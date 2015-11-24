@@ -7,10 +7,10 @@ from UserDict import IterableUserDict
 # Functions
 # Convert int to timedelta, if necessary
 def toTimeDelta(obj):
-    if type(obj) == int:
+    if isinstance(obj, int):
         obj = datetime.timedelta(obj)
         
-    if type(obj) == datetime.timedelta:
+    if isinstance(obj, datetime.timedelta):
         return obj
 
     else:
@@ -18,10 +18,10 @@ def toTimeDelta(obj):
 
 # Convert string, timedelta, or myuw date to datetime.date
 def toDate(obj):
-    if type(obj) == str:
+    if isinstance(obj, str):
         obj = myuwDate(other)
 
-    if type(obj) == myuwDate:
+    if isinstance(obj, myuwDate):
         obj = obj.dateObj
 
     return obj
@@ -35,12 +35,12 @@ class myuwDate(object):
         # TODO: use standard time (un)formatting functions instead of splitting it
         if len(args) == 1:
             arg = args[0]
-            if type(arg) == self.__class__:
+            if isinstance(arg, self.__class__):
                 # Might be dangerous if arg.dateObj is modified later
                 self.dateObj = arg.dateObj
-            elif type(arg) == datetime.date:
+            elif isinstance(arg, datetime.date):
                 self.dateObj = arg
-            elif type(arg) == str:
+            elif isinstance(arg, str):
                 try:
                     dateParts = [int(s) for s in arg.split('-')]
                     self.dateObj = datetime.date(*dateParts)
@@ -116,9 +116,9 @@ class myuwDate(object):
 
 # Convert a date to myuwDate if necessary
 def processDate(date):
-    if type(date) == myuwDate:
+    if isinstance(date, myuwDate):
         return date
-    elif type(date) == str:
+    elif isinstance(date, str):
         return myuwDate(date)
     else:
         raise Exception('Argument must either be a myuwDate or a string')
@@ -136,7 +136,7 @@ class myuwDateRange(object):
         # Just unpack them
         if len(args) == 1:
             arg = args[0]
-            if type(arg) == myuwDateRange:
+            if isinstance(arg, myuwDateRange):
                 self.startDate = arg.startDate
                 self.endDate = arg.endDate
             else:
@@ -197,7 +197,7 @@ class multiDate(IterableUserDict):
     def __init__(self, qtrsDict):
         qtrsDict = qtrsDict.copy()
         for qtr, date in qtrsDict.items():
-            if type(date) != myuwDate:
+            if not isinstance(date, myuwDate):
                 qtrsDict[qtr] = myuwDate(date)
         self.data = qtrsDict
         #super(type(self), self).__init__(qtrsDict)
