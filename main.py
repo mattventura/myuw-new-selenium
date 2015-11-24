@@ -9,19 +9,6 @@ import unittest
 import time
 from myuwFunctions import isCardVisible
 
-# TODO
-def waitForLanding():
-    # I don't know if selenium's implicit wait can wait until
-    # an element is *not* found, so do it manually
-    # TODO: make it use an actual time
-    maxTime = 15
-    startTime = time.time()
-    endTime = startTime + maxTime
-    while time.time < endTime:
-
-
-        time.sleep(6)
-    # i.fa-spin
 
 class mainMyuwTestCase(unittest.TestCase):
     
@@ -64,7 +51,7 @@ class mainMyuwTestCase(unittest.TestCase):
         dates = self.testDates[user]
         self.setUser(user)
         for date in dates:
-            print 'date is %s' %date
+            #print 'date is %s' %date
             self.setDate(date)
             self.browseLanding()
             self.checkDiffs()
@@ -84,9 +71,10 @@ class mainMyuwTestCase(unittest.TestCase):
 
     # Report differences
     def logDiffs(self, diff):
-        errString  = 'On date %s:\n' %self.currentDate
-        errString += diff
-        self.diffs += errString
+        if diff:
+            errString  = 'On date %s:\n' %self.currentDate
+            errString += diff
+            self.diffs += errString
 
     def checkDiffs(self):
         actualCards = self.pageHandler.cards
@@ -97,7 +85,7 @@ class mainMyuwTestCase(unittest.TestCase):
 class sampleMyuwTestCase(mainMyuwTestCase):
     
     testusers = ['javerage']
-    testDates = {'javerage': ('2013-02-15',)}
+    testDates = {'javerage': ('2013-02-15','2013-04-15', '2013-03-15', '2013-05-15')}
 
 
 class autoDateMyuwTestCase(mainMyuwTestCase):
@@ -149,7 +137,7 @@ class mainMyuwHandler(object):
     # Go to landing page
     def browseLanding(self):
         self.browseToPage(self.landingUrl)
-        waitForLanding()
+        self.waitForLanding()
 
     # Browse to a particular page, relative
     # to the root of the site
@@ -180,20 +168,34 @@ class mainMyuwHandler(object):
 
 
     def _parsePage(self):
-        # Main column cards
-        cardsA = self.driver.find_elements_by_xpath('//div[@id="landing_content_cards"]/div')
-        # Secondary desktop column cards
-        cardsB = self.driver.find_elements_by_xpath('//div[@id="landing_accounts_cards"]/div')
-        # All cards
-        cardElements = cardsA + cardsB
-        # Assemble a dictionary from this list of cards
+        cardEls = []
+        cardxpaths = (
+            # Notices
+            '//div[@id="notice_banner_location"]/div',
+            # Calendar on mobile
+            '//div[@id="calendar_banner_location_mobile"]/div',
+            # Calendar on desktop
+            '//div[@id="calendar_banner_location_desktop"]/div', 
+            # PCE message
+            '//div[@id="pce_banner_location"]/div',
+            # Main landing content
+            '//div[@id="landing_content_cards"]/div',
+            # Right column
+            '//div[@id="landing_accounts_cards"]/div',
+        )
+
+        for xpath in cardxpaths:
+            cardEls += self.driver.find_elements_by_xpath(xpath)
         self._cards = {}
-        for cardEl in cardElements:
+        for cardEl in cardEls:
             # If the card is not visible, then don't do anything with it
             if not(isCardVisible(cardEl)):
                 continue
             # Cards are identified by their id
-            cardName = cardEl.get_attribute('id')
+            cardId = cardEl.get_attribute('id')
+            cardDataName = cardEl.get_attribute('data-name')
+            cardName = cardId or cardDataName
+
             try:
                 # Try to find class for the given card name
                 cardClass = cardDict[cardName]
@@ -203,7 +205,9 @@ class mainMyuwHandler(object):
                 print 'WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName
             else:
                 newCard = cardClass.fromElement(self.currentDate, cardEl)
-                self._cards[cardName] = newCard
+                # For cards with multiple names, take the name from the class
+                baseCardName = newCard.name
+                self._cards[baseCardName] = newCard
             #    raise e
 
         # Mark the card list as being fresh
@@ -218,13 +222,56 @@ class mainMyuwHandler(object):
         return self._cards
 
     #TODO: allow you to just do 'pageHandler.cards' and parse if necessary
+# TODO
+    def waitForLanding(self):
+        # I don't know if selenium's implicit wait can wait until
+        # an element is *not* found, so do it manually
+        # TODO: make it use an actual time
+        maxTime = 10
+        startTime = time.time()
+        endTime = startTime + maxTime
+        while time.time() < endTime:
+            try:
+                time.sleep(.2)
+                # Look for loading gears
+                els = self.driver.find_elements_by_css_selector('i.fa-spin')
+                # Filter these to only visible
+                els = [el for el in els if el.is_displayed()]
+            except:
+                # Ignore exceptions arising from, for example, 
+                # the browser being in a weird state. If it's a
+                # real problem, something else will throw an exception
+                # anyway. 
+                pass
+            else:
+                # If there were gears, wait some more. 
+                if els:
+                    pass
+                # If there were no loading gears found, consider
+                # the page to have finished loading. 
+                else:
+                    break
+        else:
+            # If the loop ends due to running out of time, throw 
+            # this exception. 
+            raise Exception('Waited too long for landing page to finish loading.') 
 
-    
+        # If the loop ended due to there being no more loading gears, do this. 
+        #print 'Page load finish took %s seconds' %(time.time() - startTime)
+
+        # Sleep a little longer just in case we have a card that
+        # hasn't quite finished but isn't displaying the loading 
+        # gear either. 
+        time.sleep(1)
+
+            
+
+
 '''
 d = Firefox()
 d.maximize_window()
 m = mainMyuwHandler(d, 'http://localhost:8081/')
-    
+
 m.browseLanding()
 time.sleep(4)
 a = m.cards

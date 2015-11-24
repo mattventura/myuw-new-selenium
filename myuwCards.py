@@ -24,12 +24,6 @@ class myuwCard(object):
     @classmethod
     def fromElement(cls, date, cardEl):
         return cls()
-        #if isCardVisible(cardEl):
-        #    return cls.fromElementVisible(cardEl)
-        #else:
-        #    return hiddenCard(cls.name)
-            
-
 
     #@classmethod
     #def fromElementVisible(cls, e):
@@ -40,7 +34,15 @@ class myuwCard(object):
     def __eq__(self, other):
         return not(self.findDiffs(other))
     
-    
+    altNames = []
+
+    @classmethod
+    def getAllNames(cls):
+        return [cls.name] + cls.altNames[:]
+
+    @property
+    def allNames(self):
+        return [self.name] + self.altNames[:]
 
 cardDict = {}
 
@@ -50,7 +52,8 @@ cardDict = {}
 def isaCard(innerClass):
     if not(hasattr(innerClass, 'name')):
         innerClass.name = innerClass.__name__
-    cardDict[innerClass.name] = innerClass
+    for name in innerClass.getAllNames():
+        cardDict[name] = innerClass
     return innerClass
 
 # Pack the element argument of a function into the resultant object
@@ -175,9 +178,12 @@ class EmpFacStudentCard(myuwCard):
 
 
 @isaCard
-class FutureQuarterCardA(myuwCard):
+class FutureQuarterCard(myuwCard):
 
-    #name = 'FutureQuarterCardA'
+    altNames = [
+        'FutureQuarterCardA',
+        'FutureQuarterCard1',
+    ]
 
     def __init__(self, quarterData):
         self.qtrs = quarterData
@@ -247,9 +253,10 @@ stubCards = [
     'GradeCard',
     'RegStatusCard',
     'FinalExamCard',
-    'FutureQuarterCard1',
-    'SummerRegStatusCardA',
-    'SummerRegStatusCard1',
+    'SummerRegStatusCard',
+    'PCEBanner',
+    'app_notices',
+    'app_acal',
 ]
 
 for cardName in stubCards:

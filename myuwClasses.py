@@ -2,6 +2,7 @@
 
 import datetime
 from functools import total_ordering
+from UserDict import IterableUserDict
 
 # Functions
 # Convert int to timedelta, if necessary
@@ -164,20 +165,15 @@ class myuwDateRange(object):
         return self.startDate <= element <= self.endDate
 
 
-# Exception for telling the user that they didn't parse the cards
-# before trying to read them. 
-# Not yet used/TODO
-class CardsNotParsed(Exception):
-    def __init__(self, message):
-        super(CardsNotParsed, self).__init__('You must parse cards before reading them')
 
 # Class to hold an actual and expected card to be compared. 
 class cardPair(object):
     def __init__(self, actual, expected):
         # Ensure that the cards have the same name, and then 
         # set this object's name to that. 
-        if actual.name == expected.name:
-            self.name = actual.name
+        if actual.name in expected.allNames or expected.name in actual.allNames:
+            self.name = expected.name
+            self.otherName = actual.name
         else:
             raise AssertionError('Actual card and expected card have different names')
         self.actual = actual
@@ -191,3 +187,121 @@ class cardPair(object):
     # Find and report the differences between the two cards
     def findDiffs(self):
         return self.actual.findDiffs(self.expected)
+
+# Object to allow us to pack multiple dates into one friendly name
+# and do operations on it,
+# so that we can say something like 'ClassesStart + 1' and it will
+# generate a list of dates that satisfy that. 
+class multiDate(IterableUserDict):
+    
+    def __init__(self, qtrsDict):
+        qtrsDict = qtrsDict.copy()
+        for qtr, date in qtrsDict.items():
+            if type(date) != myuwDate:
+                qtrsDict[qtr] = myuwDate(date)
+        self.data = qtrsDict
+        #super(type(self), self).__init__(qtrsDict)
+
+    def __add__(self, other):
+        newQtrs = {}
+        for qtr, date in self.items():
+            newQtrs[qtr] = date + other
+        return self.__class__(newQtrs)
+
+    def __sub__(self, other):
+        return self.__add__(-1 * other)
+
+# Class to combine a card with a function to determine whether or not it should
+# show up for that user. 
+# Allows the card itself to be unhinged from show/hide logic, which may be different
+# for different users. 
+# Subclasses may populate the list of significant dates which will be used by some
+# test styles to automatically figure out dates to test. 
+class cardProxy(object):
+
+    def __init__(self, card):
+        self.card = card
+
+    def __getattr__(self, attr):
+        if attr == 'shouldAppear':
+            return self.shouldAppear
+        elif attr == 'card':
+            return self.card
+        else:
+            return self.card.__getattribute__(attr)
+
+    significantDates = []
+
+
+# Card that should always appear
+class cardAlways(cardProxy):
+    def shouldAppear(self, date):
+        return True
+
+# Card that should never appear
+class cardNever(cardProxy):
+    def shouldAppear(self, date):
+        return False
+
+# Card that appears conditionally based on date
+# cardCDM takes a list of date ranges. 
+# If you just want one, see cardCD below. 
+class cardCDM(cardProxy):
+    def __init__(self, card, dates):
+        self.card = card
+        self.dateRanges = []
+        for datePair in dates:
+            r = myuwDateRange(*datePair)
+            # Append tuple of processed dates to our date range list:
+            self.dateRanges.append(r)
+
+    # Test if the card should appear on a particular date
+    def shouldAppear(self, date):
+        for dateRange in self.dateRanges:
+            if date in dateRange:
+                if hasattr(self.card, 'shouldAppear'):
+                    return self.card.shouldAppear()
+                else:
+                    return True
+        return False
+
+    # Get dates that should be tested for this card. 
+    # Currently, it is:
+    # - Day before card is visible
+    # - First day card is visible
+    # - Day before card disappears
+    # - First day the card is not visible
+    @property
+    def significantDates(self):
+        out = []
+        for datePair in self.dateRanges:
+            out.append(datePair.startDate - 1)
+            out.append(datePair.startDate)
+            out.append(datePair.endDate)
+            out.append(datePair.endDate + 1)
+        return out
+
+# Like cardCDM, but just one single date range
+# Helps avoid parenthesis overload when defining expected dates for cards
+class cardCD(cardCDM):
+    def __init__(self, card, dateRange):
+        self.card = card
+        self.dateRanges = [myuwDateRange(dateRange)]
+
+# Lets you use multiDate (or even a plain old dict) for start and end
+class cardAuto(cardCDM):
+    # qtrSpan lets you specify that the range should span to the next quarter
+    # Not done yet, so for now just specify the card twice, once from the start to 
+    # end of qtr, then start of next qtr to true end. 
+    # Or define the actual event dates that way. 
+    def __init__(self, card, startDates, endDates, offset = 0):
+        self.card = card
+        self.dateRanges = []
+        for qtr, sd in startDates.items():
+            # Make sure the quarter is defined in both dictionaries
+            if qtr not in endDates:
+                continue
+            ed = endDates[qtr]
+            dateRange = myuwDateRange(sd, ed)
+            self.dateRanges.append(dateRange)
+
