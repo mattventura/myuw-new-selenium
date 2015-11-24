@@ -33,7 +33,7 @@ cardList['javerage'] = [
     cardAuto(
         VisualScheduleCard(),
         FirstDayQtr,
-        FinalsBegin
+        LastDayInstr
     ),
     cardAlways(app_notices()),
     cardAlways(PCEBanner()),
@@ -45,7 +45,6 @@ cardList['javerage'] = [
     #cardCD(VisualScheduleCard(), ('2013-01-07', '2013-03-15')),
     #cardCD(TextbookCard(), ('2013-01-07', '2013-01-13')),
     #cardCD(GradeCard(), ('2013-03-16', '2013-03-26')),
-    cardAuto(FinalExamCard(), FinalsBegin, BreakBegins - 1),
     cardCD(
         FutureQuarterCard({
             'Spring 2013': {
@@ -81,13 +80,13 @@ cardList['javerage'] = [
     ),
     cardAuto(
         GradeCard(),
-        FinalsBegin,
-        NextQtrClassesBegin,
+        LastDayInstr + 1,
+        NextQtrClassesBegin - 1,
     ),
     cardAuto(
         FinalExamCard(),
-        FinalsBegin,
-        BreakBegins,
+        LastDayInstr + 1,
+        BreakBegins - 1,
     ),
         
     # This card has "seen"-dependent logic, so it never actually appears at the 
@@ -125,20 +124,31 @@ def getExpectedResults(user, date):
     for name, cardColl in userCards.items():
         for card in cardColl:
             if card.shouldAppear(date):
-                userCardsVisible[name] = card
-                break
+                if name in userCardsVisible:
+                    s = 'Two expected cards with name %s on %s' %(name, date)
+                    raise Exception(s)
+                else:
+                    userCardsVisible[name] = card
     return userCardsVisible
 
 # Get significant dates to test for user. 
 # Each card is allowed to report its own dates. 
 # TODO: implement start and end
-def getSignificantDates(user, start = None, end = None): 
+def getSigDates(user, start = None, end = None): 
     userCards = cardList[user]
+    if start:
+        start = myuwDate(start)
+    if end:
+        end = myuwDate(end)
     sigDates = []
     for cardColl in userCards.values():
         for card in cardColl:
-            sigDates.extend(card.significantDates)
-    outList = list(set(sigDates))
+            for sigDate in card.significantDates:
+                if sigDate < start or sigDate > end:
+                    continue
+                if sigDate not in sigDates:
+                    sigDates.append(sigDate)
+    outList = sigDates
     outList.sort()
     return outList
 

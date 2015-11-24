@@ -95,7 +95,9 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
         userList = myuwExpected.cardList.keys()
         tcDict = {}
         for user in userList:
-            tcDict[user] = myuwExpected.getSignificantDates(user)
+            sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-06-18')
+            tcDict[user] = sd
+        #print 'Calculated test dates ' + str(tcDict)
         return tcDict
 
 class mainMyuwHandler(object):
