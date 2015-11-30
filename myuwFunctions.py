@@ -5,7 +5,6 @@ from myuwDates import FirstDayQtr, LastDayQtr
 
 # Function that attempts to determine if a card is visible
 def isCardVisible(cardEl):
-    #print 'Checking is_displayed'
     if not cardEl.is_displayed():
         return False
     #print 'Checking innerHTML'
@@ -15,6 +14,10 @@ def isCardVisible(cardEl):
     if not cardEl.text:
         return False
     return True
+
+# Like above but checks less stuff
+def isVisibleFast(el):
+    return el.is_displayed()
 
 # Try to convert 
 def dateToQtr(date):

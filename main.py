@@ -1,13 +1,19 @@
 #!/usr/bin/python
 
 
+# Generic imports
 from selenium.webdriver import Firefox
+import unittest
+import time
+
+# myuw-specific imports
 from myuwClasses import myuwDate
 import myuwExpected
 from myuwCards import cardDict
-import unittest
-import time
-from myuwFunctions import isCardVisible
+from myuwFunctions import isCardVisible,isVisibleFast
+
+# Enable this to do some performance profiling
+perf = False
 
 
 class mainMyuwTestCase(unittest.TestCase):
@@ -79,7 +85,14 @@ class mainMyuwTestCase(unittest.TestCase):
     def checkDiffs(self):
         actualCards = self.pageHandler.cards
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
-        self.logDiffs(myuwExpected.findDiffs(actualCards, expectedCards))
+        if perf:
+            diffStart = time.time()
+        diffs = myuwExpected.findDiffs(actualCards, expectedCards)
+        if perf:
+            diffEnd = time.time()
+            diffTime = diffEnd - diffStart
+            print 'Diff checking took %s seconds' %diffTime
+        self.logDiffs(diffs)
 
 
 class sampleMyuwTestCase(mainMyuwTestCase):
@@ -170,6 +183,7 @@ class mainMyuwHandler(object):
 
 
     def _parsePage(self):
+        startTime = time.time()
         cardEls = []
         cardxpaths = (
             # Notices
@@ -191,7 +205,16 @@ class mainMyuwHandler(object):
         self._cards = {}
         for cardEl in cardEls:
             # If the card is not visible, then don't do anything with it
+            if perf:
+                cardStartTime = time.time()
+            cardId = cardEl.get_attribute('id')
+            cardDataName = cardEl.get_attribute('data-name')
+            cardName = cardId or cardDataName
             if not(isCardVisible(cardEl)):
+                if perf:
+                    cardEndTime = time.time()
+                    cardParseTime = cardEndTime - cardStartTime
+                    print 'Parsing hidden card %s took %s seconds' %(cardName, cardParseTime)
                 continue
             # Cards are identified by their id
             cardId = cardEl.get_attribute('id')
@@ -210,10 +233,19 @@ class mainMyuwHandler(object):
                 # For cards with multiple names, take the name from the class
                 baseCardName = newCard.name
                 self._cards[baseCardName] = newCard
+
+            if perf:
+                cardEndTime = time.time()
+                cardParseTime = cardEndTime - cardStartTime
+                print 'Parsing card %s took %s seconds' %(cardName, cardParseTime)
             #    raise e
+
 
         # Mark the card list as being fresh
         self.cardsValid = True
+        endTime = time.time()
+        if perf:
+            print 'Card Parsing took %s seconds' %(endTime - startTime)
 
         # Do other stuff too, like directory info, email link
 
@@ -223,12 +255,9 @@ class mainMyuwHandler(object):
             self._parsePage()
         return self._cards
 
-    #TODO: allow you to just do 'pageHandler.cards' and parse if necessary
-# TODO
     def waitForLanding(self):
         # I don't know if selenium's implicit wait can wait until
         # an element is *not* found, so do it manually
-        # TODO: make it use an actual time
         maxTime = 10
         startTime = time.time()
         endTime = startTime + maxTime
@@ -238,7 +267,8 @@ class mainMyuwHandler(object):
                 # Look for loading gears
                 els = self.driver.find_elements_by_css_selector('i.fa-spin')
                 # Filter these to only visible
-                els = [el for el in els if el.is_displayed()]
+                els = filter(isVisibleFast, els)
+                #els = [el for el in els if el.is_displayed()]
             except:
                 # Ignore exceptions arising from, for example, 
                 # the browser being in a weird state. If it's a
@@ -259,7 +289,8 @@ class mainMyuwHandler(object):
             raise Exception('Waited too long for landing page to finish loading.') 
 
         # If the loop ended due to there being no more loading gears, do this. 
-        #print 'Page load finish took %s seconds' %(time.time() - startTime)
+        if perf:
+            print 'Page load finish took %s seconds' %(time.time() - startTime)
 
         # Sleep a little longer just in case we have a card that
         # hasn't quite finished but isn't displaying the loading 
@@ -274,13 +305,14 @@ d = Firefox()
 d.maximize_window()
 m = mainMyuwHandler(d, 'http://localhost:8081/')
 
+m.setDate('2013-06-10')
 m.browseLanding()
 time.sleep(4)
 a = m.cards
-e = myuwExpected.getExpectedResults('javerage', '2013-04-15')
-diff = myuwExpected.findDiffs(a, e)
-h = a['FutureQuarterCardA']
-e = h.originalElement
+e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
+#diff = myuwExpected.findDiffs(a, e)
+h = a['GradeCard']
+#e = h.originalElement
 '''
 
 

@@ -78,7 +78,18 @@ cardList['javerage'] = [
         ClassesBegin + 7
     ),
     cardAuto(
-        GradeCard(),
+        GradeCard({
+            'WI13': {
+                'EMBA 503': None,
+                'EMBA 533': None,
+                'EMBA 590': None,
+            },
+            'SP13': {
+                'PHYS 121': '4.0',
+                'TRAIN 100': 'P',
+                'TRAIN 101': 'HP',
+            }
+        }),
         LastDayInstr + 1,
         NextQtrClassesBegin - 1,
     ),
@@ -123,20 +134,32 @@ def getExpectedResults(user, date):
 
 # Get significant dates to test for user. 
 # Each card is allowed to report its own dates. 
-# TODO: implement start and end
+# Done: implement start and end
 def getSigDates(user, start = None, end = None): 
+    # Expected cards for the given user
     userCards = cardList[user]
+    # Convert start/end to myuwDate
     if start:
         start = myuwDate(start)
     if end:
         end = myuwDate(end)
     sigDates = []
+    # Go through each card collection (set of each
+    # different version a card might be in depending on 
+    # date, as an alternative to natively supporting
+    # that in the card). 
     for cardColl in userCards.values():
+        # Go through each version of the card
         for card in cardColl:
+            # Check each sigdate for each card and see if 
+            # it falls within the desired range
             for sigDate in card.significantDates:
-                if sigDate < start or sigDate > end:
+                # start and end are optional
+                if start and sigDate < start:
                     continue
-                if sigDate not in sigDates:
+                elif end and sigDate > end:
+                    continue
+                elif sigDate not in sigDates:
                     sigDates.append(sigDate)
     outList = sigDates
     outList.sort()
@@ -181,7 +204,10 @@ def findDiffs(actual, expected):
     # Report differences between actual and expected data on the cards
     for name, pair in common.items():
         pairDiff = pair.findDiffs()
-        if pairDiff:
+        
+        if not(isinstance(diffs, str)):
+            raise TypeError('Diff function %s returned a non-string value %s') %(name, diffs)
+        elif pairDiff:
             diffs += 'Found differences in card %s:\n' %name
             diffs += pairDiff
 

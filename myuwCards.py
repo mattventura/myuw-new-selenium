@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from myuwFunctions import isCardVisible
+from myuwFunctions import isCardVisible, dateToQtr
 import re
 
 #class hiddenCard(object):
@@ -260,19 +260,31 @@ class SummerEFSCard(myuwCard):
 
 @isaCard
 class GradeCard(myuwCard):
+
+    noGradeStr = 'No grade yet\nX'
+
     def __init__(self, gradeDict):
+        # Use None as a shortcut for the "No grade yet" text 
+        # defined above. 
+        for qtrGrades in gradeDict.values():
+            for className, grade in qtrGrades.items():
+                if grade == None:
+                    qtrGrades[className] = self.noGradeStr
+
         self.gradeDict = gradeDict
         self.quarter = None
 
     @classmethod
     @packElement
-    def _fromElement(cls, date, e):
-        qtr = myuwFunctions.dateToQtr(date)
+    def fromElement(cls, date, e):
+        # We have to adjust the date a bit, since the final grades
+        # card will appear a bit past the end of the quarter
+        qtr = dateToQtr(date - 10)
         qtrEls = e.find_elements_by_xpath('.//li[@class="clearfix"]')
         thisQtrDict = {}
         for el in qtrEls:
-            leftEl = el.find_elements_by_xpath('.//div@class="pull-left"]')
-            rightEl = el.find_elements_by_xpath('.//div@class="pull-right"]')
+            leftEl = el.find_element_by_xpath('.//div[@class="pull-left"]')
+            rightEl = el.find_element_by_xpath('.//div[@class="pull-right"]')
             className = leftEl.text
             classGrade = rightEl.text
             thisQtrDict[className] = classGrade
@@ -282,21 +294,26 @@ class GradeCard(myuwCard):
         }
         newObj = cls(qtrDict)
         newObj.quarter = qtr
+        return newObj
 
 
-    def _findDiffs(self, other):
+    def findDiffs(self, other):
         diffs = ''
         trueQtr = self.quarter or other.quarter
         try:
             gradesA = self.gradeDict[trueQtr]
         except:
-            pass #TODO
+            pass
+            #TODO: write better exceptions here
+            #raise Exception("gradesA problem")
         try:
             gradesB = other.gradeDict[trueQtr]
         except:
-            pass #TODO
+            pass
+            #raise Exception("gradesB problem")
 
         diffs += formatDiffs('Final grades', gradesA, gradesB)
+        return diffs
         
     
     
