@@ -20,11 +20,10 @@ cardList['javerage'] = [
     
     cardAlways(TuitionCard()),
     cardAlways(LibraryCard()),
-###    cardAlways(AcademicCard()),
     cardAlways(CourseCard()),
     cardAlways(GradStatusCard()),
     cardAlways(GradCommitteeCard()),
-    cardAlways(SummerEFSCard()),
+    cardAlways(SummerEFSCard(True, True)),
     cardCD(
         EventsCard(),
         ('2013-03-19', '2013-04-30')
@@ -90,15 +89,6 @@ cardList['javerage'] = [
         BreakBegins,
     ),
         
-    # This card has "seen"-dependent logic, so it never actually appears at the 
-    # bottom for our tests. 
-    #card(FutureQuarterCard1, ('2013-03-12', '2013-03-27')),
-#    cardN(FutureQuarterCard1()),
-
-#    cardN(RegStatusCard()), 
-#    cardN(SummerRegStatusCardA()),
-#    cardN(SummerRegStatusCard1()),
-#    cardN(EventsCard()),
 ]
 
 # We want these to be dictionaries, but no need to cause a bunch of 

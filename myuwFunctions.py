@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from myuwClasses import myuwDate
+from myuwDates import FirstDayQtr, LastDayQtr
 
 # Function that attempts to determine if a card is visible
 def isCardVisible(cardEl):
@@ -14,3 +16,14 @@ def isCardVisible(cardEl):
         return False
     return True
 
+# Try to convert 
+def dateToQtr(date):
+    date = myuwDate(date)
+    for qtr, start in FirstDayQtr.items():
+        try:
+            end = LastDayQtr[qtr]
+            if start <= date <= end:
+                return qtr
+        except: 
+            continue
+    raise Exception("Couldn't find quarter for date %s" %date)

@@ -239,18 +239,78 @@ class CourseCard(myuwCard):
 class GradStatusCard(myuwCard):
     pass
 
+@isaCard
+class SummerEFSCard(myuwCard):
+    def __init__(self, summerReg = True, considerEFS = True):
+        self.sumReg = summerReg
+        self.efs = considerEFS
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, e):
+        text = e.text
+        sumReg = 'Review Critical Summer' in text
+        efs = 'Consider Early Fall Start' in text
+        return cls(sumReg, efs)
+
+    def findDiffs(self, other):
+        diffs = ''
+        diffs += formatDiffs('Has Summer Reg Info section', self.sumReg, other.sumReg)
+        diffs += formatDiffs('Has EFS section', self.efs, other.efs)
+
+@isaCard
+class GradeCard(myuwCard):
+    def __init__(self, gradeDict):
+        self.gradeDict = gradeDict
+        self.quarter = None
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, e):
+        qtr = myuwFunctions.dateToQtr(date)
+        qtrEls = e.find_elements_by_xpath('.//li[@class="clearfix"]')
+        thisQtrDict = {}
+        for el in qtrEls:
+            leftEl = el.find_elements_by_xpath('.//div@class="pull-left"]')
+            rightEl = el.find_elements_by_xpath('.//div@class="pull-right"]')
+            className = leftEl.text
+            classGrade = rightEl.text
+            thisQtrDict[className] = classGrade
+        
+        qtrDict = {
+            qtr: thisQtrDict
+        }
+        newObj = cls(qtrDict)
+        newObj.quarter = qtr
+
+
+    def findDiffs(self, other):
+        diffs = ''
+        trueQtr = self.quarter or other.quarter
+        try:
+            gradesA = self.gradeDict[trueQtr]
+        except:
+            pass #TODO
+        try:
+            gradesB = other.gradeDict[trueQtr]
+        except:
+            pass #TODO
+
+        diffs += formatDiffs('Final grades', gradesA, gradesB)
+        
+    
+    
+
 # Cards that I haven't done yet, so just generate these quickly
 # This can also be used for cards which really have nothing to test
 # on them other than visibility. 
 
 stubCards = [
-    'SummerEFSCard',
     'VisualScheduleCard',
     'TuitionCard', 
     'EventsCard',
     'GradCommitteeCard',
     'TextbookCard',
-    'GradeCard',
     'RegStatusCard',
     'FinalExamCard',
     'SummerRegStatusCard',
