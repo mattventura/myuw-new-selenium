@@ -240,6 +240,7 @@ class GradStatusCard(myuwCard):
     pass
 
 @isaCard
+<<<<<<< HEAD
 class SummerEFSCard(myuwCard):
     def __init__(self, summerReg = True, considerEFS = True):
         self.sumReg = summerReg
@@ -300,6 +301,13 @@ class GradeCard(myuwCard):
         
     
     
+@isaCard
+class SummerRegStatusCard(myuwCard):
+    
+    altNames = [
+        'SummerRegStatusCardA',
+        'SummerRegStatusCardB'
+    ]
 
 # Cards that I haven't done yet, so just generate these quickly
 # This can also be used for cards which really have nothing to test
@@ -313,7 +321,6 @@ stubCards = [
     'TextbookCard',
     'RegStatusCard',
     'FinalExamCard',
-    'SummerRegStatusCard',
     'PCEBanner',
     'app_notices',
     'app_acal',
