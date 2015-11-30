@@ -240,7 +240,6 @@ class GradStatusCard(myuwCard):
     pass
 
 @isaCard
-<<<<<<< HEAD
 class SummerEFSCard(myuwCard):
     def __init__(self, summerReg = True, considerEFS = True):
         self.sumReg = summerReg
@@ -267,7 +266,7 @@ class GradeCard(myuwCard):
 
     @classmethod
     @packElement
-    def fromElement(cls, date, e):
+    def _fromElement(cls, date, e):
         qtr = myuwFunctions.dateToQtr(date)
         qtrEls = e.find_elements_by_xpath('.//li[@class="clearfix"]')
         thisQtrDict = {}
@@ -285,7 +284,7 @@ class GradeCard(myuwCard):
         newObj.quarter = qtr
 
 
-    def findDiffs(self, other):
+    def _findDiffs(self, other):
         diffs = ''
         trueQtr = self.quarter or other.quarter
         try:
