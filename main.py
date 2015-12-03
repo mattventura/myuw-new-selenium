@@ -7,7 +7,7 @@ import unittest
 import time
 
 # myuw-specific imports
-from myuwClasses import myuwDate
+from myuwClasses import myuwDate, errorCard
 import myuwExpected
 from myuwCards import cardDict
 from myuwFunctions import isCardVisible,isVisibleFast
@@ -84,6 +84,7 @@ class mainMyuwTestCase(unittest.TestCase):
 
     def checkDiffs(self):
         actualCards = self.pageHandler.cards
+        print 'Getting expected results for ' + self.currentUser
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
         if perf:
             diffStart = time.time()
@@ -97,8 +98,13 @@ class mainMyuwTestCase(unittest.TestCase):
 
 class sampleMyuwTestCase(mainMyuwTestCase):
     
-    testusers = ['javerage']
-    testDates = {'javerage': ('2013-02-15','2013-04-15', '2013-03-15', '2013-05-15')}
+    #usersToTest = ['jinter']
+    #testDates = {'javerage': ('2013-02-15','2013-04-15', '2013-03-15', '2013-05-15')}
+    testDates = {}
+    testDates['jinter'] = ('2013-04-15',)
+    testDates['javerage'] = ('2013-02-15', '2013-05-12')
+    
+    usersToTest = testDates.keys()
 
 
 class autoDateMyuwTestCase(mainMyuwTestCase):
@@ -221,18 +227,29 @@ class mainMyuwHandler(object):
             cardDataName = cardEl.get_attribute('data-name')
             cardName = cardId or cardDataName
 
-            try:
-                # Try to find class for the given card name
-                cardClass = cardDict[cardName]
-            except KeyError as e:
-                # KeyError implies the card was not in the list card classes
-                #raise Exception('Card %s not in list of known cards' %cardName)
-                print 'WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName
+            cardIsError = 'An error has occurred' in cardEl.text
+                
+            # If the card errors out, use myuwClasses.errorCard and provide
+            # the name. This allows us to give an error card as the expected
+            # data. 
+            if cardIsError:
+                newCard = errorCard(cardName)
+                self._cards[cardName] = newCard
+
             else:
-                newCard = cardClass.fromElement(self.currentDate, cardEl)
-                # For cards with multiple names, take the name from the class
-                baseCardName = newCard.name
-                self._cards[baseCardName] = newCard
+
+                try:
+                    # Try to find class for the given card name
+                    cardClass = cardDict[cardName]
+                except KeyError as e:
+                    # KeyError implies the card was not in the list card classes
+                    #raise Exception('Card %s not in list of known cards' %cardName)
+                    print 'WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName
+                else:
+                    newCard = cardClass.fromElement(self.currentDate, cardEl)
+                    # For cards with multiple names, take the name from the class
+                    baseCardName = newCard.name
+                    self._cards[baseCardName] = newCard
 
             if perf:
                 cardEndTime = time.time()
@@ -286,7 +303,7 @@ class mainMyuwHandler(object):
         else:
             # If the loop ends due to running out of time, throw 
             # this exception. 
-            raise Exception('Waited too long for landing page to finish loading.') 
+            raise Exception('Waited too long for landing page to finish loading on %s.' %self.currentDate) 
 
         # If the loop ended due to there being no more loading gears, do this. 
         if perf:
@@ -318,6 +335,6 @@ h = a['GradeCard']
 
 if __name__ == '__main__':
     del mainMyuwTestCase
-    del sampleMyuwTestCase
-    #del autoDateMyuwTestCase
+    #del sampleMyuwTestCase
+    del autoDateMyuwTestCase
     unittest.main()

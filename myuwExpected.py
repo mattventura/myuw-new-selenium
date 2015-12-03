@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from myuwClasses import myuwDate, myuwDateRange, cardPair, \
-cardAlways, cardNever, cardCDM, cardCD, cardAuto
+cardAlways, cardNever, cardCDM, cardCD, cardAuto, errorCard
 from myuwCards import *
 from myuwDates import *
 
@@ -16,7 +16,7 @@ cardList = {}
 cardList['javerage'] = [
     cardAlways(HFSCard({'stu': '$1.23', 'emp': '$1.00', 'din': '$5.10'})),
     #cardAlways(EmpFacStudentCard(True, False)),
-    cardAlways(CriticalInfoCard()),
+    cardAlways(CriticalInfoCard(True, True, False)),
     
     cardAlways(TuitionCard()),
     cardAlways(LibraryCard()),
@@ -101,7 +101,35 @@ cardList['javerage'] = [
         
 ]
 
-# We want these to be dictionaries, but no need to cause a bunch of 
+cardList['jinter'] = [
+    HFSCard({'emp': '$1.00'}),
+    ToRegisterCard(),
+    TuitionCard(),
+    LibraryCard(),
+    cardAlways(errorCard('GradStatusCard')),
+    cardAlways(errorCard('GradCommitteeCard')),
+    cardAlways(PCEBanner()),
+    cardAlways(app_notices()),
+    cardAlways(app_acal()),
+    cardAlways(SummerEFSCard(summerReg = False, considerEFS = True)), 
+    VisualScheduleCard(),
+    InternationalStuCard(),
+    EmpFacStudentCard(True, True),
+    
+    cardAuto(
+        RegStatusCard(), 
+        RegCardShow,
+        RegPd2 + 7
+    ), 
+    cardAuto(SummerRegStatusCard(),
+        SummerRegShow,
+        RegPd2 + 7
+    ),
+    cardAlways(CriticalInfoCard()),
+]
+
+# We want these to be dictionaries, 
+# but no need to cause a bunch of 
 # extra typing when listing them. 
 # Also pack conditionals into a list
 def cardListToDict(cl):
@@ -126,7 +154,7 @@ def getExpectedResults(user, date):
         for card in cardColl:
             if card.shouldAppear(date):
                 if name in userCardsVisible:
-                    s = 'Two expected cards with name %s on %s' %(name, date)
+                    s = 'Two expected cards with id %s on %s' %(name, date)
                     raise Exception(s)
                 else:
                     userCardsVisible[name] = card
@@ -205,8 +233,13 @@ def findDiffs(actual, expected):
     for name, pair in common.items():
         pairDiff = pair.findDiffs()
         
-        if not(isinstance(diffs, str)):
-            raise TypeError('Diff function %s returned a non-string value %s') %(name, diffs)
+        if pairDiff == None:
+            raise TypeError('Diff for %s returned None\n' %name)
+        elif not(isinstance(pairDiff, str)):
+            print type(pairDiff)
+            raise TypeError(
+                'Diff for %s returned a non-string value "%s"\n' %(name, diffs)
+            )
         elif pairDiff:
             diffs += 'Found differences in card %s:\n' %name
             diffs += pairDiff

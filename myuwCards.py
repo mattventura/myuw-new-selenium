@@ -1,52 +1,25 @@
 #!/usr/bin/python
 
-from myuwFunctions import isCardVisible, dateToQtr
+from myuwFunctions import isCardVisible, packElement, formatDiffs
+from myuwDates import dateToQtr
 import re
+from myuwClasses import myuwCard
 
 #class hiddenCard(object):
 #    def __init__(self, name):
 #        self.name = name
 #    visible = False
 
-# Generic card class
-class myuwCard(object):
-    # Placeholder values to help identify cases where the 
-    # required info was not given
-    # Title is only meaningful if there is an actual
-    # title on the card. 
-    #title = 'FIX ME'
-    # Name is the id of the card's <div>
-    #name = 'FixMeCard'
-    # Create a new object of the specified type from
-    # a selenium element. 
-    # For cards that have variable content, this behavior 
-    # needs to be overridden in each card. 
-    @classmethod
-    def fromElement(cls, date, cardEl):
-        return cls()
 
-    #@classmethod
-    #def fromElementVisible(cls, e):
 
-    def findDiffs(self, other):
-        return ''
-
-    def __eq__(self, other):
-        return not(self.findDiffs(other))
     
-    altNames = []
 
-    @classmethod
-    def getAllNames(cls):
-        return [cls.name] + cls.altNames[:]
 
-    @property
-    def allNames(self):
-        return [self.name] + self.altNames[:]
-
+# Dictionary of IDs to card classes
+# This includes alternate names for cards
 cardDict = {}
 
-# Laziness function for making card classes easier
+# Convenience function for specifying a card. 
 # Puts them in the dictionary of cards. Also automatically
 # sets the name property of the class if not already set. 
 def isaCard(innerClass):
@@ -56,39 +29,27 @@ def isaCard(innerClass):
         cardDict[name] = innerClass
     return innerClass
 
-# Pack the element argument of a function into the resultant object
-# for debugging purposes. 
-def packElement(func):
-    def inner(cls, date, e):
-        newCardInstance = func(cls, date, e)
-        newCardInstance.originalElement = e
-        return newCardInstance
-    return inner
-    
 
 
+# TODO: Move these somewhere else
 stuHuskyCardLink = 'https://www.hfs.washington.edu/olco/Secure/AccountSummary.aspx'
 empHuskyCardLink = 'fill me in'
 
+# Shorthand versions of these
 balanceLabels = {
     'Student Husky Card': 'stu',
     'Employee Husky Card': 'emp',
     'Resident Dining': 'din',
 }
 
-def formatDiffs(label, a, b):
-    if a == b:
-        return ''
-    else:
-        outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
-        return outStr
+# If a and b are different, write a message using
+# 'label' to describe what component is different
 
 # TODO: last transaction date
 @isaCard
 class HFSCard(myuwCard):
     
     title = 'Husky Card & Dining'
-    #name = 'HFSCard'
 
     def __init__(self, balanceDict = {}, 
         addFundsUrl = stuHuskyCardLink, title = title):
@@ -100,6 +61,7 @@ class HFSCard(myuwCard):
 
         # TODO: make this better
         self.balanceDict = balanceDict
+
         try:
             self.stuBalance = balanceDict['stu']
         except KeyError:
@@ -121,13 +83,19 @@ class HFSCard(myuwCard):
         titleEl = e.find_element_by_xpath('./div[@data-type="card"]/h3')
         titleText = titleEl.text
 
-        balancesContainer = e.find_element_by_xpath('.//ul[@class="card_list"]')
-        balancesElements = balancesContainer.find_elements_by_xpath('./li/div')
+        # Find balances on the card
+        balancesContainer = e.find_element_by_xpath(
+            './/ul[@class="card_list"]')
+        balancesElements = balancesContainer.find_elements_by_xpath(
+            './li/div')
         balanceDict = {}
         for be in balancesElements:
-            label = be.find_element_by_css_selector('div.pull-left h4.card-badge-label').text
+            label = be.find_element_by_css_selector(
+                'div.pull-left h4.card-badge-label').text
             balance = be.find_element_by_class_name('pull-right').text
 
+            # Look up the shorthand version of the 
+            # account name (stu/emp/din). 
             try: 
                 balanceId = balanceLabels[label]
             except KeyError:
@@ -135,26 +103,44 @@ class HFSCard(myuwCard):
 
             balanceDict[balanceId] = balance
 
-        linkElement = e.find_element_by_xpath('.//div[@class="card-badge-action"]/a')
+        # Find 'Add funds' link
+        linkElement = e.find_element_by_xpath(
+            './/div[@class="card-badge-action"]/a')
         linkUrl = linkElement.get_attribute('href')
 
         return cls(balanceDict, linkUrl, titleText)
 
+    autoDiffs = {
+        'title': 'HFS Card Title',
+        'balanceDict': 'HFS Card Balances',
+        'addFundsUrl': 'HFS Add Funds URL',
+    }
+'''
     def findDiffs(self, other):
         diffs = ''
-        diffs += formatDiffs('HFS card title', self.title, other.title)
-        diffs += formatDiffs('HFS balances', self.balanceDict, other.balanceDict)
-        diffs += formatDiffs('HFS add funds url', self.addFundsUrl, other.addFundsUrl)
+        diffs += formatDiffs(
+            'HFS card title',
+            self.title,
+            other.title
+        )
+        diffs += formatDiffs(
+            'HFS balances',
+            self.balanceDict,
+            other.balanceDict
+        )
+        diffs += formatDiffs(
+            'HFS add funds url', 
+            self.addFundsUrl, 
+            other.addFundsUrl
+        )
         return diffs
+        '''
 
 
 # Student employee/instructor card
 @isaCard
 class EmpFacStudentCard(myuwCard):
     
-    #title = 'Student Employee/Instructor Card'
-    #name = 'EmpFacStudentCard'
-
     # Takes two arguments, whether they have the student
     # employee part of the card, and whether they have
     # the instructor part of the card
@@ -170,12 +156,25 @@ class EmpFacStudentCard(myuwCard):
         instructor = 'Instructor or TA for a class' in innerText
         return cls(stuEmp, instructor)
 
+    autoDiffs = {
+        'stuEmp': 'Student Employee Section',
+        'instructor': 'Instructor Section',
+    }
+'''
     def findDiffs(self, other):
         diffs = ''
-        diffs += formatDiffs('Has Student Employee section', self.stuEmp, other.stuEmp)
-        diffs += formatDiffs('Has Instructor/TA section', self.instructor, other.instructor)
+        diffs += formatDiffs(
+            'Has Student Employee section',
+            self.stuEmp,
+            other.stuEmp
+        )
+        diffs += formatDiffs(
+            'Has Instructor/TA section', 
+            self.instructor, 
+            other.instructor
+        )
         return diffs
-
+'''
 
 @isaCard
 class FutureQuarterCard(myuwCard):
@@ -214,30 +213,13 @@ class FutureQuarterCard(myuwCard):
             qtrs[qtrName] = qtrDict
         return cls(qtrs)
 
+    autoDiffs = {'qtrs': 'Future Quarter Data'}
+    '''
     def findDiffs(self, other):
         diffs = ''
         diffs += formatDiffs('Future Quarter Data', self.qtrs, other.qtrs)
         return diffs
-
-@isaCard
-class CriticalInfoCard(myuwCard):
-    pass
-
-@isaCard
-class ToRegisterCard(myuwCard):
-    pass
-
-@isaCard
-class LibraryCard(myuwCard):
-    pass
-
-@isaCard
-class CourseCard(myuwCard):
-    pass
-
-@isaCard
-class GradStatusCard(myuwCard):
-    pass
+    '''
 
 @isaCard
 class SummerEFSCard(myuwCard):
@@ -253,10 +235,10 @@ class SummerEFSCard(myuwCard):
         efs = 'Consider Early Fall Start' in text
         return cls(sumReg, efs)
 
-    def findDiffs(self, other):
-        diffs = ''
-        diffs += formatDiffs('Has Summer Reg Info section', self.sumReg, other.sumReg)
-        diffs += formatDiffs('Has EFS section', self.efs, other.efs)
+    autoDiffs = {
+        'sumReg': 'Has Summer Reg Info section',
+        'efs': 'Has EFS Section',
+    }
 
 @isaCard
 class GradeCard(myuwCard):
@@ -322,29 +304,73 @@ class SummerRegStatusCard(myuwCard):
     
     altNames = [
         'SummerRegStatusCardA',
-        'SummerRegStatusCardB'
+        'SummerRegStatusCard1'
     ]
 
-# Cards that I haven't done yet, so just generate these quickly
-# This can also be used for cards which really have nothing to test
-# on them other than visibility. 
+@isaCard
+class CriticalInfoCard(myuwCard):
+    
+    def __init__(self, email = True,
+        directory = True, residency = True):
 
+        self.email = email
+        self.directory = directory
+        self.residency = residency
+
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, e):
+        headers = e.find_elements_by_xpath('.//span[@class="notice-title"]')
+        titles = [e.text for e in headers]
+
+        email = 'Set Up UW Email' in titles
+
+        directory = 'Update Student Directory' in titles
+
+        residency = 'Non-Resident Classification' in titles
+
+        newObj = cls(email, directory, residency)
+        return newObj
+
+    autoDiffs = {
+        'email': 'Set Up UW Email notice',
+        'directory': 'Student Directory notice',
+        'residency': 'Residency notice',
+    }
+    #def findDiffs(self, other):
+    #    diffs = ''
+    #    diffs += formatDiffs('Set Up UW Email notice', self.email, other.email)
+    #    diffs += formatDiffs('Student Directory notice', self.directory, other.directory)
+    #    diffs += formatDiffs('Residency notice', self.residency, other.residency)
+    #    return diffs
+        
+
+# Simple cards that have fixed content as well
+# as cards that simply aren't done yet. 
 stubCards = [
     'VisualScheduleCard',
     'TuitionCard', 
     'EventsCard',
     'GradCommitteeCard',
+    'GradStatusCard',
     'TextbookCard',
     'RegStatusCard',
     'FinalExamCard',
     'PCEBanner',
     'app_notices',
     'app_acal',
+    'NoCourseCard',
+    'ToRegisterCard',
+    'LibraryCard',
+    'CourseCard',
+    'InternationalStuCard',
 ]
 
 for cardName in stubCards:
     
-    #@isaCard
+    # Can't just do @isaCard because __name__ isn't set until
+    # after the class is created
     class newCardClass(myuwCard):
         pass
     newCardClass.__name__ = cardName

@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-from myuwClasses import myuwDate
-from myuwDates import FirstDayQtr, LastDayQtr
+import datetime
 
 # Function that attempts to determine if a card is visible
 def isCardVisible(cardEl):
@@ -19,14 +18,30 @@ def isCardVisible(cardEl):
 def isVisibleFast(el):
     return el.is_displayed()
 
-# Try to convert 
-def dateToQtr(date):
-    date = myuwDate(date)
-    for qtr, start in FirstDayQtr.items():
-        try:
-            end = LastDayQtr[qtr]
-            if start <= date <= end:
-                return qtr
-        except: 
-            continue
-    raise Exception("Couldn't find quarter for date %s" %date)
+# Functions
+# Convert int to timedelta, if necessary
+def toTimeDelta(obj):
+    if isinstance(obj, int):
+        obj = datetime.timedelta(obj)
+        
+    if isinstance(obj, datetime.timedelta):
+        return obj
+
+    else:
+        raise TypeError('toTimeDelta requires either an int or datetime.timedelta as its argument')
+
+# Pack the element argument of a fromElement method into the 
+# resultant object for debugging purposes. 
+def packElement(func):
+    def inner(cls, date, e):
+        newCardInstance = func(cls, date, e)
+        newCardInstance.originalElement = e
+        return newCardInstance
+    return inner
+    
+def formatDiffs(label, a, b):
+    if a == b:
+        return ''
+    else:
+        outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
+        return outStr

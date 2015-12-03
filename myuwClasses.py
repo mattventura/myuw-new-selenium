@@ -3,60 +3,58 @@
 import datetime
 from functools import total_ordering
 from UserDict import IterableUserDict
+from myuwFunctions import toTimeDelta, packElement, formatDiffs
 
-# Functions
-# Convert int to timedelta, if necessary
-def toTimeDelta(obj):
-    if isinstance(obj, int):
-        obj = datetime.timedelta(obj)
-        
-    if isinstance(obj, datetime.timedelta):
-        return obj
-
-    else:
-        raise TypeError('toTimeDelta requires either an int or datetime.timedelta as its argument')
 
 # Convert string, timedelta, or myuw date to datetime.date
 def toDate(obj):
     if isinstance(obj, str):
         obj = myuwDate(other)
 
-    if isinstance(obj, myuwDate):
+    elif isinstance(obj, myuwDate):
         obj = obj.dateObj
 
     return obj
 
-# Object for a date, takes either a string or y,m,d as individual arguments
+
+# Wrapper around datetime.date that allows easy converion
+# to and from "yyyy-mm-dd" format for myuw. 
 @total_ordering
 class myuwDate(object):
     
     def __init__(self, *args):
-        # Arguments specified as a string of the form yyyy-mm-dd
-        # TODO: use standard time (un)formatting functions instead of splitting it
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, self.__class__):
-                # Might be dangerous if arg.dateObj is modified later
-                self.dateObj = arg.dateObj
+                newDate = (arg.year, arg.month, arg.day)
+                return self.__init__(*newDate)
+
             elif isinstance(arg, datetime.date):
                 self.dateObj = arg
+
             elif isinstance(arg, str):
                 try:
+                    # TODO: use standard time (un)formatting functions instead 
+                    # of splitting it
                     dateParts = [int(s) for s in arg.split('-')]
                     self.dateObj = datetime.date(*dateParts)
                 except:
-                    raise TypeError('myuwDate accepts either "yyyy-mm-dd" or yyyy, mm, dd as its arguments')
+                    raise self.MyuwDateTypeError()
 
             else:
-                raise TypeError('myuwDate accepts either "yyyy-mm-dd" or yyyy, mm, dd as its arguments')
+                raise self.MyuwDateTypeError()
 
         # Arguments specified as y, m, d
         elif len(args) == 3:
             self.dateObj = datetime.date(*args)
 
         else: 
-            raise TypeError('myuwDate accepts either "yyyy-mm-dd" or yyyy, mm, dd as its arguments')
+            raise self.MyuwDateTypeError()
 
+    class MyuwDateTypeError(TypeError):
+        def __init__(self):
+            message = 'Arguments to mywDate must be "yyyy-mm-dd" or yyyy, mm, dd'
+            super(self.__class__, self).__init__(message)
 
     @property
     def year(self):
@@ -83,7 +81,7 @@ class myuwDate(object):
         try:
             other = toTimeDelta(other)
 
-        except: 
+        except TypeError: 
             return NotImplemented
 
         newDateObj = self.dateObj + other
@@ -114,68 +112,73 @@ class myuwDate(object):
             
 
 
-# Convert a date to myuwDate if necessary
-def processDate(date):
-    if isinstance(date, myuwDate):
-        return date
-    elif isinstance(date, str):
-        return myuwDate(date)
-    else:
-        raise Exception('Argument must either be a myuwDate or a string')
-
 # Class for a date range
 class myuwDateRange(object):
     
-    # Takes arguments in any of the following forms:
-    # myuwDate, myuwDate
-    # (myuwDate, myuwDate)
-    # 'yyyy-mm-dd', 'yyyy-mm-dd'
-    # ('yyyy-mm-dd', 'yyyy-mm-dd')
-    def __init__(self, *args):
-        # Arguments specified as a tuple
-        # Just unpack them
-        if len(args) == 1:
-            arg = args[0]
-            if isinstance(arg, myuwDateRange):
-                self.startDate = arg.startDate
-                self.endDate = arg.endDate
-            else:
-                self.__init__(*arg)
+    # Takes a startDate and an endDate, which can be specified
+    # in any format that the myuwDate constructor will accept. 
+    
+    def __init__(self, startDate, endDate):
 
-        elif len(args) == 2:
-            dateA = args[0]
-            dateB = args[1]
-            dateA = processDate(dateA)
-            dateB = processDate(dateB)
-            self.startDate = dateA
-            self.endDate = dateB
+        self.startDate = myuwDate(startDate)
+        self.endDate = myuwDate(endDate)
 
-        else: 
-            raise TypeError('myuwDateRange requires one or two arguments')
+        if self.startDate > self.endDate:
+            raise Exception('Start date %s comes after end date %s'
+                %(self.startDate, self.endDate))
+
 
     # Get dates that should be tested based on this date range
     @property
     def significantDates(self):
-        return (self.startDate - 1, self.startDate, self.endDate - 1, self.endDate)
+        return (
+            self.startDate - 1, 
+            self.startDate, 
+            self.endDate - 1, 
+            self.endDate
+        )
 
-    # Lets us use 'date in dateRange' syntax to check if a date is part of this date range
+    # Lets us use 'date in dateRange' syntax to check if 
+    # a date is part of this date range
     # This is INCLUSIVE of the end date
+    # So for a card that should appear for only one day, you
+    # would specify an identical start and end date
     def __contains__(self, element):
-        element = processDate(element)
+        element = myuwDate(element)
         return self.startDate <= element <= self.endDate
+
+# Dummy date range for when there are no dates whatsoever
+class nullDateRange(myuwDateRange):
+    def __init__(self):
+        pass
+
+    def significantDates(self):
+        return ()
+
+    def __contains__(self, element):
+        return False
 
 
 
 # Class to hold an actual and expected card to be compared. 
 class cardPair(object):
     def __init__(self, actual, expected):
+        # If we weren't passed actual cards, fix that
+        # We don't need the stuff that these proxies provide
+        if hasattr(actual, 'card'):
+            actual = actual.card
+        if hasattr(expected, 'card'):
+            expected = expected.card
         # Ensure that the cards have the same name, and then 
         # set this object's name to that. 
-        if actual.name in expected.allNames or expected.name in actual.allNames:
+        aNames = actual.allNames
+        eNames = expected.allNames
+        if actual.name in eNames or expected.name in aNames:
             self.name = expected.name
             self.otherName = actual.name
         else:
-            raise AssertionError('Actual card and expected card have different names')
+            errStr = 'Name mismatch between %s and %s' %(actual.name, expected.name)
+            raise AssertionError(errStr)
         self.actual = actual
         self.expected = expected
 
@@ -186,21 +189,33 @@ class cardPair(object):
 
     # Find and report the differences between the two cards
     def findDiffs(self):
-        return self.actual.findDiffs(self.expected)
+
+        actualError = isinstance(self.actual, errorCard)
+        expectedError = isinstance(self.expected, errorCard)
+        if actualError == expectedError:
+            return self.actual.findDiffs(self.expected)
+        else:
+            if actualError:
+                return 'Actual card had unexpected error'
+            else:
+                return 'Expected error card, didn\'t get one'
 
 # Object to allow us to pack multiple dates into one friendly name
 # and do operations on it,
 # so that we can say something like 'ClassesStart + 1' and it will
 # generate a list of dates that satisfy that. 
+# Works like a plain old dictionary
 class multiDate(IterableUserDict):
     
     def __init__(self, qtrsDict):
         qtrsDict = qtrsDict.copy()
+        # Iterate through and turn everything into a myuwDate
         for qtr, date in qtrsDict.items():
             if not isinstance(date, myuwDate):
                 qtrsDict[qtr] = myuwDate(date)
+        # IterableUserDict uses the 'data' property to 
+        # hold the real dict. 
         self.data = qtrsDict
-        #super(type(self), self).__init__(qtrsDict)
 
     def __add__(self, other):
         newQtrs = {}
@@ -211,12 +226,13 @@ class multiDate(IterableUserDict):
     def __sub__(self, other):
         return self.__add__(-1 * other)
 
-# Class to combine a card with a function to determine whether or not it should
-# show up for that user. 
-# Allows the card itself to be unhinged from show/hide logic, which may be different
-# for different users. 
-# Subclasses may populate the list of significant dates which will be used by some
-# test styles to automatically figure out dates to test. 
+# Class to combine a card with a function to determine whether 
+# or not it should show up for that user. 
+# Allows the card itself to be unhinged from show/hide logic, 
+# which may be different for different users. 
+# Subclasses may populate the list of significant dates which 
+# will be used by some test styles to automatically figure out 
+# dates to test. 
 class cardProxy(object):
 
     def __init__(self, card):
@@ -232,15 +248,27 @@ class cardProxy(object):
 
     significantDates = []
 
+    def shouldAppear(self, date):
+        # If we say the card shouldn't appear, it shouldn't. 
+        if not(self._shouldAppear(date)):
+            return False
+        # If the card says it shouldn't appear, it shouldn't. 
+        else:
+            if hasattr(self.card, 'shouldAppear'):
+                return self.card.shouldAppear(date)
+            return True
+            
+    
+
 
 # Card that should always appear
 class cardAlways(cardProxy):
-    def shouldAppear(self, date):
+    def _shouldAppear(self, date):
         return True
 
 # Card that should never appear
 class cardNever(cardProxy):
-    def shouldAppear(self, date):
+    def _shouldAppear(self, date):
         return False
 
 # Card that appears conditionally based on date
@@ -256,13 +284,10 @@ class cardCDM(cardProxy):
             self.dateRanges.append(r)
 
     # Test if the card should appear on a particular date
-    def shouldAppear(self, date):
+    def _shouldAppear(self, date):
         for dateRange in self.dateRanges:
             if date in dateRange:
-                if hasattr(self.card, 'shouldAppear'):
-                    return self.card.shouldAppear()
-                else:
-                    return True
+                return True
         return False
 
     # Get dates that should be tested for this card. 
@@ -286,7 +311,7 @@ class cardCDM(cardProxy):
 class cardCD(cardCDM):
     def __init__(self, card, dateRange):
         self.card = card
-        self.dateRanges = [myuwDateRange(dateRange)]
+        self.dateRanges = [myuwDateRange(*dateRange)]
 
 # Lets you use multiDate (or even a plain old dict) for start and end
 class cardAuto(cardCDM):
@@ -304,4 +329,89 @@ class cardAuto(cardCDM):
             ed = endDates[qtr]
             dateRange = myuwDateRange(sd, ed)
             self.dateRanges.append(dateRange)
+
+# Generic card class
+class myuwCard(object):
+    # Placeholder values to help identify cases where the 
+    # required info was not given
+    # Title is only meaningful if there is an actual
+    # title on the card. 
+    #title = 'FIX ME'
+    # Name is the id of the card's <div>
+    #name = 'FixMeCard'
+    # Create a new object of the specified type from
+    # a selenium element. 
+    # For cards that have variable content, this behavior 
+    # needs to be overridden in each card. 
+    @classmethod
+    def fromElement(cls, date, cardEl):
+        return cls()
+
+    #@classmethod
+    #def fromElementVisible(cls, e):
+
+    autoDiffs = {}
+
+    # findDiffs should do one of three things:
+    # 1. Do nothing, if the card has nothing variable
+    # 2. Use autoDiffs to do the checking
+    # 3. Be overridden in a subclass
+    def findDiffs(self, other):
+        if self.autoDiffs:
+            diffs = ''
+            for prop, label in self.autoDiffs.items():
+                valueSelf = getattr(self, prop)
+                valueOther = getattr(other, prop)
+                diffs += formatDiffs(label, valueSelf, valueOther)
+            return diffs
+        else: 
+            return ''
+
+    def __eq__(self, other):
+        return not(self.findDiffs(other))
+    
+    # The 'name' property is combined with altNames
+    # to get a list of card IDs that this card class
+    # should cover. 
+    altNames = []
+
+    # This method is used to retrive the list of acceptable
+    # ids for a card when the class itself is being reference. 
+    @classmethod
+    def getAllNames(cls):
+        return [cls.name] + cls.altNames[:]
+
+    # As above but works only on instances
+    @property
+    def allNames(self):
+        return [self.name] + self.altNames[:]
+
+    def shouldAppear(self, date):
+        return True
+
+class errorCard(myuwCard):
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, cardEl):
+        # TODO: verify it is an error
+        cardName = cardEl.get_attribute('id')
+        newObj = cls.__init__(cardName)
+        return newObj
+
+        #TODO
+
+
+    def __init__(self, name):
+        self.name = name
+        self.__name__ = name + '_error'
+
+    # This is checked elsewhere, so it shouldn't ever fail
+    # here. 
+    def findDiffs(self, other):
+        if isinstance(other, errorCard):
+            return ''
+        else:
+            return 'Error card vs non-error card'
+    
 
