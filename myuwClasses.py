@@ -4,6 +4,7 @@ import datetime
 from functools import total_ordering
 from UserDict import IterableUserDict
 from myuwFunctions import toTimeDelta, packElement, formatDiffs
+from abc import ABCMeta
 
 
 # Convert string, timedelta, or myuw date to datetime.date
@@ -111,7 +112,6 @@ class myuwDate(object):
             
             
 
-
 # Class for a date range
 class myuwDateRange(object):
     
@@ -163,17 +163,13 @@ class nullDateRange(myuwDateRange):
 # Class to hold an actual and expected card to be compared. 
 class cardPair(object):
     def __init__(self, actual, expected):
-        # If we weren't passed actual cards, fix that
-        # We don't need the stuff that these proxies provide
-        if hasattr(actual, 'card'):
-            actual = actual.card
-        if hasattr(expected, 'card'):
-            expected = expected.card
         # Ensure that the cards have the same name, and then 
         # set this object's name to that. 
         aNames = actual.allNames
         eNames = expected.allNames
         if actual.name in eNames or expected.name in aNames:
+            # Use the expected card's name since it will be more generic, 
+            # if different to begin with. 
             self.name = expected.name
             self.otherName = actual.name
         else:
@@ -226,112 +222,10 @@ class multiDate(IterableUserDict):
     def __sub__(self, other):
         return self.__add__(-1 * other)
 
-# Class to combine a card with a function to determine whether 
-# or not it should show up for that user. 
-# Allows the card itself to be unhinged from show/hide logic, 
-# which may be different for different users. 
-# Subclasses may populate the list of significant dates which 
-# will be used by some test styles to automatically figure out 
-# dates to test. 
-class cardProxy(object):
-
-    def __init__(self, card):
-        self.card = card
-
-    def __getattr__(self, attr):
-        if attr == 'shouldAppear':
-            return self.shouldAppear
-        elif attr == 'card':
-            return self.card
-        else:
-            return self.card.__getattribute__(attr)
-
-    significantDates = []
-
-    def shouldAppear(self, date):
-        # If we say the card shouldn't appear, it shouldn't. 
-        if not(self._shouldAppear(date)):
-            return False
-        # If the card says it shouldn't appear, it shouldn't. 
-        else:
-            if hasattr(self.card, 'shouldAppear'):
-                return self.card.shouldAppear(date)
-            return True
-            
-    
-
-
-# Card that should always appear
-class cardAlways(cardProxy):
-    def _shouldAppear(self, date):
-        return True
-
-# Card that should never appear
-class cardNever(cardProxy):
-    def _shouldAppear(self, date):
-        return False
-
-# Card that appears conditionally based on date
-# cardCDM takes a list of date ranges. 
-# If you just want one, see cardCD below. 
-class cardCDM(cardProxy):
-    def __init__(self, card, dates):
-        self.card = card
-        self.dateRanges = []
-        for datePair in dates:
-            r = myuwDateRange(*datePair)
-            # Append tuple of processed dates to our date range list:
-            self.dateRanges.append(r)
-
-    # Test if the card should appear on a particular date
-    def _shouldAppear(self, date):
-        for dateRange in self.dateRanges:
-            if date in dateRange:
-                return True
-        return False
-
-    # Get dates that should be tested for this card. 
-    # Currently, it is:
-    # - Day before card is visible
-    # - First day card is visible
-    # - Day before card disappears
-    # - First day the card is not visible
-    @property
-    def significantDates(self):
-        out = []
-        for datePair in self.dateRanges:
-            out.append(datePair.startDate - 1)
-            out.append(datePair.startDate)
-            out.append(datePair.endDate)
-            out.append(datePair.endDate + 1)
-        return out
-
-# Like cardCDM, but just one single date range
-# Helps avoid parenthesis overload when defining expected dates for cards
-class cardCD(cardCDM):
-    def __init__(self, card, dateRange):
-        self.card = card
-        self.dateRanges = [myuwDateRange(*dateRange)]
-
-# Lets you use multiDate (or even a plain old dict) for start and end
-class cardAuto(cardCDM):
-    # qtrSpan lets you specify that the range should span to the next quarter
-    # Not done yet, so for now just specify the card twice, once from the start to 
-    # end of qtr, then start of next qtr to true end. 
-    # Or define the actual event dates that way. 
-    def __init__(self, card, startDates, endDates, offset = 0):
-        self.card = card
-        self.dateRanges = []
-        for qtr, sd in startDates.items():
-            # Make sure the quarter is defined in both dictionaries
-            if qtr not in endDates:
-                continue
-            ed = endDates[qtr]
-            dateRange = myuwDateRange(sd, ed)
-            self.dateRanges.append(dateRange)
 
 # Generic card class
 class myuwCard(object):
+    __metaclass__ = ABCMeta
     # Placeholder values to help identify cases where the 
     # required info was not given
     # Title is only meaningful if there is an actual
@@ -346,6 +240,15 @@ class myuwCard(object):
     @classmethod
     def fromElement(cls, date, cardEl):
         return cls()
+
+    # Include cardProxies as subclasses of this class
+    #@classmethod
+    #def __subclasshook__(cls, sub):
+#        print 'called'
+#        if issubclass(sub, cardProxy):
+#            return True
+##        else:
+#            return NotImplemented
 
     #@classmethod
     #def fromElementVisible(cls, e):
@@ -387,7 +290,10 @@ class myuwCard(object):
         return [self.name] + self.altNames[:]
 
     def shouldAppear(self, date):
-        return True
+        if hasattr(self, 'visCheck'):
+            return self.visCheck.shouldAppear(date)
+        else:
+            return True
 
 class errorCard(myuwCard):
 
@@ -414,4 +320,149 @@ class errorCard(myuwCard):
         else:
             return 'Error card vs non-error card'
     
+
+# Class to combine a card with a function to determine whether 
+# or not it should show up for that user. 
+# Allows the card itself to be unhinged from show/hide logic, 
+# which may be different for different users. 
+# Subclasses may populate the list of significant dates which 
+# will be used by some test styles to automatically figure out 
+# dates to test. 
+class cardProxy(object):
+
+    def __init__(self, card):
+        self.card = card
+
+    def __getattr__(self, attr):
+        if attr == 'shouldAppear':
+            return self.shouldAppear
+        elif attr == 'card':
+            return self.card
+        else:
+            return self.card.__getattribute__(attr)
+
+
+    significantDates = []
+
+    def shouldAppear(self, date):
+        # If we say the card shouldn't appear, it shouldn't. 
+        if not(self._vis(date)):
+            return False
+        # If the card says it shouldn't appear, it shouldn't. 
+        else:
+            if hasattr(self.card, 'shouldAppear'):
+                return self.card.shouldAppear(date)
+            return True
+
+    @property
+    def significantDates(self):
+        if hasattr(self.card, 'significantDates'):
+            cardDates = self.card.significantDates
+        else:
+            cardDates = []
+        cardDates = cardDates + self._significantDates
+        return cardDates
+        
+        
+    def _significantDates(self):
+        return []
+    
+
+# Make a cardproxy be considered a myuwCard subclass for the purposes of
+# issubclass() and isinstance()
+myuwCard.register(cardProxy)
+
+def processDateRanges(dates):
+    dateRanges = []
+    for datePair in dates:
+        pair = myuwDateRange(*datePair)
+        dateRanges.append(pair)
+    return dateRanges
+
+def getMultiDateRange(starts, ends):
+    dateRanges = []
+    for qtr, sd in starts.items():
+        if qtr not in ends:
+            continue
+        ed = ends[qtr]
+        dateRange = myuwDateRange(sd, ed)
+        dateRanges.append(dateRange)
+    return dateRanges
+
+def visAlways(date):
+    return True
+
+def visNever(date):
+    return False
+
+def visCDM(dates):
+    dateRanges = processDateRanges(dates)
+        
+    def visInner(date):
+        for dateRange in dateRanges:
+            if date in dateRange:
+                return True
+        return False
+    return visInner
+
+def visCD(start, end):
+    return visCDM(((start, end), ))
+
+def visAuto(starts, ends):
+    return visCDM(getMultiDateRange(starts, ends))
+        
+# Card that should always appear
+class cardAlways(cardProxy):
+    def _shouldAppear(self, date):
+        return True
+
+# Card that should never appear
+class cardNever(cardProxy):
+    def _shouldAppear(self, date):
+        return False
+
+# Card that appears conditionally based on date
+# cardCDM takes a list of date ranges. 
+# If you just want one, see cardCD below. 
+class cardCDM(cardProxy):
+    def __init__(self, card, dates):
+        self._vis = visCDM(dates)
+        self.card = card
+        self.dateRanges = processDateRanges(dates)
+
+    # Get dates that should be tested for this card. 
+    # Currently, it is:
+    # - Day before card is visible
+    # - First day card is visible
+    # - Day before card disappears
+    # - First day the card is not visible
+    @property
+    def _significantDates(self):
+        out = []
+        for datePair in self.dateRanges:
+            out.append(datePair.startDate - 1)
+            out.append(datePair.startDate)
+            out.append(datePair.endDate)
+            out.append(datePair.endDate + 1)
+        return out
+
+# Like cardCDM, but just one single date range
+# Helps avoid parenthesis overload when defining expected dates for cards
+class cardCD(cardCDM):
+    def __init__(self, card, dateRange):
+        self.card = card
+        self.dateRanges = [myuwDateRange(*dateRange)]
+
+# Lets you use multiDate (or even a plain old dict) for start and end
+class cardAuto(cardCDM):
+    def __init__(self, card, startDates, endDates):
+        self.card = card
+        self.dateRanges = []
+        for qtr, sd in startDates.items():
+            # Make sure the quarter is defined in both dictionaries
+            if qtr not in endDates:
+                continue
+            ed = endDates[qtr]
+            dateRange = myuwDateRange(sd, ed)
+            self.dateRanges.append(dateRange)
 

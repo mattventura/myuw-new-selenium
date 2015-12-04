@@ -59,7 +59,13 @@ class mainMyuwTestCase(unittest.TestCase):
         for date in dates:
             #print 'date is %s' %date
             self.setDate(date)
-            self.browseLanding()
+            # TODO: make browseLanding throw a specific exception when it times
+            # out so it can be differentiated from an actual failure. 
+            try:
+                self.browseLanding()
+            except:
+                print 'WARNING: Page did not fully finish loading'
+                
             self.checkDiffs()
 
     def browseLanding(self):
@@ -84,7 +90,6 @@ class mainMyuwTestCase(unittest.TestCase):
 
     def checkDiffs(self):
         actualCards = self.pageHandler.cards
-        print 'Getting expected results for ' + self.currentUser
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
         if perf:
             diffStart = time.time()

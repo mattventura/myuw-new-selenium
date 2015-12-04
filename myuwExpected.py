@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 from myuwClasses import myuwDate, myuwDateRange, cardPair, \
-cardAlways, cardNever, cardCDM, cardCD, cardAuto, errorCard
+cardAlways, cardNever, cardCDM, cardCD, cardAuto, errorCard, \
+cardProxy
 from myuwCards import *
 from myuwDates import *
 
@@ -14,36 +15,36 @@ from myuwDates import *
 # ideally this should be put in the card itself. 
 cardList = {}
 cardList['javerage'] = [
-    cardAlways(HFSCard({'stu': '$1.23', 'emp': '$1.00', 'din': '$5.10'})),
-    #cardAlways(EmpFacStudentCard(True, False)),
-    cardAlways(CriticalInfoCard(True, True, False)),
-    
-    cardAlways(TuitionCard()),
-    cardAlways(LibraryCard()),
-    cardAlways(CourseCard()),
-    cardAlways(GradStatusCard()),
-    cardAlways(GradCommitteeCard()),
-    cardAlways(SummerEFSCard(True, True)),
+    HFSCard({'stu': '$1.23', 'emp': '$1.00', 'din': '$5.10'}),
+    CriticalInfoCard(True, True, False),
+    TuitionCard(),
+    LibraryCard(),
+    CourseCard(),
+    GradStatusCard(),
+    GradCommitteeCard(),
+    SummerEFSCard(True, True),
     cardCD(
         EventsCard(),
         ('2013-03-19', '2013-04-30')
     ),
-    cardAlways(ToRegisterCard()),
-    cardAuto(
-        VisualScheduleCard(),
-        FirstDayQtr,
-        LastDayInstr
-    ),
-    cardAlways(app_notices()),
-    cardAlways(PCEBanner()),
-    cardAlways(app_acal()),
-#    cardAlways(notice_banner_location()),
-#    cardAlways(calendar_banner_location_mobile()),
-#    cardAlways(landing_content_cards()),
-
-    #cardCD(VisualScheduleCard(), ('2013-01-07', '2013-03-15')),
-    #cardCD(TextbookCard(), ('2013-01-07', '2013-01-13')),
-    #cardCD(GradeCard(), ('2013-03-16', '2013-03-26')),
+    ToRegisterCard(),
+    VisualScheduleCard({
+        'WI13': {
+            'EMBA 503 A': None,
+            'EMBA 533 A': None,
+            'EMBA 590 A': None,
+        },
+        'SP13': {
+            'TRAIN 101 A': None,
+            'PHYS 121 A': None,
+            'PHYS 121 AQ': None,
+            'PHYS 121 AC': None,
+            'TRAIN 100 A': None,
+        }
+    }),
+    app_notices(),
+    PCEBanner(),
+    app_acal(),
     cardCD(
         FutureQuarterCard({
             'Spring 2013': {
@@ -72,27 +73,19 @@ cardList['javerage'] = [
         }),
         (FirstDayQtr['SP13'], LastDayQtr['SP13'])
     ),
-    cardAuto(
-        TextbookCard(),
-        FirstDayQtr, 
-        ClassesBegin + 7
-    ),
-    cardAuto(
-        GradeCard({
-            'WI13': {
-                'EMBA 503': None,
-                'EMBA 533': None,
-                'EMBA 590': None,
-            },
-            'SP13': {
-                'PHYS 121': '4.0',
-                'TRAIN 100': 'P',
-                'TRAIN 101': 'HP',
-            }
-        }),
-        LastDayInstr + 1,
-        NextQtrClassesBegin - 1,
-    ),
+    TextbookCard(),
+    GradeCard({
+        'WI13': {
+            'EMBA 503': None,
+            'EMBA 533': None,
+            'EMBA 590': None,
+        },
+        'SP13': {
+            'PHYS 121': '4.0',
+            'TRAIN 100': 'P',
+            'TRAIN 101': 'HP',
+        }
+    }),
     cardAuto(
         FinalExamCard(),
         LastDayInstr + 1,
@@ -106,12 +99,12 @@ cardList['jinter'] = [
     ToRegisterCard(),
     TuitionCard(),
     LibraryCard(),
-    cardAlways(errorCard('GradStatusCard')),
-    cardAlways(errorCard('GradCommitteeCard')),
-    cardAlways(PCEBanner()),
-    cardAlways(app_notices()),
-    cardAlways(app_acal()),
-    cardAlways(SummerEFSCard(summerReg = False, considerEFS = True)), 
+    (errorCard('GradStatusCard')),
+    (errorCard('GradCommitteeCard')),
+    (PCEBanner()),
+    (app_notices()),
+    (app_acal()),
+    (SummerEFSCard(summerReg = False, considerEFS = True)), 
     VisualScheduleCard(),
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
@@ -158,6 +151,12 @@ def getExpectedResults(user, date):
                     raise Exception(s)
                 else:
                     userCardsVisible[name] = card
+
+    for name, card in userCardsVisible.items():
+        # If it's a card proxy, replace it with the real card
+        if isinstance(card, cardProxy):
+            userCardsVisible[name] = card.card
+            
     return userCardsVisible
 
 # Get significant dates to test for user. 

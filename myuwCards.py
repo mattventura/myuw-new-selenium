@@ -1,23 +1,22 @@
 #!/usr/bin/python
 
 from myuwFunctions import isCardVisible, packElement, formatDiffs
-from myuwDates import dateToQtr
+from myuwDates import *
 import re
-from myuwClasses import myuwCard
-
-#class hiddenCard(object):
-#    def __init__(self, name):
-#        self.name = name
-#    visible = False
-
-
-
-    
+from myuwClasses import *
 
 
 # Dictionary of IDs to card classes
 # This includes alternate names for cards
 cardDict = {}
+# Function to add something to this, automatically including all
+# alternate names
+def addToCardDict(card):
+    for name in card.getAllNames():
+        # On second thought, we might want duplicates
+        #if name in cardDict:
+        #    raise Exception('Tried to put card name %s into known cards list twice' %name)
+        cardDict[name] = card
 
 # Convenience function for specifying a card. 
 # Puts them in the dictionary of cards. Also automatically
@@ -25,10 +24,8 @@ cardDict = {}
 def isaCard(innerClass):
     if not(hasattr(innerClass, 'name')):
         innerClass.name = innerClass.__name__
-    for name in innerClass.getAllNames():
-        cardDict[name] = innerClass
+    addToCardDict(innerClass)
     return innerClass
-
 
 
 # TODO: Move these somewhere else
@@ -115,26 +112,6 @@ class HFSCard(myuwCard):
         'balanceDict': 'HFS Card Balances',
         'addFundsUrl': 'HFS Add Funds URL',
     }
-'''
-    def findDiffs(self, other):
-        diffs = ''
-        diffs += formatDiffs(
-            'HFS card title',
-            self.title,
-            other.title
-        )
-        diffs += formatDiffs(
-            'HFS balances',
-            self.balanceDict,
-            other.balanceDict
-        )
-        diffs += formatDiffs(
-            'HFS add funds url', 
-            self.addFundsUrl, 
-            other.addFundsUrl
-        )
-        return diffs
-        '''
 
 
 # Student employee/instructor card
@@ -160,21 +137,6 @@ class EmpFacStudentCard(myuwCard):
         'stuEmp': 'Student Employee Section',
         'instructor': 'Instructor Section',
     }
-'''
-    def findDiffs(self, other):
-        diffs = ''
-        diffs += formatDiffs(
-            'Has Student Employee section',
-            self.stuEmp,
-            other.stuEmp
-        )
-        diffs += formatDiffs(
-            'Has Instructor/TA section', 
-            self.instructor, 
-            other.instructor
-        )
-        return diffs
-'''
 
 @isaCard
 class FutureQuarterCard(myuwCard):
@@ -214,12 +176,6 @@ class FutureQuarterCard(myuwCard):
         return cls(qtrs)
 
     autoDiffs = {'qtrs': 'Future Quarter Data'}
-    '''
-    def findDiffs(self, other):
-        diffs = ''
-        diffs += formatDiffs('Future Quarter Data', self.qtrs, other.qtrs)
-        return diffs
-    '''
 
 @isaCard
 class SummerEFSCard(myuwCard):
@@ -296,6 +252,8 @@ class GradeCard(myuwCard):
 
         diffs += formatDiffs('Final grades', gradesA, gradesB)
         return diffs
+
+    visCheck = cardAuto(None, LastDayInstr + 1, NextQtrClassesBegin - 1)
         
     
     
@@ -312,22 +270,20 @@ class CriticalInfoCard(myuwCard):
     
     def __init__(self, email = True,
         directory = True, residency = True):
-
         self.email = email
         self.directory = directory
         self.residency = residency
-
 
     @classmethod
     @packElement
     def fromElement(cls, date, e):
         headers = e.find_elements_by_xpath('.//span[@class="notice-title"]')
+
+        # Find section titles, compare to known values
         titles = [e.text for e in headers]
 
         email = 'Set Up UW Email' in titles
-
         directory = 'Update Student Directory' in titles
-
         residency = 'Non-Resident Classification' in titles
 
         newObj = cls(email, directory, residency)
@@ -338,23 +294,80 @@ class CriticalInfoCard(myuwCard):
         'directory': 'Student Directory notice',
         'residency': 'Residency notice',
     }
-    #def findDiffs(self, other):
-    #    diffs = ''
-    #    diffs += formatDiffs('Set Up UW Email notice', self.email, other.email)
-    #    diffs += formatDiffs('Student Directory notice', self.directory, other.directory)
-    #    diffs += formatDiffs('Residency notice', self.residency, other.residency)
-    #    return diffs
+
+@isaCard
+class VisualScheduleCard(myuwCard):
+    
+    def __init__(self, quartersDict = None):
+        # TODO
+        self.quartersDict = quartersDict
+        self.quarter = None
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, e):
+        qtr = dateToQtr(date - 10)
+        classEls = e.find_elements_by_css_selector('div.visual-course-id')
+        classEls += e.find_elements_by_css_selector('div.course-info')
+        thisQtrClasses = {}
+        for el in classEls:
+            text = el.text
+            if text:
+                classInfo = None
+                thisQtrClasses[text] = classInfo
         
+        qtrDict = {
+            qtr: thisQtrClasses
+        }
+        newObj = cls(qtrDict)
+        newObj.quarter = qtr
+        return newObj
+
+    def getQtrInfo(self, qtr):
+        if self.quartersDict == None:
+            return {}
+        else:
+            try:
+                classes = self.quartersDict[qtr]
+                return classes
+            except KeyError:
+                return None
+
+    def findDiffs(self, other):
+        trueQtr = self.quarter or other.quarter
+        classesA = self.getQtrInfo(trueQtr)
+        classesB = other.getQtrInfo(trueQtr)
+        diffs = ''
+        diffs = formatDiffs('Visual Schedule Content', classesA, classesB)
+        return diffs
+
+    visCheck = cardAuto(None, FirstDayQtr, LastDayInstr)
+
+    autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
+        
+
+# TODO: Final exam card 
+
+@isaCard
+class LibraryCard(myuwCard):
+    
+    pass
+    # TODO: figure out what this card can display
+    #def __init__(self):
+        
+    
+@isaCard
+class TextbookCard(myuwCard):
+    visCheck = cardAuto(None, FirstDayQtr, ClassesBegin)
+
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
 stubCards = [
-    'VisualScheduleCard',
     'TuitionCard', 
     'EventsCard',
     'GradCommitteeCard',
     'GradStatusCard',
-    'TextbookCard',
     'RegStatusCard',
     'FinalExamCard',
     'PCEBanner',
