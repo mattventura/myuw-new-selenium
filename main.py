@@ -7,14 +7,14 @@ import unittest
 import time
 
 # myuw-specific imports
-from myuwClasses import myuwDate, errorCard
+from myuwClasses import myuwDate, errorCard, LandingWaitTimedOut, perfCounter
 import myuwExpected
 from myuwCards import cardDict
-from myuwFunctions import isCardVisible,isVisibleFast
+from myuwFunctions import isCardVisible, isVisibleFast
 
+# Some settings
 # Enable this to do some performance profiling
 perf = False
-
 
 class mainMyuwTestCase(unittest.TestCase):
     
@@ -63,7 +63,7 @@ class mainMyuwTestCase(unittest.TestCase):
             # out so it can be differentiated from an actual failure. 
             try:
                 self.browseLanding()
-            except:
+            except LandingWaitTimedOut:
                 print 'WARNING: Page did not fully finish loading'
                 
             self.checkDiffs()
@@ -92,23 +92,21 @@ class mainMyuwTestCase(unittest.TestCase):
         actualCards = self.pageHandler.cards
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
         if perf:
-            diffStart = time.time()
+            diffTimer = perfCounter('Diff checking')
         diffs = myuwExpected.findDiffs(actualCards, expectedCards)
         if perf:
-            diffEnd = time.time()
-            diffTime = diffEnd - diffStart
-            print 'Diff checking took %s seconds' %diffTime
+            diffTime = diffTimer.endFmt()
+            print diffTime
         self.logDiffs(diffs)
 
 
 class sampleMyuwTestCase(mainMyuwTestCase):
     
-    #usersToTest = ['jinter']
-    #testDates = {'javerage': ('2013-02-15','2013-04-15', '2013-03-15', '2013-05-15')}
+    # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
-    testDates['jinter'] = ('2013-04-15',)
-    testDates['javerage'] = ('2013-02-15', '2013-05-12')
-    
+    #testDates['jinter'] = ('2013-04-15',)
+    testDates['javerage'] = ('2013-06-15', )
+    #testDates['javerage'] = ('2013-02-15', '2013-04-01', '2013-05-12')
     usersToTest = testDates.keys()
 
 
@@ -126,7 +124,6 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
 
 class mainMyuwHandler(object):
     
-
     # Go to override page and set override username
     def changeUser(self, username):
         self.browseToPage(self.userUrl)
@@ -147,7 +144,6 @@ class mainMyuwHandler(object):
         dateBox.submit()
         time.sleep(1)
         self.currentDate = myuwDate(dateStr)
-
 
     # Set user if it is different from the current user
     def setUser(self, username):
@@ -191,11 +187,12 @@ class mainMyuwHandler(object):
         self.currentUser = user
         self.currentDate = date
         
-
-
     def _parsePage(self):
-        startTime = time.time()
+        # If requested, set up timing
+        if perf: 
+            allParseTimer = perfCounter('Parsing all cards')
         cardEls = []
+        # Various search strings to use for finding cards
         cardxpaths = (
             # Notices
             '//div[@id="notice_banner_location"]/div',
@@ -211,63 +208,65 @@ class mainMyuwHandler(object):
             '//div[@id="landing_accounts_cards"]/div',
         )
 
+        # Using each search string above, find cards
         for xpath in cardxpaths:
             cardEls += self.driver.find_elements_by_xpath(xpath)
+
+        # Iterate over each card element
         self._cards = {}
         for cardEl in cardEls:
+            if perf: 
+                cardTimer = perfCounter('Parsing card')
+            # Get name of card using whatever's available
+            cardId = cardEl.get_attribute('id')
+            cardDataName = cardEl.get_attribute('data-name')
+            cardName = cardId or cardDataName
             # If the card is not visible, then don't do anything with it
-            if perf:
-                cardStartTime = time.time()
-            cardId = cardEl.get_attribute('id')
-            cardDataName = cardEl.get_attribute('data-name')
-            cardName = cardId or cardDataName
-            if not(isCardVisible(cardEl)):
-                if perf:
-                    cardEndTime = time.time()
-                    cardParseTime = cardEndTime - cardStartTime
-                    print 'Parsing hidden card %s took %s seconds' %(cardName, cardParseTime)
-                continue
-            # Cards are identified by their id
-            cardId = cardEl.get_attribute('id')
-            cardDataName = cardEl.get_attribute('data-name')
-            cardName = cardId or cardDataName
+            if isCardVisible(cardEl):
+                # Cards are identified by their id
+                cardId = cardEl.get_attribute('id')
+                cardDataName = cardEl.get_attribute('data-name')
+                cardName = cardId or cardDataName
 
-            cardIsError = 'An error has occurred' in cardEl.text
-                
-            # If the card errors out, use myuwClasses.errorCard and provide
-            # the name. This allows us to give an error card as the expected
-            # data. 
-            if cardIsError:
-                newCard = errorCard(cardName)
-                self._cards[cardName] = newCard
+                cardIsError = 'An error has occurred' in cardEl.text
+                    
+                # If the card errors out, use myuwClasses.errorCard and provide
+                # the name. This allows us to give an error card as the expected
+                # result. 
+                if cardIsError:
+                    newCard = errorCard(cardName)
+                    self._cards[cardName] = newCard
 
-            else:
-
-                try:
-                    # Try to find class for the given card name
-                    cardClass = cardDict[cardName]
-                except KeyError as e:
-                    # KeyError implies the card was not in the list card classes
-                    #raise Exception('Card %s not in list of known cards' %cardName)
-                    print 'WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName
                 else:
-                    newCard = cardClass.fromElement(self.currentDate, cardEl)
-                    # For cards with multiple names, take the name from the class
-                    baseCardName = newCard.name
-                    self._cards[baseCardName] = newCard
+                    try:
+                        # Try to find class for the given card name
+                        cardClass = cardDict[cardName]
+                    except KeyError as e:
+                        # KeyError implies the card was not in the list card classes
+                        # This doesn't fail the test as it might just be a new card. 
+                        print 'WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName
+                    else:
+                        newCard = cardClass.fromElement(self.currentDate, cardEl)
+                        # For cards with multiple names, take the name from the class
+                        baseCardName = newCard.name
+                        self._cards[baseCardName] = newCard
+            else:
+                # Card is hidden
+                if perf:
+                    cardTimer.label = 'Parsing hidden card'
+                continue
 
             if perf:
-                cardEndTime = time.time()
-                cardParseTime = cardEndTime - cardStartTime
-                print 'Parsing card %s took %s seconds' %(cardName, cardParseTime)
+                parseTime = cardTimer.endFmt()
+                print parseTime
             #    raise e
 
 
         # Mark the card list as being fresh
         self.cardsValid = True
-        endTime = time.time()
         if perf:
-            print 'Card Parsing took %s seconds' %(endTime - startTime)
+            allParseTime = allParseTimer.endFmt()
+            print allParseTime
 
         # Do other stuff too, like directory info, email link
 
@@ -281,9 +280,8 @@ class mainMyuwHandler(object):
         # I don't know if selenium's implicit wait can wait until
         # an element is *not* found, so do it manually
         maxTime = 10
-        startTime = time.time()
-        endTime = startTime + maxTime
-        while time.time() < endTime:
+        loadTimer = perfCounter('Page load')
+        while loadTimer.elapsedTime < maxTime:
             try:
                 time.sleep(.2)
                 # Look for loading gears
@@ -292,10 +290,9 @@ class mainMyuwHandler(object):
                 els = filter(isVisibleFast, els)
                 #els = [el for el in els if el.is_displayed()]
             except:
-                # Ignore exceptions arising from, for example, 
-                # the browser being in a weird state. If it's a
-                # real problem, something else will throw an exception
-                # anyway. 
+                # Ignore exceptions from the browser being in some weird
+                # state while loading. If there's a legitimate exception, 
+                # it will be caught elsewhere. 
                 pass
             else:
                 # If there were gears, wait some more. 
@@ -308,11 +305,13 @@ class mainMyuwHandler(object):
         else:
             # If the loop ends due to running out of time, throw 
             # this exception. 
-            raise Exception('Waited too long for landing page to finish loading on %s.' %self.currentDate) 
+            raise LandingWaitTimedOut()
 
         # If the loop ended due to there being no more loading gears, do this. 
+
+        loadTimer.end()
         if perf:
-            print 'Page load finish took %s seconds' %(time.time() - startTime)
+            print loadTimer.formatted
 
         # Sleep a little longer just in case we have a card that
         # hasn't quite finished but isn't displaying the loading 
@@ -320,7 +319,6 @@ class mainMyuwHandler(object):
         time.sleep(1)
 
             
-
 
 '''
 d = Firefox()
@@ -331,15 +329,16 @@ m.setDate('2013-06-10')
 m.browseLanding()
 time.sleep(4)
 a = m.cards
-e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
+#
+#e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
 #diff = myuwExpected.findDiffs(a, e)
-h = a['GradeCard']
+h = a['GradCommitteeCard']
 #e = h.originalElement
 '''
 
 
 if __name__ == '__main__':
     del mainMyuwTestCase
-    #del sampleMyuwTestCase
-    del autoDateMyuwTestCase
+    del sampleMyuwTestCase
+    #del autoDateMyuwTestCase
     unittest.main()

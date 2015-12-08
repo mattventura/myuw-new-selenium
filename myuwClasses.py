@@ -3,9 +3,10 @@
 import datetime
 from functools import total_ordering
 from UserDict import IterableUserDict
-from myuwFunctions import toTimeDelta, packElement, formatDiffs
 from abc import ABCMeta
+import time
 
+from myuwFunctions import toTimeDelta, packElement, formatDiffs
 
 # Convert string, timedelta, or myuw date to datetime.date
 def toDate(obj):
@@ -222,105 +223,6 @@ class multiDate(IterableUserDict):
     def __sub__(self, other):
         return self.__add__(-1 * other)
 
-
-# Generic card class
-class myuwCard(object):
-    __metaclass__ = ABCMeta
-    # Placeholder values to help identify cases where the 
-    # required info was not given
-    # Title is only meaningful if there is an actual
-    # title on the card. 
-    #title = 'FIX ME'
-    # Name is the id of the card's <div>
-    #name = 'FixMeCard'
-    # Create a new object of the specified type from
-    # a selenium element. 
-    # For cards that have variable content, this behavior 
-    # needs to be overridden in each card. 
-    @classmethod
-    def fromElement(cls, date, cardEl):
-        return cls()
-
-    # Include cardProxies as subclasses of this class
-    #@classmethod
-    #def __subclasshook__(cls, sub):
-#        print 'called'
-#        if issubclass(sub, cardProxy):
-#            return True
-##        else:
-#            return NotImplemented
-
-    #@classmethod
-    #def fromElementVisible(cls, e):
-
-    autoDiffs = {}
-
-    # findDiffs should do one of three things:
-    # 1. Do nothing, if the card has nothing variable
-    # 2. Use autoDiffs to do the checking
-    # 3. Be overridden in a subclass
-    def findDiffs(self, other):
-        if self.autoDiffs:
-            diffs = ''
-            for prop, label in self.autoDiffs.items():
-                valueSelf = getattr(self, prop)
-                valueOther = getattr(other, prop)
-                diffs += formatDiffs(label, valueSelf, valueOther)
-            return diffs
-        else: 
-            return ''
-
-    def __eq__(self, other):
-        return not(self.findDiffs(other))
-    
-    # The 'name' property is combined with altNames
-    # to get a list of card IDs that this card class
-    # should cover. 
-    altNames = []
-
-    # This method is used to retrive the list of acceptable
-    # ids for a card when the class itself is being reference. 
-    @classmethod
-    def getAllNames(cls):
-        return [cls.name] + cls.altNames[:]
-
-    # As above but works only on instances
-    @property
-    def allNames(self):
-        return [self.name] + self.altNames[:]
-
-    def shouldAppear(self, date):
-        if hasattr(self, 'visCheck'):
-            return self.visCheck.shouldAppear(date)
-        else:
-            return True
-
-class errorCard(myuwCard):
-
-    @classmethod
-    @packElement
-    def fromElement(cls, date, cardEl):
-        # TODO: verify it is an error
-        cardName = cardEl.get_attribute('id')
-        newObj = cls.__init__(cardName)
-        return newObj
-
-        #TODO
-
-
-    def __init__(self, name):
-        self.name = name
-        self.__name__ = name + '_error'
-
-    # This is checked elsewhere, so it shouldn't ever fail
-    # here. 
-    def findDiffs(self, other):
-        if isinstance(other, errorCard):
-            return ''
-        else:
-            return 'Error card vs non-error card'
-    
-
 # Class to combine a card with a function to determine whether 
 # or not it should show up for that user. 
 # Allows the card itself to be unhinged from show/hide logic, 
@@ -346,12 +248,12 @@ class cardProxy(object):
 
     def shouldAppear(self, date):
         # If we say the card shouldn't appear, it shouldn't. 
-        if not(self._vis(date)):
-            return False
+        if hasattr(self, '_vis'):
+            return self._vis(date)
         # If the card says it shouldn't appear, it shouldn't. 
+        if hasattr(self.card, 'shouldAppear'):
+            return self.card.shouldAppear(date)
         else:
-            if hasattr(self.card, 'shouldAppear'):
-                return self.card.shouldAppear(date)
             return True
 
     @property
@@ -368,17 +270,18 @@ class cardProxy(object):
         return []
     
 
-# Make a cardproxy be considered a myuwCard subclass for the purposes of
-# issubclass() and isinstance()
-myuwCard.register(cardProxy)
-
+# Process date ranges
+# Turns (start, end) pairs into myuwDateRange objects
 def processDateRanges(dates):
     dateRanges = []
     for datePair in dates:
-        pair = myuwDateRange(*datePair)
-        dateRanges.append(pair)
+        if not(isinstance(datePair, myuwDateRange)):
+            datePair = myuwDateRange(*datePair)
+        dateRanges.append(datePair)
     return dateRanges
 
+# Turns "smart" date ranges (e.g. QtrStart + 1 to FinalsBegin - 5)
+# into a list of date ranges
 def getMultiDateRange(starts, ends):
     dateRanges = []
     for qtr, sd in starts.items():
@@ -389,6 +292,10 @@ def getMultiDateRange(starts, ends):
         dateRanges.append(dateRange)
     return dateRanges
 
+# Visibility check functions
+
+# visAlways and visNever should just be used as-is, whereas
+# the others should be called with arguments. 
 def visAlways(date):
     return True
 
@@ -406,7 +313,7 @@ def visCDM(dates):
     return visInner
 
 def visCD(start, end):
-    return visCDM(((start, end), ))
+    return visCDM([(start, end)])
 
 def visAuto(starts, ends):
     return visCDM(getMultiDateRange(starts, ends))
@@ -452,17 +359,154 @@ class cardCD(cardCDM):
     def __init__(self, card, dateRange):
         self.card = card
         self.dateRanges = [myuwDateRange(*dateRange)]
+        self._vis = visCD(*dateRange)
 
 # Lets you use multiDate (or even a plain old dict) for start and end
 class cardAuto(cardCDM):
     def __init__(self, card, startDates, endDates):
-        self.card = card
-        self.dateRanges = []
+        dateRanges = []
         for qtr, sd in startDates.items():
             # Make sure the quarter is defined in both dictionaries
             if qtr not in endDates:
                 continue
             ed = endDates[qtr]
             dateRange = myuwDateRange(sd, ed)
-            self.dateRanges.append(dateRange)
+            dateRanges.append(dateRange)
+
+        super(self.__class__, self).__init__(card, dateRanges)
+
+
+# Generic card class
+class myuwCard(object):
+    __metaclass__ = ABCMeta
+    # Placeholder values to help identify cases where the 
+    # required info was not given
+
+    # Create a new object of the specified type from
+    # a selenium element. 
+    # For cards that have variable content, this behavior 
+    # needs to be overridden in each card. 
+    @classmethod
+    def fromElement(cls, date, cardEl):
+        return cls()
+
+    autoDiffs = {}
+
+    # findDiffs should do one of three things:
+    # 1. Do nothing, if the card has nothing variable
+    # 2. Use autoDiffs to do the checking
+    # 3. Be overridden in a subclass
+    def findDiffs(self, other):
+        if self.autoDiffs:
+            diffs = ''
+            for prop, label in self.autoDiffs.items():
+                valueSelf = getattr(self, prop)
+                valueOther = getattr(other, prop)
+                diffs += formatDiffs(label, valueSelf, valueOther)
+            return diffs
+        else: 
+            return ''
+
+    def __eq__(self, other):
+        return not(self.findDiffs(other))
+    
+    # The 'name' property is combined with altNames
+    # to get a list of card IDs that this card class
+    # should cover. 
+    altNames = []
+
+    # This method is used to retrive the list of acceptable
+    # ids for a card when the class itself is being reference. 
+    @classmethod
+    def getAllNames(cls):
+        return [cls.name] + cls.altNames[:]
+
+    # As above but works only on instances
+    @property
+    def allNames(self):
+        return [self.name] + self.altNames[:]
+
+    def shouldAppear(self, date):
+        if hasattr(self, 'visCheck'):
+            # If we got a bound version, we want it unbound
+            try:
+                vf = self.visCheck.__func__
+            except:
+                vf = self.visCheck
+            return vf(date)
+        else:
+            return True
+
+class errorCard(myuwCard):
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, cardEl):
+        # TODO: verify it is an error
+        cardName = cardEl.get_attribute('id')
+        newObj = cls.__init__(cardName)
+        return newObj
+
+        #TODO
+
+
+    def __init__(self, name):
+        self.name = name
+        self.__name__ = name + '_error'
+
+    # This is checked elsewhere, so it shouldn't ever fail
+    # here. 
+    def findDiffs(self, other):
+        if isinstance(other, errorCard):
+            return ''
+        else:
+            return 'Error card vs non-error card'
+    
+
+
+# Make a cardproxy be considered a myuwCard subclass for the purposes of
+# issubclass() and isinstance()
+myuwCard.register(cardProxy)
+
+class LandingWaitTimedOut(Exception):
+    def __init__(self):
+        return super(self.__class__, self).__init__(
+            'Waited too long for landing page to finish loading'
+        )
+    
+
+# Class for measuring how long certain things take
+class perfCounter(object):
+    def __init__(self, label = None):
+        self.startTime = time.time()
+        self.finished = False
+        self.label = label
+
+    def end(self):
+        self.endTime = time.time()
+        self.finished = True
+
+    @property
+    def elapsedTime(self):
+        if self.finished:
+            return self.endTime - self.startTime
+        else:
+            return time.time() - self.startTime
+
+    @property
+    def formatted(self):
+        if self.label:
+            return '%s took %s seconds' %(self.label, self.elapsedTime)
+        else: 
+            return str(self.elapsedTime)
+
+    def endGetTime(self):
+        self.end()
+        return self.elapsedTime
+    
+    def endFmt(self):
+        self.end()
+        return self.formatted
+        
+        
 

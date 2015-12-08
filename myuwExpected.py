@@ -21,7 +21,60 @@ cardList['javerage'] = [
     LibraryCard(),
     CourseCard(),
     GradStatusCard(),
-    GradCommitteeCard(),
+    GradCommitteeCard({
+        'Doctoral Supervisory Committee': [
+            {
+                'dept': 'Anthropology', 
+                'chair': True, 'name': u'Bet Duncan', 
+                'email': u'bbb@u.washington.edu'
+            }, 
+            {
+                'dept': u'Anthropology', 'chair': True, 
+                'name': u'Steve M. Goodman', 
+                'email': u'sss@u.washington.edu'
+            }, 
+            {
+                'dept': u'Health Services - Public Health', 
+                'gsr': True, 
+                'name': u'Malinda Korry'
+            }, 
+            {
+                'dept': u'Global Health', 
+                'name': u'James T. Pfeiffer', 
+                'email': u'jjj@uw.edu'
+            }
+        ], 
+        u"Master's Committee": [
+            {
+                'dept': u'Epidemiology - Public Health', 
+                'chair': True, 
+                'email': u'nnn@u.washington.edu', 
+                'name': u'Nina L. Patrick', 
+                'rcc': True
+            }, 
+            {
+                'rcm': True, 
+                'gsr': True, 
+                'name': u'Bet Duncan', 
+                'email': u'bbb@u.washington.edu', 
+                'dept': u'Anthropology'
+            }, 
+            {
+                'rcm': True, 
+                'email': u'lll@oge.sld.pe', 
+                'name': u'Louis Vivian', 
+                'dept': u'Ministry of Health, Peru'
+            }
+        ], 
+        u'Advisor': [
+            {
+                'rcm': True, 
+                'email': u'bbb@u.washington.edu', 
+                'name': u'Bet Duncan', 
+                'dept': u'Anthropology'
+            }
+        ]
+    }),
     SummerEFSCard(True, True),
     cardCD(
         EventsCard(),
@@ -99,12 +152,12 @@ cardList['jinter'] = [
     ToRegisterCard(),
     TuitionCard(),
     LibraryCard(),
-    (errorCard('GradStatusCard')),
-    (errorCard('GradCommitteeCard')),
-    (PCEBanner()),
-    (app_notices()),
-    (app_acal()),
-    (SummerEFSCard(summerReg = False, considerEFS = True)), 
+    errorCard('GradStatusCard'),
+    errorCard('GradCommitteeCard'),
+    PCEBanner(),
+    app_notices(),
+    app_acal(),
+    SummerEFSCard(summerReg = False, considerEFS = True), 
     VisualScheduleCard(),
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
@@ -180,14 +233,15 @@ def getSigDates(user, start = None, end = None):
         for card in cardColl:
             # Check each sigdate for each card and see if 
             # it falls within the desired range
-            for sigDate in card.significantDates:
-                # start and end are optional
-                if start and sigDate < start:
-                    continue
-                elif end and sigDate > end:
-                    continue
-                elif sigDate not in sigDates:
-                    sigDates.append(sigDate)
+            if hasattr(card, 'significantDates'):
+                for sigDate in card.significantDates:
+                    # start and end are optional
+                    if start and sigDate < start:
+                        continue
+                    elif end and sigDate > end:
+                        continue
+                    elif sigDate not in sigDates:
+                        sigDates.append(sigDate)
     outList = sigDates
     outList.sort()
     return outList

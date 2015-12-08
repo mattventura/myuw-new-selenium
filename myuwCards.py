@@ -18,9 +18,9 @@ def addToCardDict(card):
         #    raise Exception('Tried to put card name %s into known cards list twice' %name)
         cardDict[name] = card
 
-# Convenience function for specifying a card. 
-# Puts them in the dictionary of cards. Also automatically
-# sets the name property of the class if not already set. 
+# Convenience all-in-one function for specifying a card. 
+# 1. Puts them in the dictionary of cards. 
+# 2. Automatically sets the name property of the class if not already set. 
 def isaCard(innerClass):
     if not(hasattr(innerClass, 'name')):
         innerClass.name = innerClass.__name__
@@ -241,19 +241,19 @@ class GradeCard(myuwCard):
         try:
             gradesA = self.gradeDict[trueQtr]
         except:
-            pass
+            gradesA = {}
             #TODO: write better exceptions here
             #raise Exception("gradesA problem")
         try:
             gradesB = other.gradeDict[trueQtr]
         except:
-            pass
+            gradesB = {}
             #raise Exception("gradesB problem")
 
         diffs += formatDiffs('Final grades', gradesA, gradesB)
         return diffs
 
-    visCheck = cardAuto(None, LastDayInstr + 1, NextQtrClassesBegin - 1)
+    visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1)
         
     
     
@@ -306,7 +306,8 @@ class VisualScheduleCard(myuwCard):
     @classmethod
     @packElement
     def fromElement(cls, date, e):
-        qtr = dateToQtr(date - 10)
+        qtr = dateToQtr(date)
+        #qtr = dateToQtr(date + 1)
         classEls = e.find_elements_by_css_selector('div.visual-course-id')
         classEls += e.find_elements_by_css_selector('div.course-info')
         thisQtrClasses = {}
@@ -341,7 +342,7 @@ class VisualScheduleCard(myuwCard):
         diffs = formatDiffs('Visual Schedule Content', classesA, classesB)
         return diffs
 
-    visCheck = cardAuto(None, FirstDayQtr, LastDayInstr)
+    visCheck = visAuto(FirstDayQtr, LastDayInstr)
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
         
@@ -358,15 +359,67 @@ class LibraryCard(myuwCard):
     
 @isaCard
 class TextbookCard(myuwCard):
-    visCheck = cardAuto(None, FirstDayQtr, ClassesBegin)
+    visCheck = visAuto(FirstDayQtr, ClassesBegin)
 
+@isaCard
+class GradCommitteeCard(myuwCard):
+    def __init__(self, commDict):
+        self.commDict = commDict
+    
+    autoDiffs = {'commDict': 'Grad Committee Members'}
+
+    @classmethod
+    def fromElement(cls, date, el):
+        # Brak into individual committees
+        commSections = el.find_elements_by_xpath('.//ul[@class="card-list"]/li')
+        commDict = {}
+        for section in commSections:
+            # Get committee name
+            commName = section.find_element_by_xpath('./h4').text
+            # Get committee members
+            memberSections = section.find_elements_by_xpath('./ol/li[@class="committee-member"]')
+            members = []
+            for member in memberSections:
+                memberLines = member.find_elements_by_xpath('./span')
+                # Get text of each line
+                memberDetails = [e.text for e in memberLines]
+                memberDict = {}
+                # Name is on the first line, along with committee role
+                nameLine = memberDetails[0]
+                nameParts = nameLine.split(', ')
+                # First chunk before a comma (if any) is the name of the person
+                memberDict['name'] = nameParts[0]
+                # Anything after that is a role
+                for role in nameParts[1:]:
+                    if role == 'GSR':
+                        memberDict['gsr'] = True
+                    elif role == 'Reading Committee Member':
+                        memberDict['rcm'] = True
+                    elif role == 'Reading Committee Chair':
+                        memberDict['rcc'] = True
+                    elif role == 'Chair':
+                        memberDict['chair'] = True
+
+                # Other 2 lines are optional
+                # If it contains @, consider it to be the email
+                # Otherwise, consider it to be the department.
+                for line in memberDetails[1:]:
+                    if line.find('@') == -1:
+                        memberDict['dept'] = line
+                    else:
+                        memberDict['email'] = line
+
+                members.append(memberDict)
+
+            commDict[commName] = members
+
+        return cls(commDict)
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
 stubCards = [
     'TuitionCard', 
     'EventsCard',
-    'GradCommitteeCard',
     'GradStatusCard',
     'RegStatusCard',
     'FinalExamCard',

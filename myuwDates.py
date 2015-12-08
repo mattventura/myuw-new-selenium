@@ -82,6 +82,9 @@ SummerRegShow = multiDate(SummerRegCardDates)
 # Try to convert 
 def dateToQtr(date):
     date = myuwDate(date)
+    # Hack, TODO fix this
+    if date < myuwDate('2013-01-01'):
+        return 'AU12'
     for qtr, start in FirstDayQtr.items():
         try:
             end = LastDayQtr[qtr]
