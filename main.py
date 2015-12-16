@@ -15,6 +15,7 @@ from myuwFunctions import isCardVisible, isVisibleFast
 # Some settings
 # Enable this to do some performance profiling
 perf = False
+debug = False
 
 class mainMyuwTestCase(unittest.TestCase):
     
@@ -105,7 +106,7 @@ class sampleMyuwTestCase(mainMyuwTestCase):
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
     #testDates['jinter'] = ('2013-04-15',)
-    testDates['javerage'] = ('2013-06-15', )
+    testDates['javerage'] = ('2013-2-15', )
     #testDates['javerage'] = ('2013-02-15', '2013-04-01', '2013-05-12')
     usersToTest = testDates.keys()
 
@@ -320,25 +321,25 @@ class mainMyuwHandler(object):
 
             
 
-'''
-d = Firefox()
-d.maximize_window()
-m = mainMyuwHandler(d, 'http://localhost:8081/')
+if debug:
+    d = Firefox()
+    d.maximize_window()
+    m = mainMyuwHandler(d, 'http://localhost:8081/')
 
-m.setDate('2013-06-10')
-m.browseLanding()
-time.sleep(4)
-a = m.cards
-#
-#e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
-#diff = myuwExpected.findDiffs(a, e)
-h = a['GradCommitteeCard']
-#e = h.originalElement
-'''
+    m.setDate('2013-06-10')
+    m.browseLanding()
+    time.sleep(4)
+    a = m.cards
+    #
+    #e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
+    #diff = myuwExpected.findDiffs(a, e)
+    h = a['GradStatusCard']
+    #e = h.originalElement
 
+else:
 
-if __name__ == '__main__':
-    del mainMyuwTestCase
-    del sampleMyuwTestCase
-    #del autoDateMyuwTestCase
-    unittest.main()
+    if __name__ == '__main__':
+        del mainMyuwTestCase
+        #del sampleMyuwTestCase
+        del autoDateMyuwTestCase
+        unittest.main()

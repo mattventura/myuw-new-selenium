@@ -415,12 +415,121 @@ class GradCommitteeCard(myuwCard):
 
         return cls(commDict)
 
+# Do later
+@isaCard
+class GradStatusCard(myuwCard):
+    
+    def __init__(self, petitions, leaves, degrees, date = None):
+        self.petitions = petitions
+        self.leaves = leaves
+        self.degrees = degrees
+        self.date = date
+        self.needsFiltering = not(date)
+
+    # Shorthand replacements for longer strings
+    replacements = {
+        'Graduate School Decision': 'grad',
+        'Department Recommendation': 'dept',
+    }
+
+    @classmethod
+    def fromElement(cls, date, el):
+        date = myuwDate(date)
+
+        petEls = el.find_elements_by_xpath('.//div[@id="petition-reqs"]/ul/li/div')
+        leaveEls = el.find_elements_by_xpath('.//div[@id="leave-reqs"]/ul/li/div')
+        degreeEls = el.find_elements_by_xpath('.//div[@id="degree-reqs"]/ul/li/div')
+
+        requestEls = petEls + leaveEls + degreeEls
+        
+        # Iterate through petitions
+        # TODO: need to find a way to get the date in here
+        # We'll just use a special version in fromElements that adds in date stuff
+        petitions = cls.processRequests(petEls, petRequest)
+        leaves = cls.processRequests(leaveEls, leaveRequest)
+        degrees = cls.processRequests(degreeEls, degreeRequest)
+
+        newObj = cls(petitions, leaves, degrees, date)
+        return newObj
+
+
+    
+    @classmethod
+    def processRequests(cls, reqEls, reqClass):
+        reqsOut = []
+        for reqEl in reqEls:
+            req = reqClass.fromElement(reqEl)
+            reqsOut.append(req)
+        return reqsOut
+        
+
+    # For the expected one, at the top level of each dictionary, rather than specifying an
+    # item directly, you can specify 
+    def filterToDate(self, date):
+        petitions = self.filterList(self.petitions, date)
+        leaves = self.filterList(self.leaves, date)
+        degrees = self.filterList(self.degrees, date)
+
+        newObj = self.__class__(petitions, leaves, degrees)
+        newObj.needsFiltering = False
+        return newObj
+
+    # Returns a new dictionary returning only the visible items from the original
+    @staticmethod
+    def filterList(old, date):
+        new = []
+        for req in old:
+            if req.shouldAppear(date):
+                new.append(req)
+        return new
+
+    
+    autoDiffs = {
+        'petitions'    : 'Petition Requests',
+        'leaves'        : 'Leave Requests',
+        'degrees'    : 'Degree Requests',
+    }
+
+    def findDiffs(self, other):
+        date = self.date or other.date
+        if self.needsFiltering:
+            self = self.filterToDate(date)
+        if other.needsFiltering:
+            other = other.filterToDate(date)
+
+        return super(self.__class__, self).findDiffs(other)
+
+
+@isaCard
+class ThriveCard(myuwCard):
+    def __init__(self, title, desc, tryThis = None, links = []):
+        self.title = title
+        self.desc = desc
+        self.tryThis = tryThis
+        self.links = links
+
+    @classmethod
+    def fromElement(cls, date, e):
+        h4s = e.find_elements_by_xpath('.//h4')
+        title = h4s[0].text
+        ps = e.find_elements_by_xpath('.//p')
+        desc = ps[0].text
+        tryThis = ps[1].text
+        links = []
+        for el in e.find_elements_by_xpath('.//ul/li/a'):
+            links.append(link.fromElement(el))
+
+        return cls(title, desc, tryThis, links)
+
+        
+        
+        
+
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
 stubCards = [
     'TuitionCard', 
     'EventsCard',
-    'GradStatusCard',
     'RegStatusCard',
     'FinalExamCard',
     'PCEBanner',

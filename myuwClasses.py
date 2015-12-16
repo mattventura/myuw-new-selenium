@@ -6,7 +6,7 @@ from UserDict import IterableUserDict
 from abc import ABCMeta
 import time
 
-from myuwFunctions import toTimeDelta, packElement, formatDiffs
+from myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs
 
 # Convert string, timedelta, or myuw date to datetime.date
 def toDate(obj):
@@ -317,6 +317,18 @@ def visCD(start, end):
 
 def visAuto(starts, ends):
     return visCDM(getMultiDateRange(starts, ends))
+
+
+def visBefore(end):
+    def visInner(date):
+        return date < end
+    return visInner
+
+def visAfter(start):
+    def visInner(date):
+        return date > end
+    return visInner
+            
         
 # Card that should always appear
 class cardAlways(cardProxy):
@@ -375,9 +387,12 @@ class cardAuto(cardCDM):
 
         super(self.__class__, self).__init__(card, dateRanges)
 
+class autoDiff(object):
+    def findDiffs(self, other):
+        return findDiffs(self, other)
 
 # Generic card class
-class myuwCard(object):
+class myuwCard(autoDiff):
     __metaclass__ = ABCMeta
     # Placeholder values to help identify cases where the 
     # required info was not given
@@ -396,16 +411,6 @@ class myuwCard(object):
     # 1. Do nothing, if the card has nothing variable
     # 2. Use autoDiffs to do the checking
     # 3. Be overridden in a subclass
-    def findDiffs(self, other):
-        if self.autoDiffs:
-            diffs = ''
-            for prop, label in self.autoDiffs.items():
-                valueSelf = getattr(self, prop)
-                valueOther = getattr(other, prop)
-                diffs += formatDiffs(label, valueSelf, valueOther)
-            return diffs
-        else: 
-            return ''
 
     def __eq__(self, other):
         return not(self.findDiffs(other))
@@ -510,3 +515,115 @@ class perfCounter(object):
         
         
 
+class gradRequest(autoDiff):
+
+    def __init__(self, name, statuses, visCheck = visAlways, title = None):
+        self.name = name
+        self.statuses = statuses
+        self.visCheck = visCheck
+        self.title = title
+        if hasattr(self, 'statusFix'):
+            self.statusFix()
+
+
+    def shouldAppear(self, date):
+        return self.visCheck(date)
+
+    def __str__(self):
+        return self.__class__.__name__ + ': ' + self.name
+
+    def __repr__(self):
+        return '<%s "%s">' %(self.__class__.__name__, self.name)
+
+    @classmethod
+    def fromElement(cls, reqEl):
+        reqName = reqEl.find_element_by_xpath('./h5').text
+        try:
+            title = reqEl.find_element_by_css_selector('div.degree-title').text
+        except:
+            title = None
+        decisionEls = reqEl.find_elements_by_xpath('./ul/li')
+        decisions = {}
+        for decEl in decisionEls:
+            key = decEl.find_element_by_css_selector('span.card-badge-label').text
+            value = decEl.find_element_by_css_selector('span.card-badge-value').text
+
+            if key in cls.replacements:
+                key = cls.replacements[key]
+            if value in cls.replacements:
+                value = cls.replacements[value]
+
+            decisions[key] = value
+
+        req = cls(reqName, decisions, title = title)
+        return req
+
+    replacements = {}
+
+    autoDiffs = {
+        'name': 'Request name',
+        'statuses': 'Request statuses',
+        'title': 'Request title',
+    }
+
+
+    def __eq__(self, other):
+        print 'running request eq'
+        result = self.findDiffs(other)
+        print result
+        return not(self.findDiffs(other))
+        
+class simpleStatus:
+    def statusFix(self):
+        if isinstance(self.statuses, str):
+            self.statuses = {'Status': self.statuses}
+            
+
+class petRequest(gradRequest):
+    # TODO: make overrides for these for easier date behavior
+    replacements = {
+        'Graduate School Decision': 'grad',
+        'Department Recommendation': 'dept'
+    }
+
+class leaveRequest(simpleStatus, gradRequest):
+    pass
+
+class degreeRequest(simpleStatus, gradRequest):
+    pass
+        
+        
+
+class link(autoDiff):
+    def __init__(self, label, url, newTab = False):
+        self.label = label
+        self.url = url
+        self.newTab = newTab
+
+    @classmethod
+    def fromElement(cls, e):
+        label = e.text
+        url = e.get_attribute('href')
+        try:
+            newTab = (e.get_attribute('target') == '_blank')
+        except:
+            newTab = False
+
+        return cls(label, url, newTab)
+
+
+    autoDiffs = {
+        'label': 'Link Label',
+        'url': 'Link URL',
+        'newTab': 'Link opens in new tab',
+    }
+    '''
+    def findDiffs(self, other):
+        diffs = formatDiffs(self.label, other.label,
+            'Link Label')
+        diffs += formatDiffs(self.url, other.url, 
+            'Link URL')
+        diffs += formatDiffs(self.newTab, other.newTab,
+            'Link opens in new tab')
+        return diffs
+        '''

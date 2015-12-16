@@ -45,3 +45,24 @@ def formatDiffs(label, a, b):
     else:
         outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
         return outStr
+        
+        
+        
+def findDiffs(self, other):
+    if self.autoDiffs:
+        diffs = ''
+        for prop, label in self.autoDiffs.items():
+            valueSelf = getattr(self, prop)
+            valueOther = getattr(other, prop)
+            # If the values themselves have diff methods, use those
+            # instead of a simple comparison
+            diffSelf = hasattr(valueSelf, 'findDiffs')
+            diffOther = hasattr(valueOther, 'findDiffs')
+            if diffSelf and diffOther:
+                diffs += valueSelf.findDiffs(valueOther)
+            else:
+                diffs += formatDiffs(label, valueSelf, valueOther)
+        return diffs
+    else: 
+        return ''
+

@@ -20,7 +20,54 @@ cardList['javerage'] = [
     TuitionCard(),
     LibraryCard(),
     CourseCard(),
-    GradStatusCard(),
+    GradStatusCard(
+        [
+            petRequest("Master's degree - Extend six year limit", 
+                {'grad': 'Approved',}
+            ), 
+            petRequest("Master's degree - Extend six year limit", 
+                {'grad': 'Pending', 'dept': 'Approve'}
+            ), 
+            petRequest("Master's degree - Extend six year limit", 
+                {'dept': 'Withdraw',}
+            ), 
+            petRequest("Master's degree - Extend six year limit", 
+                {'dept': 'Approve', 'grad': 'Withdrawn'}
+            ), 
+
+        ], [
+            leaveRequest('Winter 2013 Leave', 'Paid'),
+            leaveRequest('Autumn 2013 Leave', 'Paid'),
+            leaveRequest('Winter 2014 Leave', 'Paid'),
+            leaveRequest('Spring 2014 Leave', 'Paid'),
+        ], [
+            degreeRequest('Masters Request, Winter 2015', 
+                'Awaiting Dept Action (Final Exam)', 
+                title = 'MASTER OF LANDSCAPE ARCHITECTURE/MASTER OF ARCHITECTURE'
+            ), 
+            degreeRequest('Masters Request, Winter 2015', 
+                'Withdrawn',
+                title = 'MASTER OF ARCHITECTURE'
+            ),
+            degreeRequest('Masters Request, Winter 2015', 
+                'Withdrawn',
+                title = 'MASTER OF ARCHITECTURE'
+            ),
+            degreeRequest('Masters Request, Winter 2015', 
+                'Not Recommended by Dept',
+                title = 'MASTER OF LANDSCAPE ARCHITECTURE'
+            ),
+            degreeRequest('Masters Request, Winter 2015', 
+                'Recommended by Dept',
+                title = 'MASTER OF ARCHITECTURE'
+            ),
+            degreeRequest('Masters Request, Winter 2015', 
+                'Did Not Graduate',
+                title = 'MASTER OF LANDSCAPE ARCHITECTURE'
+            ),
+        
+        ]
+    ),
     GradCommitteeCard({
         'Doctoral Supervisory Committee': [
             {
