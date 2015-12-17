@@ -36,8 +36,11 @@ cardList['javerage'] = [
             ), 
 
         ], [
-            leaveRequest('Winter 2013 Leave', 'Paid'),
-            leaveRequest('Autumn 2013 Leave', 'Paid'),
+            leaveRequest('Winter 2013 Leave', 'Paid', 
+                visCheck = visBefore('2013-3-27')),
+            leaveRequest('Autumn 2013 Leave', 'Paid',
+                visCheck = visBefore('2013-12-20')),
+            #TODO: fix above date
             leaveRequest('Winter 2014 Leave', 'Paid'),
             leaveRequest('Spring 2014 Leave', 'Paid'),
         ], [
@@ -57,11 +60,11 @@ cardList['javerage'] = [
                 'Not Recommended by Dept',
                 title = 'MASTER OF LANDSCAPE ARCHITECTURE'
             ),
-            degreeRequest('Masters Request, Winter 2015', 
+            degreeRequest('Masters Request, Spring 2015', 
                 'Recommended by Dept',
                 title = 'MASTER OF ARCHITECTURE'
             ),
-            degreeRequest('Masters Request, Winter 2015', 
+            degreeRequest('Masters Request, Spring 2015', 
                 'Did Not Graduate',
                 title = 'MASTER OF LANDSCAPE ARCHITECTURE'
             ),
@@ -191,6 +194,7 @@ cardList['javerage'] = [
         LastDayInstr + 1,
         BreakBegins - 1,
     ),
+    ThriveCardExpected(),
         
 ]
 
@@ -295,7 +299,7 @@ def getSigDates(user, start = None, end = None):
 
 # Given two dictionaries of cards, find the differences between them. 
 # This includes missing/unexpected cards as well as differences in card content. 
-def findDiffs(actual, expected):
+def findDiffs(expected, actual):
 
     # Cards in common. 
     # These will need to be compared to each other individually to find 
@@ -308,7 +312,7 @@ def findDiffs(actual, expected):
             actualCard = actual[cardName]
             expectedCard = expected[cardName]
             # Assemble a cardPair object for these two cards. 
-            common[cardName] = cardPair(actualCard, expectedCard)
+            common[cardName] = cardPair(expectedCard, actualCard)
 
     # For the cards in common, remove them from the dictionaries of 
     # the actual and expected lists (after copying them) to form 
@@ -335,8 +339,9 @@ def findDiffs(actual, expected):
         
         if pairDiff == None:
             raise TypeError('Diff for %s returned None\n' %name)
-        elif not(isinstance(pairDiff, str)):
-            print type(pairDiff)
+        elif (not(isinstance(pairDiff, str))
+            and not(isinstance(pairDiff, unicode))):
+
             raise TypeError(
                 'Diff for %s returned a non-string value "%s"\n' %(name, diffs)
             )

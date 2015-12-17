@@ -6,7 +6,8 @@ from UserDict import IterableUserDict
 from abc import ABCMeta
 import time
 
-from myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs
+from myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs, \
+    getCardName
 
 # Convert string, timedelta, or myuw date to datetime.date
 def toDate(obj):
@@ -163,7 +164,7 @@ class nullDateRange(myuwDateRange):
 
 # Class to hold an actual and expected card to be compared. 
 class cardPair(object):
-    def __init__(self, actual, expected):
+    def __init__(self, expected, actual):
         # Ensure that the cards have the same name, and then 
         # set this object's name to that. 
         aNames = actual.allNames
@@ -190,7 +191,7 @@ class cardPair(object):
         actualError = isinstance(self.actual, errorCard)
         expectedError = isinstance(self.expected, errorCard)
         if actualError == expectedError:
-            return self.actual.findDiffs(self.expected)
+            return self.expected.findDiffs(self.actual)
         else:
             if actualError:
                 return 'Actual card had unexpected error'
@@ -315,18 +316,21 @@ def visCDM(dates):
 def visCD(start, end):
     return visCDM([(start, end)])
 
+
 def visAuto(starts, ends):
     return visCDM(getMultiDateRange(starts, ends))
 
 
 def visBefore(end):
+    end = myuwDate(end)
     def visInner(date):
-        return date < end
+        return end > date
     return visInner
 
 def visAfter(start):
+    start = myuwDate(start)
     def visInner(date):
-        return date > end
+        return start < date
     return visInner
             
         
@@ -474,9 +478,15 @@ class errorCard(myuwCard):
 myuwCard.register(cardProxy)
 
 class LandingWaitTimedOut(Exception):
-    def __init__(self):
-        return super(self.__class__, self).__init__(
-            'Waited too long for landing page to finish loading'
+    def __init__(self, els):
+        cardNames = []
+        for el in els:
+            cardName = getCardName(el)
+            cardNames.append(cardName)
+        self.cardsNotLoaded = cardNames
+        super(self.__class__, self).__init__(
+            'Waited too long for landing page to finish loading. The following cards did\
+            not load: %s' %(', '.join(cardNames))
         )
     
 
@@ -525,7 +535,6 @@ class gradRequest(autoDiff):
         if hasattr(self, 'statusFix'):
             self.statusFix()
 
-
     def shouldAppear(self, date):
         return self.visCheck(date)
 
@@ -543,6 +552,12 @@ class gradRequest(autoDiff):
         except:
             title = None
         decisionEls = reqEl.find_elements_by_xpath('./ul/li')
+        if decisionEls:
+            pass
+        else:
+            # For ones with just a 'Status' decision, we can use the original element
+            # to find the appropriate children. 
+            decisionEls = [reqEl]
         decisions = {}
         for decEl in decisionEls:
             key = decEl.find_element_by_css_selector('span.card-badge-label').text
@@ -568,9 +583,7 @@ class gradRequest(autoDiff):
 
 
     def __eq__(self, other):
-        print 'running request eq'
         result = self.findDiffs(other)
-        print result
         return not(self.findDiffs(other))
         
 class simpleStatus:

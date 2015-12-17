@@ -6,10 +6,8 @@ import datetime
 def isCardVisible(cardEl):
     if not cardEl.is_displayed():
         return False
-    #print 'Checking innerHTML'
     #if not cardEl.get_attribute('innerHTML'):
     #    return False
-    #print 'Checking .text'
     if not cardEl.text:
         return False
     return True
@@ -49,7 +47,7 @@ def formatDiffs(label, a, b):
         
         
 def findDiffs(self, other):
-    if self.autoDiffs:
+    if hasattr(self, 'autoDiffs'):
         diffs = ''
         for prop, label in self.autoDiffs.items():
             valueSelf = getattr(self, prop)
@@ -62,7 +60,23 @@ def findDiffs(self, other):
                 diffs += valueSelf.findDiffs(valueOther)
             else:
                 diffs += formatDiffs(label, valueSelf, valueOther)
+        #diffs = str(diffs)
         return diffs
     else: 
-        return ''
+        raise Exception('Used findDiffs on %s without autoDiffs attribute' %self)
 
+def rangesToSigDates(dateRanges):
+    out = []
+    for r in dateRanges:
+        out += r.significantDates
+    return out
+
+# Get card name from an element
+# Useful for when you can't make a proper card out of the 
+# element, but still need a useful identifier, e.g. 
+# the loading spinner. 
+def getCardName(cardEl):
+    cardId = cardEl.get_attribute('id')
+    cardDataName = cardEl.get_attribute('data-name')
+    cardName = cardId or cardDataName
+    return cardName

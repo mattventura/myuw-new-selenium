@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-from myuwFunctions import isCardVisible, packElement, formatDiffs
+from myuwFunctions import isCardVisible, packElement, formatDiffs, \
+rangesToSigDates
 from myuwDates import *
 import re
 from myuwClasses import *
@@ -253,7 +254,10 @@ class GradeCard(myuwCard):
         diffs += formatDiffs('Final grades', gradesA, gradesB)
         return diffs
 
-    visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1)
+    dateRanges = getMultiDateRange(LastDayInstr + 1, NextQtrClassesBegin - 1)
+    visCheck = visCDM(dateRanges)
+    significantDates = rangesToSigDates(dateRanges)
+    #visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1)
         
     
     
@@ -342,7 +346,9 @@ class VisualScheduleCard(myuwCard):
         diffs = formatDiffs('Visual Schedule Content', classesA, classesB)
         return diffs
 
-    visCheck = visAuto(FirstDayQtr, LastDayInstr)
+    dateRanges = getMultiDateRange(FirstDayQtr, LastDayInstr)
+    visCheck = visCDM(dateRanges)
+    significantDates = rangesToSigDates(dateRanges)
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
         
@@ -359,7 +365,10 @@ class LibraryCard(myuwCard):
     
 @isaCard
 class TextbookCard(myuwCard):
-    visCheck = visAuto(FirstDayQtr, ClassesBegin)
+    #visCheck = visAuto(FirstDayQtr, ClassesBegin)
+    dateRanges = getMultiDateRange(FirstDayQtr, ClassesBegin)
+    visCheck = visCDM(dateRanges)
+    significantDates = rangesToSigDates(dateRanges)
 
 @isaCard
 class GradCommitteeCard(myuwCard):
@@ -433,6 +442,7 @@ class GradStatusCard(myuwCard):
     }
 
     @classmethod
+    @packElement
     def fromElement(cls, date, el):
         date = myuwDate(date)
 
@@ -454,8 +464,8 @@ class GradStatusCard(myuwCard):
 
 
     
-    @classmethod
-    def processRequests(cls, reqEls, reqClass):
+    @staticmethod
+    def processRequests(reqEls, reqClass):
         reqsOut = []
         for reqEl in reqEls:
             req = reqClass.fromElement(reqEl)
@@ -499,14 +509,75 @@ class GradStatusCard(myuwCard):
 
         return super(self.__class__, self).findDiffs(other)
 
-
-@isaCard
-class ThriveCard(myuwCard):
-    def __init__(self, title, desc, tryThis = None, links = []):
+class thriveContent(autoDiff):
+    def __init__(self, title, desc, tryThis, links = []):
+        
         self.title = title
         self.desc = desc
         self.tryThis = tryThis
         self.links = links
+
+    # Temporary
+    def findDiffs(self, other):
+        return ''
+
+
+    autoDiffs = {
+        'title': 'Thrive card title',
+        'desc': 'Thrive card first section',
+        'tryThis': 'Thrive card "Try This" section',
+        'links': 'Thrive card links'
+    }
+
+
+@isaCard
+class ThriveCard(myuwCard):
+    def __init__(self, date = None, content = None):
+        
+        # Need to handle 3 scenarios:
+        # 1. Actual card, in which case we get a date and a content
+        # 2. Expected card list, in which case we get neither
+        if date is None and content is None:
+            self.actual = False
+
+        elif date is not None and content is not None:
+            self.actual = True
+            self.content = content
+            self.date = date
+
+        else:
+            raise Exception('Illegal arguments %s and %s for thrive card' %(date, content))
+            
+            
+
+    # Format: dateRange to card
+    expectedContent = {}
+
+    def getExpected(self, date):
+        for key, value in self.expectedContent.items():
+            if date in key:
+                return value
+        return None
+
+    def findDiffs(self, other):
+        
+        if self.actual and not(other.actual):
+            actual = self
+            expected = other
+        elif other.actual and not(self.actual):
+            actual = other
+            expected = self
+        else:
+            raise Exception('Got two actual or two expected')
+
+        date = actual.date
+
+        expectedContent = expected.getExpected(date)
+        actualContent = actual.content
+
+        diffs = expectedContent.findDiffs(actualContent)
+        return diffs
+
 
     @classmethod
     def fromElement(cls, date, e):
@@ -519,7 +590,66 @@ class ThriveCard(myuwCard):
         for el in e.find_elements_by_xpath('.//ul/li/a'):
             links.append(link.fromElement(el))
 
-        return cls(title, desc, tryThis, links)
+        content = thriveContent(title, desc, tryThis, links)
+        card = ThriveCard(date, content)
+        return card
+
+    '''
+    dateRanges = [
+        # Autumn 2012
+        myuwDateRange('2012-9-7', '2012-11-15'),
+        myuwDateRange('2012-11-23', '2012-12-6'),
+        # Winter 2013
+        myuwDateRange('2013-1-6', '2013-1-26'),
+        myuwDateRange('2013-2-3', '2013-3-16'),
+    ]
+    visCheck = visCDM(dateRanges)
+    significantDates = rangesToSigDates(dateRanges)
+    '''
+
+    def shouldAppear(self, date):
+        for key in self.expectedContent.keys():
+            if date in key:
+                return True
+        return False
+
+    @property
+    def significantDates(self):
+        return rangesToSigDates(self.expectedContent.keys())
+        
+
+        
+
+# TODO: move this to its own file
+class ThriveCardExpected(ThriveCard):
+    
+    thriveCards = {}
+    thriveCards['WI13'] = [
+        thriveContent('New Year, Fresh Start',
+            'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
+            'Finish this sentence: This year, I wish to ______. When you come to Mary Gates Hall this week -- for advising, career coaching, or CLUE tutoring -- share your aspriations on the board outside of First Year Programs (MGH 120), or using #ThriveUW.',
+            [ link('New Year\'s Resolutions for College Students', 
+                'http://collegelife.about.com/od/cocurricularlife/a/10-Sample-New-Years-Resolutions-For-College-Students.htm')
+            ]
+        )
+    ]
+        
+    ec = {}
+
+    for key, value in thriveCards.items():
+        startDate = ClassesBegin[key] - 1
+        curDate = startDate
+        for card in value:
+            if card is not None:
+                dr = myuwDateRange(curDate, curDate + 6)
+                ec[dr] = card
+            curDate = curDate + 7
+
+    expectedContent = ec
+
+    print expectedContent
+
+
 
         
         

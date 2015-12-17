@@ -10,7 +10,7 @@ import time
 from myuwClasses import myuwDate, errorCard, LandingWaitTimedOut, perfCounter
 import myuwExpected
 from myuwCards import cardDict
-from myuwFunctions import isCardVisible, isVisibleFast
+from myuwFunctions import isCardVisible, isVisibleFast, getCardName
 
 # Some settings
 # Enable this to do some performance profiling
@@ -58,14 +58,14 @@ class mainMyuwTestCase(unittest.TestCase):
         dates = self.testDates[user]
         self.setUser(user)
         for date in dates:
-            #print 'date is %s' %date
             self.setDate(date)
             # TODO: make browseLanding throw a specific exception when it times
             # out so it can be differentiated from an actual failure. 
             try:
                 self.browseLanding()
-            except LandingWaitTimedOut:
+            except LandingWaitTimedOut as e:
                 print 'WARNING: Page did not fully finish loading'
+                print 'Cards Not Loaded: %s' %(', '.join(e.cardsNotLoaded))
                 
             self.checkDiffs()
 
@@ -94,7 +94,7 @@ class mainMyuwTestCase(unittest.TestCase):
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
         if perf:
             diffTimer = perfCounter('Diff checking')
-        diffs = myuwExpected.findDiffs(actualCards, expectedCards)
+        diffs = myuwExpected.findDiffs(expectedCards, actualCards)
         if perf:
             diffTime = diffTimer.endFmt()
             print diffTime
@@ -105,8 +105,8 @@ class sampleMyuwTestCase(mainMyuwTestCase):
     
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
-    #testDates['jinter'] = ('2013-04-15',)
-    testDates['javerage'] = ('2013-2-15', )
+    testDates['jinter'] = ('2013-04-15',)
+    #testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
     #testDates['javerage'] = ('2013-02-15', '2013-04-01', '2013-05-12')
     usersToTest = testDates.keys()
 
@@ -120,7 +120,6 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
         for user in userList:
             sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-06-18')
             tcDict[user] = sd
-        #print 'Calculated test dates ' + str(tcDict)
         return tcDict
 
 class mainMyuwHandler(object):
@@ -219,15 +218,10 @@ class mainMyuwHandler(object):
             if perf: 
                 cardTimer = perfCounter('Parsing card')
             # Get name of card using whatever's available
-            cardId = cardEl.get_attribute('id')
-            cardDataName = cardEl.get_attribute('data-name')
-            cardName = cardId or cardDataName
+            cardName = getCardName(cardEl)
             # If the card is not visible, then don't do anything with it
             if isCardVisible(cardEl):
                 # Cards are identified by their id
-                cardId = cardEl.get_attribute('id')
-                cardDataName = cardEl.get_attribute('data-name')
-                cardName = cardId or cardDataName
 
                 cardIsError = 'An error has occurred' in cardEl.text
                     
@@ -249,6 +243,8 @@ class mainMyuwHandler(object):
                     else:
                         newCard = cardClass.fromElement(self.currentDate, cardEl)
                         # For cards with multiple names, take the name from the class
+                        if newCard is None:
+                            raise Exception('Tried to make %s from element, but it returned none' %cardClass)
                         baseCardName = newCard.name
                         self._cards[baseCardName] = newCard
             else:
@@ -282,6 +278,7 @@ class mainMyuwHandler(object):
         # an element is *not* found, so do it manually
         maxTime = 10
         loadTimer = perfCounter('Page load')
+        els = []
         while loadTimer.elapsedTime < maxTime:
             try:
                 time.sleep(.2)
@@ -306,7 +303,16 @@ class mainMyuwHandler(object):
         else:
             # If the loop ends due to running out of time, throw 
             # this exception. 
-            raise LandingWaitTimedOut()
+            els = filter(isVisibleFast, els)
+            newEls = []
+            for el in els:
+                cardName = None
+                while cardName is None:
+                    el = el.find_element_by_xpath('..')
+                    cardName = getCardName(el)
+                else:
+                    newEls.append(el)
+            raise LandingWaitTimedOut(newEls)
 
         # If the loop ended due to there being no more loading gears, do this. 
 
@@ -326,7 +332,7 @@ if debug:
     d.maximize_window()
     m = mainMyuwHandler(d, 'http://localhost:8081/')
 
-    m.setDate('2013-06-10')
+    m.setDate('2013-02-15')
     m.browseLanding()
     time.sleep(4)
     a = m.cards
@@ -340,6 +346,6 @@ else:
 
     if __name__ == '__main__':
         del mainMyuwTestCase
-        #del sampleMyuwTestCase
-        del autoDateMyuwTestCase
+        del sampleMyuwTestCase
+        #del autoDateMyuwTestCase
         unittest.main()
