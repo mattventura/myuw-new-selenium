@@ -41,8 +41,18 @@ def formatDiffs(label, a, b):
     if a == b:
         return ''
     else:
-        outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
-        return outStr
+        #a = unicode(a)
+        #b = unicode(b)
+        if isinstance(a, unicode):
+            a = a.encode('unicode-escape')
+        if isinstance(b, unicode):
+            b = b.encode('unicode-escape')
+        try:
+            outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
+            return outStr
+        except:
+            print a.encode('ascii', 'replace')
+            print b.encode('ascii', 'replace')
         
         
         
@@ -80,3 +90,25 @@ def getCardName(cardEl):
     cardDataName = cardEl.get_attribute('data-name')
     cardName = cardId or cardDataName
     return cardName
+
+# Escape unicode from all arguments
+def uesc(func):
+    
+    def inner(*args, **kwargs):
+        
+        newArgs = []
+        newKw = {}
+        for arg in args:
+            if isinstance(arg, unicode):
+                arg = arg.encode('unicode-escape')
+            newArgs.append(arg)
+
+        for k,v in kwargs.items():
+            if isinstance(v, unicode):
+                v = v.encode('unicode-escape')
+            newKw[k] = v
+
+        func(*newArgs, **newKw)
+    
+    return inner
+

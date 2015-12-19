@@ -5,6 +5,7 @@
 from selenium.webdriver import Firefox
 import unittest
 import time
+import sys
 
 # myuw-specific imports
 from myuwClasses import myuwDate, errorCard, LandingWaitTimedOut, perfCounter
@@ -21,11 +22,10 @@ class mainMyuwTestCase(unittest.TestCase):
     
     driverFunc = Firefox
     baseUrl = 'http://localhost:8081'
-    usersToTest = ['javerage']
+    usersToTest = ['javerage', 'jinter']
     defaultUser = 'javerage'
     defaultDate = myuwDate(2013, 04, 15)
     testDates = {}
-    diffs = ''
 
     def setUp(self):
         self.driver = self.driverFunc()
@@ -35,6 +35,7 @@ class mainMyuwTestCase(unittest.TestCase):
         # Not sure if these are necessary
         self.currentUser = self.defaultUser
         self.currentDate = self.defaultDate
+        self.diffs = {}
 
 
     def tearDown(self):
@@ -43,10 +44,16 @@ class mainMyuwTestCase(unittest.TestCase):
     # Run tests and report discrepancies between expected and actual results
     def test_runtests(self):
         self.runAllUsers()
-        if self.diffs:
+        diffs = self.getFormattedDiffs()
+        if diffs:
             errString  = 'Found differences between actual and expected data:\n'
-            errString += self.diffs
+            errString += diffs
             self.fail(errString)
+
+    # TODO
+    def test_json_out(self):
+        # TODO
+        pass
 
     # RunTests is where code specific to a test style should go
     def runAllUsers(self):
@@ -64,11 +71,15 @@ class mainMyuwTestCase(unittest.TestCase):
             try:
                 self.browseLanding()
             except LandingWaitTimedOut as e:
-                print 'WARNING: Page did not fully finish loading'
-                print 'Cards Not Loaded: %s' %(', '.join(e.cardsNotLoaded))
+                cardsNotLoaded = ', '.join(e.cardsNotLoaded)
+                self.logDiffCurrent(
+                    'Some cards did not finish loading: %s\n' %cardsNotLoaded
+                )
+
                 
             self.checkDiffs()
 
+    # Browse landing
     def browseLanding(self):
         self.pageHandler.browseLanding()
 
@@ -83,12 +94,45 @@ class mainMyuwTestCase(unittest.TestCase):
         self.pageHandler.setDate(date)
 
     # Report differences
-    def logDiffs(self, diff):
-        if diff:
-            errString  = 'On date %s:\n' %self.currentDate
-            errString += diff
-            self.diffs += errString
+    def logDiffs(self, user, date, diffs):
+        if diffs:
+            # Might get more than one at a time, separated
+            # by linefeeds. 
+            for diff in diffs.split('\n'):
+                if diff:
+                    # Make sure user exists in diffs dictionary
+                    if user not in self.diffs:
+                        self.diffs[user] = {}
+                    userDiffs = self.diffs[user]
+                    # Make sure date exists in user's dictionary
+                    if date not in userDiffs:
+                        userDiffs[date] = []
+                    dateDiffs = userDiffs[date]
 
+                    # Add diff
+                    dateDiffs.append(diff)
+
+
+    # Returns formatted version of the diff dictionary
+    def getFormattedDiffs(self):
+        diffStr = ''
+        for user, dates in self.diffs.items():
+            diffStr += 'Failures for user %s:\n' %user
+            for date, diffs in dates.items():
+                diffStr += ' ' * 2 + 'On date %s:\n' %date
+
+                for diff in diffs:
+                    diffStr += ' ' * 4 + '%s\n' %diff
+
+        return diffStr
+                
+                
+    # Log diff for the current user and date
+    def logDiffCurrent(self, diff):
+        self.logDiffs(self.currentUser, self.currentDate, diff)
+        
+
+    # Check diffs and log any that were found
     def checkDiffs(self):
         actualCards = self.pageHandler.cards
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
@@ -98,16 +142,17 @@ class mainMyuwTestCase(unittest.TestCase):
         if perf:
             diffTime = diffTimer.endFmt()
             print diffTime
-        self.logDiffs(diffs)
+        self.logDiffCurrent(diffs)
 
 
 class sampleMyuwTestCase(mainMyuwTestCase):
     
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
-    testDates['jinter'] = ('2013-04-15',)
+    #testDates['jinter'] = ('2013-01-09',)
+    testDates['javerage'] = ('2013-01-09',)
     #testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
-    #testDates['javerage'] = ('2013-02-15', '2013-04-01', '2013-05-12')
+    #testDates['javerage'] = ('2013-02-15', '2013-01-09', '2013-05-12')
     usersToTest = testDates.keys()
 
 
@@ -314,7 +359,8 @@ class mainMyuwHandler(object):
                     newEls.append(el)
             raise LandingWaitTimedOut(newEls)
 
-        # If the loop ended due to there being no more loading gears, do this. 
+        # If the loop ended due to there being no more loading gears, 
+        # it will hit this code instead. 
 
         loadTimer.end()
         if perf:
@@ -345,7 +391,27 @@ if debug:
 else:
 
     if __name__ == '__main__':
-        del mainMyuwTestCase
-        del sampleMyuwTestCase
-        #del autoDateMyuwTestCase
-        unittest.main()
+
+        argv = sys.argv
+        if len(argv) >= 4 and argv[1] == '--single':
+            user = argv[2]
+            date = argv[3]
+
+            class singleTestCase(mainMyuwTestCase):
+                
+                testDates = {user: (date,)}
+                usersToTest = [user]
+
+                
+
+            unittest.TextTestRunner().run(singleTestCase('test_json_out'))
+            
+
+        else:
+            pass
+
+            #del mainMyuwTestCase
+            #del sampleMyuwTestCase
+            #del autoDateMyuwTestCase
+            #unittest.main()
+

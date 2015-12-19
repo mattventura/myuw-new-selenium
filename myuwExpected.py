@@ -216,13 +216,14 @@ cardList['jinter'] = [
     cardAuto(
         RegStatusCard(), 
         RegCardShow,
-        RegPd2 + 7
+        RegCardHide
     ), 
     cardAuto(SummerRegStatusCard(),
         SummerRegShow,
-        RegPd2 + 7
+        SummerRegHide
     ),
     cardAlways(CriticalInfoCard()),
+    ThriveCardExpected(),
 ]
 
 # We want these to be dictionaries, 

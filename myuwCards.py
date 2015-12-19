@@ -510,7 +510,8 @@ class GradStatusCard(myuwCard):
         return super(self.__class__, self).findDiffs(other)
 
 class thriveContent(autoDiff):
-    def __init__(self, title, desc, tryThis, links = []):
+    @uesc
+    def __init__(self, title, desc = '', tryThis = '', links = []):
         
         self.title = title
         self.desc = desc
@@ -518,15 +519,15 @@ class thriveContent(autoDiff):
         self.links = links
 
     # Temporary
-    def findDiffs(self, other):
-        return ''
+    #def findDiffs(self, other):
+    #    return ''
 
 
     autoDiffs = {
         'title': 'Thrive card title',
-        'desc': 'Thrive card first section',
-        'tryThis': 'Thrive card "Try This" section',
-        'links': 'Thrive card links'
+        #'desc': 'Thrive card first section',
+        #'tryThis': 'Thrive card "Try This" section',
+        #'links': 'Thrive card links'
     }
 
 
@@ -626,12 +627,22 @@ class ThriveCardExpected(ThriveCard):
     thriveCards = {}
     thriveCards['WI13'] = [
         thriveContent('New Year, Fresh Start',
+            #'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
             'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
-            'Finish this sentence: This year, I wish to ______. When you come to Mary Gates Hall this week -- for advising, career coaching, or CLUE tutoring -- share your aspriations on the board outside of First Year Programs (MGH 120), or using #ThriveUW.',
-            [ link('New Year\'s Resolutions for College Students', 
-                'http://collegelife.about.com/od/cocurricularlife/a/10-Sample-New-Years-Resolutions-For-College-Students.htm')
+            u'Finish this sentence: This year, I wish to ______. When you come to Mary Gates Hall this week \u2013 for advising, career coaching, or CLUE tutoring \u2013 share your aspirations on the board outside of First Year Programs (MGH 120), or using #ThriveUW.',
+            [ link('New Year\u2019s Resolutions for College Students', 
+                'http://collegelife.about.com/od/cocurricularlife/a/10-Sample-New-Years-Resolutions-For-College-Students.htm', True)
             ]
-        )
+        ),
+        thriveContent('Learn to Lead'),
+        thriveContent('Activate your Activism'),
+        None,
+        thriveContent('Research smarter, not harder!'),
+        thriveContent('Internships and Exploration'),
+        thriveContent('Revisiting Plans, Exploring Options'),
+        thriveContent('Battle the Winter Blues'),
+        thriveContent('What\'s Your Dream Summer?'),
+        thriveContent('Finals: Pace Your Prep'),
     ]
         
     ec = {}
@@ -646,14 +657,9 @@ class ThriveCardExpected(ThriveCard):
             curDate = curDate + 7
 
     expectedContent = ec
-
-    print expectedContent
-
-
-
-        
-        
-        
+    #a = expectedContent.keys()
+    #a.sort()
+    #print a
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 

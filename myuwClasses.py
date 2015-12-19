@@ -7,7 +7,7 @@ from abc import ABCMeta
 import time
 
 from myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs, \
-    getCardName
+    getCardName, uesc
 
 # Convert string, timedelta, or myuw date to datetime.date
 def toDate(obj):
@@ -148,6 +148,30 @@ class myuwDateRange(object):
     def __contains__(self, element):
         element = myuwDate(element)
         return self.startDate <= element <= self.endDate
+
+    def __repr__(self):
+        return 'myuwDateRange(%s, %s)' %(self.startDate, self.endDate)
+
+    def __eq__(self, other):
+        return (self.startDate == other.startDate) and \
+            (self.endDate == other.endDate)
+
+    def __gt__(self, other):
+        return (self.startDate > other.startDate) and \
+            (self.endDate > other.endDate)
+
+    def __lt__(self, other):
+        return (self.startDate < other.startDate) and \
+            (self.endDate < other.endDate)
+
+    def __ge__(self, other):
+        return self == other or self > other
+
+    def __le__(self, other):
+        return self == other or self < other
+
+    def __ne__(self, other):
+        return not(self == other)
 
 # Dummy date range for when there are no dates whatsoever
 class nullDateRange(myuwDateRange):
@@ -608,6 +632,7 @@ class degreeRequest(simpleStatus, gradRequest):
         
 
 class link(autoDiff):
+    @uesc
     def __init__(self, label, url, newTab = False):
         self.label = label
         self.url = url
@@ -624,12 +649,20 @@ class link(autoDiff):
 
         return cls(label, url, newTab)
 
+    def __repr__(self):
+        return 'link(%s, %s, %s)' %(self.label, self.url, self.newTab)
+
 
     autoDiffs = {
         'label': 'Link Label',
         'url': 'Link URL',
         'newTab': 'Link opens in new tab',
     }
+
+    def __eq__(self, other):
+        return (self.label == other.label and self.url == other.url \
+            and self.newTab == other.newTab)
+
     '''
     def findDiffs(self, other):
         diffs = formatDiffs(self.label, other.label,
@@ -639,4 +672,4 @@ class link(autoDiff):
         diffs += formatDiffs(self.newTab, other.newTab,
             'Link opens in new tab')
         return diffs
-        '''
+    '''

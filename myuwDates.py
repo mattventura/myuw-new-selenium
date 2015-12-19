@@ -22,12 +22,14 @@ ClassesBegin = multiDate({
 RegPd1 = multiDate({
     'SP13': '2013-02-15',
     'SU13': '2013-04-15',
+    'AU13': '2013-05-10',
 })
 
 # Reg period 2 begin
 RegPd2 = multiDate({
     'SP13': '2013-03-04',
     'SU13': '2013-05-23',
+    'AU13': '2013-06-24',
 })
 
 # Last day of instruction
@@ -64,18 +66,24 @@ NextQtrClassesBegin = multiDate({
 
 # Special dates
 
-RegCardDates = {}
-SummerRegCardDates = {}
+RegCardShowDates = {}
+SummerRegCardShowDates = {}
+RegCardHideDates = {}
+SummerRegCardHideDates = {}
 for key, value in RegPd1.items():
     # If it's summer, put it in a special summer 
     # quarter reg card date
     if key[0:2] == 'SU':
-        SummerRegCardDates[key] = value - 7
+        SummerRegCardShowDates[key] = value - 7
+        SummerRegCardHideDates[key] = RegPd2[key] + 6
     else:
-        RegCardDates[key] = value - 14
+        RegCardShowDates[key] = value - 14
+        RegCardHideDates[key] = RegPd2[key] + 6
 
-RegCardShow = multiDate(RegCardDates)
-SummerRegShow = multiDate(SummerRegCardDates)
+RegCardShow = multiDate(RegCardShowDates)
+SummerRegShow = multiDate(SummerRegCardShowDates)
+RegCardHide = multiDate(RegCardHideDates)
+SummerRegHide = multiDate(SummerRegCardHideDates)
 
 
 
