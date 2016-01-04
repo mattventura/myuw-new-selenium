@@ -6,6 +6,9 @@ from selenium.webdriver import Firefox
 import unittest
 import time
 import sys
+import os
+import json
+import subprocess
 
 # myuw-specific imports
 from myuwClasses import myuwDate, errorCard, LandingWaitTimedOut, perfCounter
@@ -17,6 +20,7 @@ from myuwFunctions import isCardVisible, isVisibleFast, getCardName
 # Enable this to do some performance profiling
 perf = False
 debug = False
+parallel = 3
 
 class mainMyuwTestCase(unittest.TestCase):
     
@@ -43,17 +47,130 @@ class mainMyuwTestCase(unittest.TestCase):
 
     # Run tests and report discrepancies between expected and actual results
     def test_runtests(self):
-        self.runAllUsers()
-        diffs = self.getFormattedDiffs()
-        if diffs:
-            errString  = 'Found differences between actual and expected data:\n'
-            errString += diffs
-            self.fail(errString)
+        # Parallel test currently just spawns 1 process for each user to test
+        if parallel:
+            # List for holding diffs
+            # These will each be a string of json
+            diffList = []
+            # List for holding each Popen object
+            processes = []
+            for user, dates in self.testDates.items():
+                
+                # Turn dates from myuwDate objects to strings
+                datesStr = [str(date) for date in dates]
+                # Use this file's name as the script to run
+                mainFile = __file__
+                # Run it
+                process = subprocess.Popen(
+                    ['python', mainFile, '--single', user] + datesStr, 
+                    stdout = subprocess.PIPE, 
+                    stderr = subprocess.PIPE
+                )
+                processes.append(process)
+
+            finished = False
+            # Wait for every process to finish
+            while not(finished):
+                time.sleep(2)
+
+                # Set finished to True, but if any process is not finished
+                # then set it back to false
+                finished = True
+                for proc in processes:
+                    # Returns None if process is not finished, otherwise
+                    # gives the exit code 
+                    if proc.poll() is None:
+                        finished = False
+
+                # Grab output from each process
+                # The unittest stuff as well as any errors will go to stderr,
+                # while the actual output will
+                # go to stdout which we read from here
+                for proc in processes:
+                    try:
+                        (stdout, stderr) = proc.communicate()
+                        if stderr:
+                            errs = ''
+                            errLines = stderr.split('\n')
+                            # Filter out anything that isn't an error
+                            # There has to be a better way to do this
+                            for line in errLines:
+                                if len(line) == 0:
+                                    continue
+                                if line[0] in ('.', 'E', 'F'): 
+                                    continue
+                                if line[0:4] == '----':
+                                    continue
+                                if line[0:3] == 'Ran':
+                                    continue
+                                if line[0:6] == 'FAILED':
+                                    continue
+                                if line[0:2] == 'OK':
+                                    continue
+                                print 'Line: <start>%s<end>' %line
+                                errs += line + '\n'
+
+                            # If there is something left, report it
+                            if errs:
+                                print 'Got errors:\n%s' %stderr
+
+                        if stdout:
+                            diffList.append(stdout)
+
+                    # If the process's output has already hit EOF, then don't worry
+                    # about it. This just means we already got the data from that
+                    # particular process. 
+                    except ValueError:
+                        pass
+
+            diffDicts = []
+            # For each json diff, convert it to a real dictionary
+            for diffJson in diffList:
+                diffDict = json.loads(diffJson)
+                diffDicts.append(diffDict)
+
+            # Combine dictionaries into one, like what we would get from the 
+            # non-parallelized version
+            fullDiffs = self.mergeDiffs(diffDicts)
+            # Format them like how they would normally be formatted
+            diffStr = self.formatDiffsFull(fullDiffs)
+            # If there are differences, fail the test
+            if diffStr:
+                self.fail(diffStr)
+
+
+
+        # Old, non-parallel test
+        else:
+            self.runAllUsers()
+            diffs = self.getFormattedDiffs()
+            if diffs:
+                errString  = 'Found differences between actual and expected data:\n'
+                errString += diffs
+                self.fail(errString)
+
+    @staticmethod
+    def mergeDiffs(diffDicts):
+        out = {}
+        for dic in diffDicts:
+            
+            for user, dateDict in dic.items():
+                if user not in out:
+                    out[user] = {}
+
+                for date, diffs in dateDict.items():
+                    out[user][date] = diffs
+
+        return out
+
 
     # TODO
-    def test_json_out(self):
+    def _test_json_out(self):
         # TODO
-        pass
+        self.runAllUsers()
+        diffs = self.getJsonDiffs()
+        if diffs:
+            print diffs
 
     # RunTests is where code specific to a test style should go
     def runAllUsers(self):
@@ -115,16 +232,28 @@ class mainMyuwTestCase(unittest.TestCase):
 
     # Returns formatted version of the diff dictionary
     def getFormattedDiffs(self):
+        return self.formatDiffsFull(self.diffs)
+
+
+    @staticmethod 
+    def formatDiffsFull(diffs, indentChar = '  '):
         diffStr = ''
-        for user, dates in self.diffs.items():
+        for user, dates in diffs.items():
             diffStr += 'Failures for user %s:\n' %user
             for date, diffs in dates.items():
-                diffStr += ' ' * 2 + 'On date %s:\n' %date
+                diffStr += indentChar + 'On date %s:\n' %date
 
                 for diff in diffs:
-                    diffStr += ' ' * 4 + '%s\n' %diff
-
+                    diffStr += indentChar * 2 + '%s\n' %diff
         return diffStr
+        
+
+    def getJsonDiffs(self):
+        diffDict = self.diffs
+        if diffDict:
+            return json.dumps(diffDict)
+        else:
+            return None
                 
                 
     # Log diff for the current user and date
@@ -149,10 +278,10 @@ class sampleMyuwTestCase(mainMyuwTestCase):
     
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
-    #testDates['jinter'] = ('2013-01-09',)
-    testDates['javerage'] = ('2013-01-09',)
-    #testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
-    #testDates['javerage'] = ('2013-02-15', '2013-01-09', '2013-05-12')
+    #testDates['jinter'] = ('2013-02-09',)
+    #testDates['javerage'] = ('2013-02-08',)
+    testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
+    testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
     usersToTest = testDates.keys()
 
 
@@ -395,23 +524,26 @@ else:
         argv = sys.argv
         if len(argv) >= 4 and argv[1] == '--single':
             user = argv[2]
-            date = argv[3]
+            dates = argv[3:]
 
             class singleTestCase(mainMyuwTestCase):
                 
-                testDates = {user: (date,)}
+                testDates = {user: dates}
                 usersToTest = [user]
 
                 
-
-            unittest.TextTestRunner().run(singleTestCase('test_json_out'))
+            unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
             
 
         else:
-            pass
 
             #del mainMyuwTestCase
             #del sampleMyuwTestCase
             #del autoDateMyuwTestCase
-            #unittest.main()
+            main = 'mainMyuwTestCase'
+            sample = 'sampleMyuwTestCase'
+            auto = autoDateMyuwTestCase
+
+
+            unittest.main(defaultTest = sample)
 
