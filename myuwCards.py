@@ -22,6 +22,9 @@ def addToCardDict(card):
 # Convenience all-in-one function for specifying a card. 
 # 1. Puts them in the dictionary of cards. 
 # 2. Automatically sets the name property of the class if not already set. 
+# Because it modifies the class in-place rather than returning a new object, 
+# if you want to use it in non-decorator form you can do isaCard(foo) rather than
+# foo = isaCard(foo). 
 def isaCard(innerClass):
     if not(hasattr(innerClass, 'name')):
         innerClass.name = innerClass.__name__
@@ -366,7 +369,7 @@ class LibraryCard(myuwCard):
 @isaCard
 class TextbookCard(myuwCard):
     #visCheck = visAuto(FirstDayQtr, ClassesBegin)
-    dateRanges = getMultiDateRange(FirstDayQtr, ClassesBegin)
+    dateRanges = getMultiDateRange(FirstDayQtr, ClassesBegin + 7)
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
 
@@ -660,6 +663,13 @@ class ThriveCardExpected(ThriveCard):
     #a = expectedContent.keys()
     #a.sort()
     #print a
+    
+@isaCard
+class FinalExamCard(myuwCard):
+    #visCheck = visAuto(FirstDayQtr, ClassesBegin)
+    dateRanges = getMultiDateRange(LastDayInstr + 1, BreakBegins - 1)
+    visCheck = visCDM(dateRanges)
+    significantDates = rangesToSigDates(dateRanges)
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
@@ -667,7 +677,6 @@ stubCards = [
     'TuitionCard', 
     'EventsCard',
     'RegStatusCard',
-    'FinalExamCard',
     'PCEBanner',
     'app_notices',
     'app_acal',
@@ -680,12 +689,9 @@ stubCards = [
 
 for cardName in stubCards:
     
-    # Can't just do @isaCard because __name__ isn't set until
-    # after the class is created
-    class newCardClass(myuwCard):
-        pass
-    newCardClass.__name__ = cardName
+    vars()[cardName] = newCardClass = type(cardName, (myuwCard, ), {})
+    # isaCard modifies in place so we don't care about its return. 
     isaCard(newCardClass)
-    vars()[cardName] = newCardClass
+
 
 del newCardClass

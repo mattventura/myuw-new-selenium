@@ -14,15 +14,20 @@ import subprocess
 from myuwClasses import myuwDate, errorCard, LandingWaitTimedOut, perfCounter
 import myuwExpected
 from myuwCards import cardDict
-from myuwFunctions import isCardVisible, isVisibleFast, getCardName
+from myuwFunctions import isCardVisible, isVisibleFast, getCardName, splitList
 
 # Some settings
 # Enable this to do some performance profiling
 perf = False
 debug = False
-parallel = 3
+# Run each user in parallel
+parallel = True
+# Split up tests for each user into separate parallel processes
+parallelDateSplit = 4
 
 class mainMyuwTestCase(unittest.TestCase):
+    '''Main myuw test case. Others should subclass this and override testDates
+    and usersToTest. '''
     
     driverFunc = Firefox
     baseUrl = 'http://localhost:8081'
@@ -32,6 +37,12 @@ class mainMyuwTestCase(unittest.TestCase):
     testDates = {}
 
     def setUp(self):
+        if not(parallel):
+            self.driverSetup()
+        self.diffs = {}
+        self.errors = []
+
+    def driverSetup(self):
         self.driver = self.driverFunc()
         self.driver.maximize_window()
         self.pageHandler = mainMyuwHandler(self.driver, self.baseUrl, 
@@ -39,14 +50,22 @@ class mainMyuwTestCase(unittest.TestCase):
         # Not sure if these are necessary
         self.currentUser = self.defaultUser
         self.currentDate = self.defaultDate
-        self.diffs = {}
 
 
     def tearDown(self):
+        if not(parallel):
+            self.driverTeardown()
+
+    def driverTeardown(self):
         self.driver.close()
 
     # Run tests and report discrepancies between expected and actual results
     def test_runtests(self):
+        '''Run all tests as defined in testDates and usersToTest. 
+        Will parallelize on a per-user basis if the parallel option
+        is set. usersToTest should be a list of usernames to test with, 
+        while testDates should be a dictionary mapping usernames to a list
+        of dates which they should be tested on. '''
         # Parallel test currently just spawns 1 process for each user to test
         if parallel:
             # List for holding diffs
@@ -56,17 +75,26 @@ class mainMyuwTestCase(unittest.TestCase):
             processes = []
             for user, dates in self.testDates.items():
                 
-                # Turn dates from myuwDate objects to strings
-                datesStr = [str(date) for date in dates]
-                # Use this file's name as the script to run
-                mainFile = __file__
-                # Run it
-                process = subprocess.Popen(
-                    ['python', mainFile, '--single', user] + datesStr, 
-                    stdout = subprocess.PIPE, 
-                    stderr = subprocess.PIPE
-                )
-                processes.append(process)
+                if not(dates):
+                    continue
+                dateLists = splitList(dates, parallelDateSplit)
+                for dates in dateLists:
+                    # Turn dates from myuwDate objects to strings
+                    datesStr = [str(date) for date in dates]
+                    # Use this file's name as the script to run
+                    mainFile = __file__
+                    # Run it
+                    process = subprocess.Popen(
+                        ['python', mainFile, '--single', user] + datesStr, 
+                        stdout = subprocess.PIPE, 
+                        stderr = subprocess.PIPE,
+                        preexec_fn = lambda: os.nice(15),
+                    )
+                    processes.append(process)
+
+                    # Stagger processes to even out load and reduce
+                    # bottlenecking. 
+                    time.sleep(3)
 
             finished = False
             # Wait for every process to finish
@@ -93,7 +121,9 @@ class mainMyuwTestCase(unittest.TestCase):
                             errs = ''
                             errLines = stderr.split('\n')
                             # Filter out anything that isn't an error
-                            # There has to be a better way to do this
+                            # There has to be a better way to do this, but right now
+                            # it's more important to make sure errors will be seen
+                            # if they exist. 
                             for line in errLines:
                                 if len(line) == 0:
                                     continue
@@ -107,12 +137,13 @@ class mainMyuwTestCase(unittest.TestCase):
                                     continue
                                 if line[0:2] == 'OK':
                                     continue
-                                print 'Line: <start>%s<end>' %line
+                                #print 'Line: <start>%s<end>' %line
                                 errs += line + '\n'
 
                             # If there is something left, report it
                             if errs:
-                                print 'Got errors:\n%s' %stderr
+                                #print 'Got errors:\n%s' %stderr
+                                self.errors.append(errs)
 
                         if stdout:
                             diffList.append(stdout)
@@ -134,10 +165,16 @@ class mainMyuwTestCase(unittest.TestCase):
             fullDiffs = self.mergeDiffs(diffDicts)
             # Format them like how they would normally be formatted
             diffStr = self.formatDiffsFull(fullDiffs)
+            if self.errors:
+                errStr = 'Got errors from children: \n'
+                for err in self.errors:
+                    errStr += err
+            else:
+                errStr = ''
             # If there are differences, fail the test
-            if diffStr:
-                self.fail(diffStr)
-
+            if diffStr or errStr:
+                allStr = diffStr + '\n' + errStr
+                self.fail(allStr)
 
 
         # Old, non-parallel test
@@ -151,6 +188,7 @@ class mainMyuwTestCase(unittest.TestCase):
 
     @staticmethod
     def mergeDiffs(diffDicts):
+        '''Merge multiple dicts of differences together. '''
         out = {}
         for dic in diffDicts:
             
@@ -163,9 +201,9 @@ class mainMyuwTestCase(unittest.TestCase):
 
         return out
 
-
     # TODO
     def _test_json_out(self):
+        '''Run tests, but report results in json.'''
         # TODO
         self.runAllUsers()
         diffs = self.getJsonDiffs()
@@ -174,11 +212,13 @@ class mainMyuwTestCase(unittest.TestCase):
 
     # RunTests is where code specific to a test style should go
     def runAllUsers(self):
+        '''Run tests for all users in usersToTest'''
         for user in self.usersToTest:
             self.runTestsForUser(user)
 
     # Run tests for a user
     def runTestsForUser(self, user):
+        '''Run tests for a specific user'''
         dates = self.testDates[user]
         self.setUser(user)
         for date in dates:
@@ -196,22 +236,29 @@ class mainMyuwTestCase(unittest.TestCase):
                 
             self.checkDiffs()
 
-    # Browse landing
     def browseLanding(self):
+        '''Browse the landing page'''
         self.pageHandler.browseLanding()
 
     # Change user if necessary
     def setUser(self, user):
+        '''Set the username. Since this uses setUser, it will do
+        nothing if we already have the right username. '''
         self.currentUser = user
         self.pageHandler.setUser(user)
 
     # Change date if necessary
     def setDate(self, date):
+        '''Set the date. Since this uses setDate, it will do
+        nothing if the date is already correct. '''
         self.currentDate = date
         self.pageHandler.setDate(date)
 
     # Report differences
     def logDiffs(self, user, date, diffs):
+        '''Given a username, date, and string of differences, put these
+        differences in the appropriate location in the diffs dictionary,
+        with each line being considered a different diff. '''
         if diffs:
             # Might get more than one at a time, separated
             # by linefeeds. 
@@ -230,13 +277,15 @@ class mainMyuwTestCase(unittest.TestCase):
                     dateDiffs.append(diff)
 
 
-    # Returns formatted version of the diff dictionary
     def getFormattedDiffs(self):
+        '''Returns formatted version of the diff dictionary. '''
         return self.formatDiffsFull(self.diffs)
 
 
     @staticmethod 
     def formatDiffsFull(diffs, indentChar = '  '):
+        '''Given a diff dictionary, format them with indentChar used to 
+        indicate nesting. '''
         diffStr = ''
         for user, dates in diffs.items():
             diffStr += 'Failures for user %s:\n' %user
@@ -249,6 +298,7 @@ class mainMyuwTestCase(unittest.TestCase):
         
 
     def getJsonDiffs(self):
+        '''Dump raw diff dictionary as json. Return None if there are no diffs. '''
         diffDict = self.diffs
         if diffDict:
             return json.dumps(diffDict)
@@ -258,11 +308,14 @@ class mainMyuwTestCase(unittest.TestCase):
                 
     # Log diff for the current user and date
     def logDiffCurrent(self, diff):
+        '''Given a diff, get the current user and date, and use logDiffs
+        to report it. '''
         self.logDiffs(self.currentUser, self.currentDate, diff)
         
 
     # Check diffs and log any that were found
     def checkDiffs(self):
+        '''Check diffs for the page as it currently stands. '''
         actualCards = self.pageHandler.cards
         expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
         if perf:
@@ -275,6 +328,7 @@ class mainMyuwTestCase(unittest.TestCase):
 
 
 class sampleMyuwTestCase(mainMyuwTestCase):
+    '''Sample test case where you can specify what users/dates to test on. '''
     
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
@@ -286,6 +340,7 @@ class sampleMyuwTestCase(mainMyuwTestCase):
 
 
 class autoDateMyuwTestCase(mainMyuwTestCase):
+    '''Test case which automatically finds test users and dates. '''
 
     @property
     def testDates(self):
@@ -297,9 +352,11 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
         return tcDict
 
 class mainMyuwHandler(object):
+    '''Page object model handler for myuw. '''
     
     # Go to override page and set override username
     def changeUser(self, username):
+        '''Set override username. '''
         self.browseToPage(self.userUrl)
         time.sleep(.5)
         userBox = self.driver.find_element_by_xpath('//input[@name="override_as"]')
@@ -310,6 +367,7 @@ class mainMyuwHandler(object):
 
     # Go to override page and set override date
     def changeDate(self, dateStr):
+        '''Set override date. '''
         self.browseToPage(self.dateUrl)
         time.sleep(.5)
         dateBox = self.driver.find_element_by_xpath('//input[@name="date"]')
@@ -321,24 +379,26 @@ class mainMyuwHandler(object):
 
     # Set user if it is different from the current user
     def setUser(self, username):
+        '''Set override username only if that isn't already our username. '''
         if username != self.currentUser:
             self.changeUser(username)
 
     # Set date if it is different from the current date
     def setDate(self, newDate):
+        '''Set override date only if that isn't already our date. '''
         newDate = myuwDate(newDate)
         if self.currentDate != newDate:
             self.changeDate(str(newDate))
 
     # Go to landing page
     def browseLanding(self):
+        '''Browse back to the landing page. '''
         self.browseToPage(self.landingUrl)
         self.waitForLanding()
 
-    # Browse to a particular page, relative
-    # to the root of the site
-    # i.e. browseToPage('foo') -> my.uw.edu/foo
     def browseToPage(self, url):
+        '''Browse to a specific URL, and indicate that cards will need
+        to be re-parsed. '''
         self.cardsValid = False
         self.driver.get(url)
 
@@ -349,6 +409,12 @@ class mainMyuwHandler(object):
     # javerage/2013-04-15
     def __init__(self, driver, baseUrl, date = myuwDate('2013-04-15'), user = 'javerage',
         userUrl = None, dateUrl = None):
+        '''Constructor for mainMyuwHandler. 
+        baseUrl: root URL for the site. 
+        date, user: these indicate what the server will default to before we override. 
+        userUrl: override the user override page. Defaults to baseUrl + 'users/'. 
+        dateUrl: Same for date page. Defaults to baseUrl + 'admin/dates'. 
+        '''
 
         self.cardsValid = False
         if baseUrl[-1] != '/':
@@ -362,6 +428,7 @@ class mainMyuwHandler(object):
         self.currentDate = date
         
     def _parsePage(self):
+        '''Internal function for parsing cards. '''
         # If requested, set up timing
         if perf: 
             allParseTimer = perfCounter('Parsing all cards')
@@ -443,11 +510,18 @@ class mainMyuwHandler(object):
 
     @property
     def cards(self):
+        '''Get cards. Only parses if they haven't already been parsed. '''
         if not(self.cardsValid):
             self._parsePage()
         return self._cards
 
     def waitForLanding(self):
+        '''Wait for landing to finish loading. If this times out, it will raise
+        a LandingWaitTimedOut exception, which accepts a list of elements that did
+        not finish loading. The presence of the loading gear is used to determine
+        that an element has not finished loading. Waits 1 second after the last 
+        loading gear has disappeared. 
+        '''
         # I don't know if selenium's implicit wait can wait until
         # an element is *not* found, so do it manually
         maxTime = 10
@@ -502,6 +576,7 @@ class mainMyuwHandler(object):
 
             
 
+# debug option will just load the page rather than actually running any tests
 if debug:
     d = Firefox()
     d.maximize_window()
@@ -519,31 +594,32 @@ if debug:
 
 else:
 
+    # Do nothing if loaded as a module rather than run as a script
     if __name__ == '__main__':
 
         argv = sys.argv
+        # --single option causes it to run individual test cases and report
+        # them in json format rather than doing everything
         if len(argv) >= 4 and argv[1] == '--single':
             user = argv[2]
             dates = argv[3:]
+            parallel = False
 
             class singleTestCase(mainMyuwTestCase):
                 
                 testDates = {user: dates}
                 usersToTest = [user]
 
-                
             unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
             
-
         else:
-
             #del mainMyuwTestCase
             #del sampleMyuwTestCase
             #del autoDateMyuwTestCase
             main = 'mainMyuwTestCase'
             sample = 'sampleMyuwTestCase'
-            auto = autoDateMyuwTestCase
+            auto = 'autoDateMyuwTestCase'
 
-
-            unittest.main(defaultTest = sample)
+            # This chooses what the default test case is
+            unittest.main(defaultTest = auto)
 

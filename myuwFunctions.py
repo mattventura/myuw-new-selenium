@@ -2,8 +2,8 @@
 
 import datetime
 
-# Function that attempts to determine if a card is visible
 def isCardVisible(cardEl):
+    '''Attempt to determine if a card is visible using numerous indicators. '''
     if not cardEl.is_displayed():
         return False
     #if not cardEl.get_attribute('innerHTML'):
@@ -14,11 +14,14 @@ def isCardVisible(cardEl):
 
 # Like above but checks less stuff
 def isVisibleFast(el):
+    '''Attempt to determine if a card is visible using just is_displayed(). '''
     return el.is_displayed()
 
 # Functions
 # Convert int to timedelta, if necessary
 def toTimeDelta(obj):
+    '''Convert an int to a datetime.timedelta. If the input is already
+    a timedelta, just return it. '''
     if isinstance(obj, int):
         obj = datetime.timedelta(obj)
         
@@ -31,18 +34,25 @@ def toTimeDelta(obj):
 # Pack the element argument of a fromElement method into the 
 # resultant object for debugging purposes. 
 def packElement(func):
+    '''Decorator to set the 'originalElement' property of a card
+    to the web element used to construct it. Useful for debugging. 
+    '''
     def inner(cls, date, e):
         newCardInstance = func(cls, date, e)
         newCardInstance.originalElement = e
         return newCardInstance
     return inner
     
+
 def formatDiffs(label, a, b):
+    '''Format diffs. 
+    If a and b are equal, return an empty string. 
+    If not, then use 'label' to form a description of the differences. 
+    Escapes unicode such as to not cause problems. 
+    '''
     if a == b:
         return ''
     else:
-        #a = unicode(a)
-        #b = unicode(b)
         if isinstance(a, unicode):
             a = a.encode('unicode-escape')
         if isinstance(b, unicode):
@@ -86,13 +96,14 @@ def rangesToSigDates(dateRanges):
 # element, but still need a useful identifier, e.g. 
 # the loading spinner. 
 def getCardName(cardEl):
+    '''Try to guess card name from an element. '''
     cardId = cardEl.get_attribute('id')
     cardDataName = cardEl.get_attribute('data-name')
     cardName = cardId or cardDataName
     return cardName
 
-# Escape unicode from all arguments
 def uesc(func):
+    '''Escape unicode from all arguments. '''
     
     def inner(*args, **kwargs):
         
@@ -112,3 +123,14 @@ def uesc(func):
     
     return inner
 
+def splitList(l, n):
+    '''Split a list into n smaller lists, with a minimum of one item per chunk.'''
+    out = []
+    for i in range(n):
+        length = len(l)
+        start = length * i / n
+        end = length * (i + 1) / n
+        chunk = l[start:end]
+        if chunk:
+            out.append(chunk)
+    return out

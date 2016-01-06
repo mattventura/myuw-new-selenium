@@ -189,11 +189,8 @@ cardList['javerage'] = [
             'TRAIN 101': 'HP',
         }
     }),
-    cardAuto(
-        FinalExamCard(),
-        LastDayInstr + 1,
-        BreakBegins - 1,
-    ),
+
+    FinalExamCard(),
     ThriveCardExpected(),
         
 ]
@@ -218,7 +215,8 @@ cardList['jinter'] = [
         RegCardShow,
         RegCardHide
     ), 
-    cardAuto(SummerRegStatusCard(),
+    cardAuto(
+        SummerRegStatusCard(),
         SummerRegShow,
         SummerRegHide
     ),
@@ -226,10 +224,10 @@ cardList['jinter'] = [
     ThriveCardExpected(),
 ]
 
-# We want these to be dictionaries, 
-# but no need to cause a bunch of 
+# We want these to be dictionaries, but no need to cause a bunch of 
 # extra typing when listing them. 
-# Also pack conditionals into a list
+# It puts them in a list so that cards that move around depending
+# on date can have multiple entries. 
 def cardListToDict(cl):
     cd = {}
     for card in cl:
