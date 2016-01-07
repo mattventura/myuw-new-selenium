@@ -52,6 +52,8 @@ def formatDiffs(label, a, b):
     '''
     if a == b:
         return ''
+    #elif isinstance(a, list) and isinstance(b, list):
+    #    return formatListDiffs(label, a, b)
     else:
         if isinstance(a, unicode):
             a = a.encode('unicode-escape')
@@ -61,9 +63,29 @@ def formatDiffs(label, a, b):
             outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
             return outStr
         except:
-            print a.encode('ascii', 'replace')
-            print b.encode('ascii', 'replace')
+            print unicode(a).encode('ascii', 'replace')
+            print unicode(b).encode('ascii', 'replace')
         
+# Not finished
+"""
+def formatListDiffs(label, a, b):
+    '''Find differences between two lists'''
+    
+    if len(a) != len(b):
+        outStr = 'Different lengths of %s (%s vs %s)\n' %(label, len(a), len(b))
+        return outStr
+
+    sortedA = list(a)
+    sortedB = list(b)
+    sortedA.sort()
+    sortedB.sort()
+
+    if sortedA == sortedB:
+        outStr = 'Different order of %s (%s vs %s)\n' %(label, a, b)
+        return outStr
+
+    outStr = 'Different lists %s
+    """
         
         
 def findDiffs(self, other):

@@ -307,10 +307,17 @@ def processDateRanges(dates):
 
 # Turns "smart" date ranges (e.g. QtrStart + 1 to FinalsBegin - 5)
 # into a list of date ranges
-def getMultiDateRange(starts, ends):
+def getMultiDateRange(starts, ends, exclude = []):
     dateRanges = []
     for qtr, sd in starts.items():
+        skip = False
+        if exclude:
+            for ex in exclude:
+                if qtr.startswith(ex):
+                    skip = True
         if qtr not in ends:
+            skip = True
+        if skip: 
             continue
         ed = ends[qtr]
         dateRange = myuwDateRange(sd, ed)
@@ -320,14 +327,21 @@ def getMultiDateRange(starts, ends):
 # Visibility check functions
 
 # visAlways and visNever should just be used as-is, whereas
-# the others should be called with arguments. 
+# the others should be called with arguments, upon which
+# they will return the actual function. 
 def visAlways(date):
+    '''Visibility function that always returns True. '''
     return True
 
 def visNever(date):
+    '''Visibility function that always returns False. '''
     return False
 
 def visCDM(dates):
+    '''Visibility function creator for one or more date ranges. 
+    Should be called with a list of date ranges, and will return 
+    a visibility function. 
+    Date ranges need be dateRange instances. '''
     dateRanges = processDateRanges(dates)
         
     def visInner(date):
@@ -338,26 +352,39 @@ def visCDM(dates):
     return visInner
 
 def visCD(start, end):
+    '''Visibility function creator for a single date range,
+    specified as a start and end date. '''
     return visCDM([(start, end)])
 
-
 def visAuto(starts, ends):
+    '''Given a starting and ending multiDate object, return
+    an appropriate visibility function that returns True when 
+    the date is between a start date and its corresponding end
+    date in the same quarter. '''
     return visCDM(getMultiDateRange(starts, ends))
 
 
+# visBefore and visAfter are NOT inclusive of the specified date
 def visBefore(end):
+    '''Returns a visibility function that will return True if
+    the date is strictly before the given end date. '''
     end = myuwDate(end)
     def visInner(date):
         return end > date
     return visInner
 
 def visAfter(start):
+    '''Returns a visibility function that will return True if
+    the date is strictly after the given end date. '''
     start = myuwDate(start)
     def visInner(date):
         return start < date
     return visInner
             
         
+# Card proxies. These allow you to further customize the visibility
+# of a card without having to modify or create a new card class. 
+
 # Card that should always appear
 class cardAlways(cardProxy):
     def _shouldAppear(self, date):
@@ -415,12 +442,19 @@ class cardAuto(cardCDM):
 
         super(self.__class__, self).__init__(card, dateRanges)
 
+
+
 class autoDiff(object):
+    '''Mixin that provides a findDiffs method which uses the 
+    autoDiffs property of the object. '''
     def findDiffs(self, other):
+        # This is the findDiffs as defined in myuwFunctions
         return findDiffs(self, other)
 
 # Generic card class
 class myuwCard(autoDiff):
+    # Lets things that aren't actually cards (like cardProxies)
+    # be considered real subclasses of myuwCard. 
     __metaclass__ = ABCMeta
     # Placeholder values to help identify cases where the 
     # required info was not given
@@ -431,6 +465,7 @@ class myuwCard(autoDiff):
     # needs to be overridden in each card. 
     @classmethod
     def fromElement(cls, date, cardEl):
+        # Just return as basic an instance as possible by default
         return cls()
 
     autoDiffs = {}
@@ -551,6 +586,7 @@ class perfCounter(object):
 
 class gradRequest(autoDiff):
 
+    @uesc
     def __init__(self, name, statuses, visCheck = visAlways, title = None):
         self.name = name
         self.statuses = statuses
@@ -566,7 +602,7 @@ class gradRequest(autoDiff):
         return self.__class__.__name__ + ': ' + self.name
 
     def __repr__(self):
-        return '<%s "%s">' %(self.__class__.__name__, self.name)
+        return '<%s "%s": %s>' %(self.__class__.__name__, self.name, self.statuses)
 
     @classmethod
     def fromElement(cls, reqEl):
@@ -614,6 +650,10 @@ class simpleStatus:
     def statusFix(self):
         if isinstance(self.statuses, str):
             self.statuses = {'Status': self.statuses}
+
+    def __repr__(self):
+        className = self.__class__.__name__
+        return '<%s "%s": %s>' %(className, self.name, self.statuses['Status'])
             
 
 class petRequest(gradRequest):

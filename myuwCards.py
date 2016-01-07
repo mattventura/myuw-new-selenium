@@ -179,7 +179,7 @@ class FutureQuarterCard(myuwCard):
             qtrs[qtrName] = qtrDict
         return cls(qtrs)
 
-    autoDiffs = {'qtrs': 'Future Quarter Data'}
+    #autoDiffs = {'qtrs': 'Future Quarter Data'}
 
 @isaCard
 class SummerEFSCard(myuwCard):
@@ -313,7 +313,7 @@ class VisualScheduleCard(myuwCard):
     @classmethod
     @packElement
     def fromElement(cls, date, e):
-        qtr = dateToQtr(date)
+        qtr = dateToTerm(date)
         #qtr = dateToQtr(date + 1)
         classEls = e.find_elements_by_css_selector('div.visual-course-id')
         classEls += e.find_elements_by_css_selector('div.course-info')
@@ -667,7 +667,7 @@ class ThriveCardExpected(ThriveCard):
 @isaCard
 class FinalExamCard(myuwCard):
     #visCheck = visAuto(FirstDayQtr, ClassesBegin)
-    dateRanges = getMultiDateRange(LastDayInstr + 1, BreakBegins - 1)
+    dateRanges = getMultiDateRange(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
 

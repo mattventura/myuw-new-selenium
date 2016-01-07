@@ -23,7 +23,9 @@ debug = False
 # Run each user in parallel
 parallel = True
 # Split up tests for each user into separate parallel processes
-parallelDateSplit = 4
+parallelDateSplit = 3
+# Number of concurrent tests running at any given time will be at most
+# the number of users to test times parallelDateSplit
 
 class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
@@ -75,9 +77,13 @@ class mainMyuwTestCase(unittest.TestCase):
             processes = []
             for user, dates in self.testDates.items():
                 
+                # If there are no dates to test, skip this user
                 if not(dates):
                     continue
                 dateLists = splitList(dates, parallelDateSplit)
+                # splitList() correctly handles the situation where we have
+                # more splits than actual dates, so we don't have to handle the
+                # blank list case here
                 for dates in dateLists:
                     # Turn dates from myuwDate objects to strings
                     datesStr = [str(date) for date in dates]
@@ -88,6 +94,7 @@ class mainMyuwTestCase(unittest.TestCase):
                         ['python', mainFile, '--single', user] + datesStr, 
                         stdout = subprocess.PIPE, 
                         stderr = subprocess.PIPE,
+                        # Reduce priority of child process (doesn't work on Windows)
                         preexec_fn = lambda: os.nice(15),
                     )
                     processes.append(process)
@@ -131,7 +138,7 @@ class mainMyuwTestCase(unittest.TestCase):
                                     continue
                                 if line[0:4] == '----':
                                     continue
-                                if line[0:3] == 'Ran':
+                                if line[0:3] in ('Ran', 'Run'):
                                     continue
                                 if line[0:6] == 'FAILED':
                                     continue
@@ -334,8 +341,9 @@ class sampleMyuwTestCase(mainMyuwTestCase):
     testDates = {}
     #testDates['jinter'] = ('2013-02-09',)
     #testDates['javerage'] = ('2013-02-08',)
-    testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
-    testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
+    #testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
+    #testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
+    testDates['seagrad'] = ('2013-1-15', )
     usersToTest = testDates.keys()
 
 
@@ -347,7 +355,8 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
         userList = myuwExpected.cardList.keys()
         tcDict = {}
         for user in userList:
-            sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-06-18')
+            #sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-07-18')
+            sd = myuwExpected.getSigDates(user, '2013-5-1', '2013-8-1')
             tcDict[user] = sd
         return tcDict
 
@@ -443,9 +452,9 @@ class mainMyuwHandler(object):
             '//div[@id="calendar_banner_location_desktop"]/div', 
             # PCE message
             '//div[@id="pce_banner_location"]/div',
-            # Main landing content
+            # Left column on desktop layout, only column on mobile
             '//div[@id="landing_content_cards"]/div',
-            # Right column
+            # Right column on desktop layout
             '//div[@id="landing_accounts_cards"]/div',
         )
 
@@ -601,15 +610,19 @@ else:
         # --single option causes it to run individual test cases and report
         # them in json format rather than doing everything
         if len(argv) >= 4 and argv[1] == '--single':
+            # Parse arguments
             user = argv[2]
             dates = argv[3:]
+            # Disable parallelization
             parallel = False
 
             class singleTestCase(mainMyuwTestCase):
-                
+                '''Test class for --single mode'''
                 testDates = {user: dates}
                 usersToTest = [user]
 
+            # Run the test
+            # This handles the output
             unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
             
         else:

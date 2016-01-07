@@ -23,7 +23,8 @@ cardList['javerage'] = [
     GradStatusCard(
         [
             petRequest("Master's degree - Extend six year limit", 
-                {'grad': 'Approved',}
+                {'grad': 'Approved',}, 
+                visCheck = visBefore('2013-6-26'),
             ), 
             petRequest("Master's degree - Extend six year limit", 
                 {'grad': 'Pending', 'dept': 'Approve'}
@@ -35,7 +36,8 @@ cardList['javerage'] = [
                 {'dept': 'Approve', 'grad': 'Withdrawn'}
             ), 
 
-        ], [
+        ], 
+        [
             leaveRequest('Winter 2013 Leave', 'Paid', 
                 visCheck = visBefore('2013-3-27')),
             leaveRequest('Autumn 2013 Leave', 'Paid',
@@ -43,7 +45,8 @@ cardList['javerage'] = [
             #TODO: fix above date
             leaveRequest('Winter 2014 Leave', 'Paid'),
             leaveRequest('Spring 2014 Leave', 'Paid'),
-        ], [
+        ], 
+        [
             degreeRequest('Masters Request, Winter 2015', 
                 'Awaiting Dept Action (Final Exam)', 
                 title = 'MASTER OF LANDSCAPE ARCHITECTURE/MASTER OF ARCHITECTURE'
@@ -143,7 +146,15 @@ cardList['javerage'] = [
             'PHYS 121 AQ': None,
             'PHYS 121 AC': None,
             'TRAIN 100 A': None,
-        }
+        }, 
+        'SA13': {
+            'TRAIN 102 A': None,
+            'ELCBUS 451 A': None,
+        },
+        'SB13': {
+            'TRAIN 101 A': None,
+            'TRAIN 102 A': None,
+        },
     }),
     app_notices(),
     PCEBanner(),
@@ -175,6 +186,24 @@ cardList['javerage'] = [
             },
         }),
         (FirstDayQtr['SP13'], LastDayQtr['SP13'])
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Autumn 2013': {
+                'credits' : 5,
+                'sections': 1,
+            },
+        }),
+        (FirstDayQtr['SU13'], LastDayQtr['SU13'])
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Winter 2014': {
+                'credits' : 15,
+                'sections': 5,
+            },
+        }),
+        (FirstDayQtr['AU13'], LastDayQtr['AU13'])
     ),
     TextbookCard(),
     GradeCard({
@@ -211,7 +240,7 @@ cardList['jinter'] = [
     EmpFacStudentCard(True, True),
     
     cardAuto(
-        RegStatusCard(), 
+        RegStatusCard(),
         RegCardShow,
         RegCardHide
     ), 
@@ -222,6 +251,147 @@ cardList['jinter'] = [
     ),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
+]
+
+cardList['seagrad'] = [
+    errorCard('TuitionCard'),
+    app_acal(),
+    ThriveCardExpected(),
+    cardCDM(
+        VisualScheduleCard(),
+        getMultiDateRange(FirstDayQtr, LastDayInstr, exclude = ['SU'])
+    ), 
+        
+    FinalExamCard(),
+    GradStatusCard(
+        [
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'dept': 'Pending',}
+            ), 
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'dept': 'Withdraw',},
+                visCheck = visBefore('2013-4-25'),
+            ), 
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'grad': 'Pending', 'dept': 'Deny'}
+            ), 
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'grad': 'Not approved', 'dept': 'Deny'},
+                visCheck = visBefore('2013-4-25'),
+            ), 
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'grad': 'Approved'},
+                visCheck = visBefore('2013-4-25'),
+            ), 
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'dept': 'Approve', 'grad': 'Pending'}
+            ), 
+            petRequest("Doctoral degree - Extend ten year limit", 
+                {'grad': 'Approved'},
+                visCheck = visBefore('2013-4-25'),
+            ), 
+        ], 
+        [
+            leaveRequest('Spring 2013 Leave', 'Requested'),
+            leaveRequest('Spring 2013 Leave', 'Withdrawn'),
+            leaveRequest('Winter 2013 Leave', 'Paid', 
+                visCheck = visBefore('2013-3-27')),
+            leaveRequest('Spring 2013 Leave', 'Approved\n Pay Your Fee To Confirm', 
+                visCheck = visBefore('2013-6-8')),
+        ], 
+        [
+            degreeRequest('Masters Request, Spring 2013', 
+                'Awaiting Dept Action', 
+                title = 'Master Of Landscape Architecture/Master Of Architecture'
+            ), 
+            degreeRequest('Masters Request, Spring 2013', 
+                'Awaiting Dept Action (Final Exam)',
+                title = 'Master Of Landscape Architecture/Master Of Architecture'
+            ),
+            degreeRequest('Masters Request, Spring 2013', 
+                'Awaiting Dept Action (General Exam)',
+                title = 'Master Of Landscape Architecture/Master Of Architecture'
+            ),
+            degreeRequest('Masters Request, Spring 2013', 
+                'Recommended by Dept',
+                title = 'Master Of Architecture'
+            ),
+            degreeRequest('Masters Request, Spring 2013', 
+                'Withdrawn',
+                title = 'Master Of Architecture',
+                visCheck = visBefore('2013-4-5'),
+            ),
+            degreeRequest('Masters Request, Spring 2013', 
+                'Candidacy Granted',
+                title = 'Master Of Landscape Architecture',
+                visCheck = visBefore('2013-8-28'),
+            ),
+            degreeRequest('Masters Request, Spring 2013', 
+                'Graduated by Grad School',
+                title = 'Master Of Landscape Architecture',
+                visCheck = visBefore('2013-8-28'),
+            ),
+            degreeRequest('Masters Request, Spring 2013', 
+                'Did Not Graduate',
+                title = 'Master Of Science In Construction Management',
+                visCheck = visBefore('2013-8-28'),
+            ),
+        
+        ]
+    ),
+    GradCommitteeCard({
+        'Doctoral Supervisory Committee': [
+            {
+                'dept': 'Anthropology', 
+                'chair': True, 
+                'rcc': True,
+                'name': u'Bet Duncan', 
+                'email': u'bbb@u.washington.edu'
+            }, 
+            {
+                'dept': u'Anthropology', 
+                'chair': True, 
+                'name': u'Steve M. Goodman', 
+                'email': u'sss@u.washington.edu'
+            }, 
+            {
+                'dept': u'Health Services - Public Health', 
+                'gsr': True, 
+                'name': u'Malinda Korry'
+            }, 
+            {
+                'dept': u'Global Health', 
+                'name': u'James T. Pfeiffer', 
+                'email': u'jjj@uw.edu'
+            }
+        ], 
+        u"Master's Committee": [
+            {
+                'dept': u'Epidemiology - Public Health', 
+                'chair': True, 
+                'email': u'nnn@u.washington.edu', 
+                'name': u'Nina L. Fitzpatrick', 
+            }, 
+            {
+                'gsr': True, 
+                'name': u'Bet Shell-Duncan', 
+                'email': u'bbb@u.washington.edu', 
+                'dept': u'Anthropology'
+            }, 
+            {
+                'email': u'lll@oge.sld.pe', 
+                'name': u'Louis ReVivian', 
+                'dept': u'Ministry of Health, Peru',
+            }
+        ], 
+        u'Advisor': [
+            {
+                'email': u'bbb@u.washington.edu', 
+                'name': u'Bet Duncan', 
+                'dept': u'Anthropology'
+            }
+        ]
+    }),
 ]
 
 # We want these to be dictionaries, but no need to cause a bunch of 
