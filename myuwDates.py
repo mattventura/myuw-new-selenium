@@ -11,6 +11,7 @@ FirstDayQtr = multiDate({
     'SP13': '2013-03-27',
     'SU13': '2013-06-19',
     'AU13': '2013-08-28',
+    'WI14': '2013-12-18',
 })
 
 
@@ -68,6 +69,7 @@ LastDayQtr = multiDate({
     'SP13': '2013-06-18',
     'SU13': '2013-08-27',
     'AU13': '2013-12-17',
+    'WI14': '2014-03-25',
 })
 
 # First day of classes for the upcoming quarter

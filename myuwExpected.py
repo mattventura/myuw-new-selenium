@@ -206,6 +206,8 @@ cardList['javerage'] = [
         (FirstDayQtr['AU13'], LastDayQtr['AU13'])
     ),
     TextbookCard(),
+
+
     GradeCard({
         'WI13': {
             'EMBA 503': None,
@@ -251,7 +253,13 @@ cardList['jinter'] = [
     ),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
+    cardCDM(
+        CourseCard(),
+        getMultiDateRange(LastDayInstr + 1, LastDayQtr, exclude = ['SU13', 'WI13'])
+        + [myuwDateRange('2013-6-19', '2013-6-23')], 
+    )
 ]
+
 
 cardList['seagrad'] = [
     errorCard('TuitionCard'),
@@ -293,7 +301,8 @@ cardList['seagrad'] = [
         ], 
         [
             leaveRequest('Spring 2013 Leave', 'Requested'),
-            leaveRequest('Spring 2013 Leave', 'Withdrawn'),
+            leaveRequest('Spring 2013 Leave', 'Withdrawn',
+                visCheck = visBefore('2013-8-28')),
             leaveRequest('Winter 2013 Leave', 'Paid', 
                 visCheck = visBefore('2013-3-27')),
             leaveRequest('Spring 2013 Leave', 'Approved\n Pay Your Fee To Confirm', 
@@ -393,6 +402,8 @@ cardList['seagrad'] = [
         ]
     }),
 ]
+del cardList['javerage']
+del cardList['seagrad']
 
 # We want these to be dictionaries, but no need to cause a bunch of 
 # extra typing when listing them. 
@@ -413,6 +424,8 @@ for name, cl in cardList.items():
 
 # Function to get expected results for a date and user
 def getExpectedResults(user, date):
+    if isinstance(date, str):
+        date = myuwDate(date)
     userCards = cardList[user]
     userCardsVisible = {}
     # Go over the collection of possible card states, figure out which to display

@@ -6,6 +6,8 @@ from myuwDates import *
 import re
 from myuwClasses import *
 
+from selenium.common.exceptions import NoSuchElementException
+
 
 # Dictionary of IDs to card classes
 # This includes alternate names for cards
@@ -303,8 +305,13 @@ class CriticalInfoCard(myuwCard):
     }
 
 @isaCard
+class NoCourseCard(myuwCard):
+    pass
+
+@isaCard
 class VisualScheduleCard(myuwCard):
     
+    #altNames = ['FinalExamCard']
     def __init__(self, quartersDict = None):
         # TODO
         self.quartersDict = quartersDict
@@ -313,6 +320,11 @@ class VisualScheduleCard(myuwCard):
     @classmethod
     @packElement
     def fromElement(cls, date, e):
+        ncc = e.find_elements_by_xpath('.//div[@data-name="NoCourseCard"]')
+        #qtrEls = e.find_elts_by_xpath('.//div[@data-name="FutureCard"]')
+        if ncc:
+            return NoCourseCard()
+            
         qtr = dateToTerm(date)
         #qtr = dateToQtr(date + 1)
         classEls = e.find_elements_by_css_selector('div.visual-course-id')
@@ -350,8 +362,40 @@ class VisualScheduleCard(myuwCard):
         return diffs
 
     dateRanges = getMultiDateRange(FirstDayQtr, LastDayInstr)
+    #dateRanges = getMultiDateRange(FirstDayQtr, LastDayInstr, exclude = ['SU13'])
+    # Fix for 'SP13 grade sub deadline is always tomorrow' thing
+    #dateRanges.append(dateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
+
+    def shouldAppear(self, date):
+        # If the normal visibility function determines that the card shouldn't appear,
+        # just go with that. 
+        if super(self.__class__, self).shouldAppear(date):
+            # If the vis func says it should, then we still need to handle the case where
+            # if it is summer but the user has no summer classes, then the vis sched
+            # shouldn't appear. 
+            """
+            qtrName = dateToTerm(date)
+            if qtrName in ('SA', 'SB'):
+                if self.getQtrInfo(qtrName):
+                    return True
+                else:
+                    return False
+            else:
+                return True
+            if qtrName.startswith('SA'):
+            """
+            badDateRange = myuwDateRange(
+                LastDayQtr['SP13'],
+                ClassesBegin['SU13'] - 1
+            )
+            if date in badDateRange:
+                return False
+            else:
+                return True
+        else:
+            return False
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
         
@@ -369,7 +413,9 @@ class LibraryCard(myuwCard):
 @isaCard
 class TextbookCard(myuwCard):
     #visCheck = visAuto(FirstDayQtr, ClassesBegin)
-    dateRanges = getMultiDateRange(FirstDayQtr, ClassesBegin + 7)
+    dateRanges = getMultiDateRange(FirstDayQtr, ClassesBegin + 6, exclude = ['SU13'])
+    # Fix for 'SP13 grade sub deadline is always tomorrow' thing
+    dateRanges.append(myuwDateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
 
@@ -670,6 +716,19 @@ class FinalExamCard(myuwCard):
     dateRanges = getMultiDateRange(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
+
+@isaCard
+class CourseCard(myuwCard):
+    
+
+    @classmethod
+    @packElement
+    def fromElement(cls, date, e):
+        ncc = e.find_elements_by_xpath('.//[@data-name="NoCourseCard"]')
+        if ncc:
+            return NoCourseCard()
+
+        return cls()
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 

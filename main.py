@@ -23,7 +23,7 @@ debug = False
 # Run each user in parallel
 parallel = True
 # Split up tests for each user into separate parallel processes
-parallelDateSplit = 3
+parallelDateSplit = 8
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 
@@ -134,7 +134,9 @@ class mainMyuwTestCase(unittest.TestCase):
                             for line in errLines:
                                 if len(line) == 0:
                                     continue
-                                if line[0] in ('.', 'E', 'F'): 
+                                if line == 'E':
+                                    continue
+                                if line[0] in ('.', 'F'): 
                                     continue
                                 if line[0:4] == '----':
                                     continue
@@ -356,7 +358,7 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
         tcDict = {}
         for user in userList:
             #sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-07-18')
-            sd = myuwExpected.getSigDates(user, '2013-5-1', '2013-8-1')
+            sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-12-25')
             tcDict[user] = sd
         return tcDict
 
@@ -591,7 +593,8 @@ if debug:
     d.maximize_window()
     m = mainMyuwHandler(d, 'http://localhost:8081/')
 
-    m.setDate('2013-02-15')
+    m.setUser('jinter')
+    m.setDate('2013-05-29')
     m.browseLanding()
     time.sleep(4)
     a = m.cards
