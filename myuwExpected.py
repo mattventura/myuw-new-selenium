@@ -41,8 +41,8 @@ cardList['javerage'] = [
             leaveRequest('Winter 2013 Leave', 'Paid', 
                 visCheck = visBefore('2013-3-27')),
             leaveRequest('Autumn 2013 Leave', 'Paid',
-                visCheck = visBefore('2013-12-20')),
-            #TODO: fix above date
+                visCheck = visBefore('2013-12-18')),
+            #TODO: verify above date
             leaveRequest('Winter 2014 Leave', 'Paid'),
             leaveRequest('Spring 2014 Leave', 'Paid'),
         ], 
@@ -155,6 +155,9 @@ cardList['javerage'] = [
             'TRAIN 101 A': None,
             'TRAIN 102 A': None,
         },
+        'AU13': {
+            'ENGL 207 A': None,
+        },
     }),
     app_notices(),
     PCEBanner(),
@@ -205,9 +208,10 @@ cardList['javerage'] = [
         }),
         (FirstDayQtr['AU13'], LastDayQtr['AU13'])
     ),
-    TextbookCard(),
-
-
+    cardCD(
+        TextbookCard(),
+        ('2013-1-1', LastDayQtr['SU13'])
+    ),
     GradeCard({
         'WI13': {
             'EMBA 503': None,
@@ -218,7 +222,18 @@ cardList['javerage'] = [
             'PHYS 121': '4.0',
             'TRAIN 100': 'P',
             'TRAIN 101': 'HP',
-        }
+        }, 
+        'SA13': {
+            'ELCBUS 451': None,
+        },
+        'SB13': {
+            'ELCBUS 451': None,
+            'TRAIN 101': None,
+            'TRAIN 102': None,
+        },
+        'AU13': {
+            'ENGL 207': None,
+        },
     }),
 
     FinalExamCard(),
@@ -237,7 +252,7 @@ cardList['jinter'] = [
     app_notices(),
     app_acal(),
     SummerEFSCard(summerReg = False, considerEFS = True), 
-    VisualScheduleCard(),
+    #VisualScheduleCard(),
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
     
@@ -253,11 +268,12 @@ cardList['jinter'] = [
     ),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
-    cardCDM(
-        CourseCard(),
-        getMultiDateRange(LastDayInstr + 1, LastDayQtr, exclude = ['SU13', 'WI13'])
-        + [myuwDateRange('2013-6-19', '2013-6-23')], 
-    )
+    #cardCDM(
+    #    CourseCard(),
+    #    getMultiDateRange(LastDayInstr + 1, LastDayQtr, exclude = ['SU13', 'WI13'])
+    #    + [myuwDateRange('2013-6-19', '2013-6-23')], 
+    #)
+    NoCourseCard(), 
 ]
 
 
@@ -265,12 +281,13 @@ cardList['seagrad'] = [
     errorCard('TuitionCard'),
     app_acal(),
     ThriveCardExpected(),
-    cardCDM(
-        VisualScheduleCard(),
-        getMultiDateRange(FirstDayQtr, LastDayInstr, exclude = ['SU'])
-    ), 
+    NoCourseCard(),
+    #cardCDM(
+    #    VisualScheduleCard(),
+    #    getMultiDateRange(FirstDayQtr, LastDayInstr, exclude = ['SU'])
+    #), 
         
-    FinalExamCard(),
+    #FinalExamCard(),
     GradStatusCard(
         [
             petRequest("Doctoral degree - Extend ten year limit", 
@@ -402,8 +419,9 @@ cardList['seagrad'] = [
         ]
     }),
 ]
-del cardList['javerage']
-del cardList['seagrad']
+#del cardList['javerage']
+#del cardList['seagrad']
+#del cardList['jinter']
 
 # We want these to be dictionaries, but no need to cause a bunch of 
 # extra typing when listing them. 

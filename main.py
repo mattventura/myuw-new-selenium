@@ -14,7 +14,8 @@ import subprocess
 from myuwClasses import myuwDate, errorCard, LandingWaitTimedOut, perfCounter
 import myuwExpected
 from myuwCards import cardDict
-from myuwFunctions import isCardVisible, isVisibleFast, getCardName, splitList
+from myuwFunctions import isCardVisible, isVisibleFast, getCardName, splitList, \
+    driverRetry
 
 # Some settings
 # Enable this to do some performance profiling
@@ -23,7 +24,7 @@ debug = False
 # Run each user in parallel
 parallel = True
 # Split up tests for each user into separate parallel processes
-parallelDateSplit = 8
+parallelDateSplit = 3
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 
@@ -45,7 +46,7 @@ class mainMyuwTestCase(unittest.TestCase):
         self.errors = []
 
     def driverSetup(self):
-        self.driver = self.driverFunc()
+        self.driver = driverRetry(self.driverFunc)
         self.driver.maximize_window()
         self.pageHandler = mainMyuwHandler(self.driver, self.baseUrl, 
             self.defaultDate, self.defaultUser)
@@ -201,11 +202,13 @@ class mainMyuwTestCase(unittest.TestCase):
         out = {}
         for dic in diffDicts:
             
-            for user, dateDict in dic.items():
+            sortedUsers = sorted(dic.items())
+            for user, dateDict in sortedUsers:
                 if user not in out:
                     out[user] = {}
 
-                for date, diffs in dateDict.items():
+                sortedDates = sorted(dateDict.items())
+                for date, diffs in sortedDates:
                     out[user][date] = diffs
 
         return out
@@ -296,9 +299,14 @@ class mainMyuwTestCase(unittest.TestCase):
         '''Given a diff dictionary, format them with indentChar used to 
         indicate nesting. '''
         diffStr = ''
-        for user, dates in diffs.items():
+        # Use myuwDate to sort the dates, since a string won't necessarily
+        # do that (e.g. "2013-12-20" < "2013-6-20")
+        dateSortKey = lambda date: myuwDate(date)
+        for user, dates in sorted(diffs.items()):
             diffStr += 'Failures for user %s:\n' %user
-            for date, diffs in dates.items():
+
+            for date in sorted(dates.keys(), key = dateSortKey):
+                diffs = dates[date]
                 diffStr += indentChar + 'On date %s:\n' %date
 
                 for diff in diffs:
@@ -352,13 +360,16 @@ class sampleMyuwTestCase(mainMyuwTestCase):
 class autoDateMyuwTestCase(mainMyuwTestCase):
     '''Test case which automatically finds test users and dates. '''
 
+    startDate = '2013-1-1'
+    #startDate = '2013-6-1'
+    endDate = '2013-12-25'
+    #endDate = '2013-7-25'
     @property
     def testDates(self):
         userList = myuwExpected.cardList.keys()
         tcDict = {}
         for user in userList:
-            #sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-07-18')
-            sd = myuwExpected.getSigDates(user, '2013-1-1', '2013-12-25')
+            sd = myuwExpected.getSigDates(user, self.startDate, self.endDate)
             tcDict[user] = sd
         return tcDict
 

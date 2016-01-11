@@ -35,33 +35,38 @@ class myuwDate(object):
             elif isinstance(arg, datetime.date):
                 self.dateObj = arg
 
-            elif isinstance(arg, str):
+            elif isinstance(arg, basestring):
                 try:
                     # TODO: use standard time (un)formatting functions instead 
                     # of splitting it
                     dateParts = [int(s) for s in arg.split('-')]
                     self.dateObj = datetime.date(*dateParts)
                 except:
-                    raise self.MyuwDateTypeError()
+                    raise self.MyuwDateTypeError(*args)
 
             else:
-                raise self.MyuwDateTypeError()
+                raise self.MyuwDateTypeError(*args)
 
         # Arguments specified as y, m, d
         elif len(args) == 3:
             self.dateObj = datetime.date(*args)
 
         else: 
-            raise self.MyuwDateTypeError()
+            raise self.MyuwDateTypeError(*args)
 
     class MyuwDateTypeError(TypeError):
-        def __init__(self):
-            message = 'Arguments to mywDate must be "yyyy-mm-dd" or yyyy, mm, dd'
+        def __init__(self, args):
+            args = repr(args)
+            message = 'Arguments to mywDate must be "yyyy-mm-dd" or yyyy, mm, dd, got %s instead' %args
             super(self.__class__, self).__init__(message)
 
     @property
     def year(self):
         return self.dateObj.year
+
+    @property
+    def shortYear(self):
+        return self.dateObj.year - 2000
 
     @property
     def month(self):
@@ -274,7 +279,10 @@ class cardProxy(object):
     def shouldAppear(self, date):
         # If we say the card shouldn't appear, it shouldn't. 
         if hasattr(self, '_vis'):
-            return self._vis(date)
+            if self._vis(date):
+                pass
+            else:
+                return False
         # If the card says it shouldn't appear, it shouldn't. 
         if hasattr(self.card, 'shouldAppear'):
             return self.card.shouldAppear(date)
@@ -381,6 +389,15 @@ def visAfter(start):
         return start < date
     return visInner
             
+
+'''def visFilterQtr(include = [], exclude = []):
+    if include and exclude:
+        raise Exception('visFilterQtr needs an include or exclude list, not both')
+
+    elif include:
+        dateRanges = []
+        '''
+
         
 # Card proxies. These allow you to further customize the visibility
 # of a card without having to modify or create a new card class. 

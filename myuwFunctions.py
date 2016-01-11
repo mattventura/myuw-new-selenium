@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import datetime
+from selenium.common.exceptions import WebDriverException
 
 def isCardVisible(cardEl):
     '''Attempt to determine if a card is visible using numerous indicators. '''
@@ -156,3 +157,16 @@ def splitList(l, n):
         if chunk:
             out.append(chunk)
     return out
+
+def driverRetry(driverFunc, numTries = 3):
+    '''Function to automatically retry opening the browser when you get the
+    'Can't load the profile' error. 
+    Try at most numTries times to start the Webdriver. 
+    '''
+    try:
+        return driverFunc()
+    except WebDriverException as ex:
+        if numTries > 1:
+            return driverRetry(driverFunc, numTries - 1)
+        else:
+            raise ex

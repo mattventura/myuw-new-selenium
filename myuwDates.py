@@ -49,7 +49,7 @@ LastDayInstr = multiDate({
 FinalsBegin = multiDate({
     'WI13': '2013-03-18',
     'SP13': '2013-06-10',
-    #'SU13': '2013-08-20', # TODO: decide what to do about summer finals date
+#    'SU13': '2013-08-23', # TODO: decide what to do about summer finals date
     'AU13': '2013-12-07'
 })
 
@@ -81,7 +81,7 @@ NextQtrClassesBegin = multiDate({
 })
 
 SummerBTermBegins = multiDate({
-    'SU13': '2013-8-23',
+    'SU13': '2013-7-25',
 })
 
 # Special dates

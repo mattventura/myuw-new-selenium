@@ -224,6 +224,14 @@ class GradeCard(myuwCard):
         # We have to adjust the date a bit, since the final grades
         # card will appear a bit past the end of the quarter
         qtr = dateToQtr(date - 10)
+        if qtr.startswith('SU'):
+            if date >= LastDayInstr[qtr] + 1:
+                qtr = 'SB13'
+            else:
+                qtr = 'SA13'
+                
+
+
         qtrEls = e.find_elements_by_xpath('.//li[@class="clearfix"]')
         thisQtrDict = {}
         for el in qtrEls:
@@ -241,25 +249,45 @@ class GradeCard(myuwCard):
         return newObj
 
 
+    def getGradesForQuarter(self, qtr):
+        try:
+            grades = self.gradeDict[qtr]
+        except:
+            grades = {}
+
+        return grades
+
     def findDiffs(self, other):
         diffs = ''
         trueQtr = self.quarter or other.quarter
-        try:
-            gradesA = self.gradeDict[trueQtr]
-        except:
-            gradesA = {}
-            #TODO: write better exceptions here
-            #raise Exception("gradesA problem")
-        try:
-            gradesB = other.gradeDict[trueQtr]
-        except:
-            gradesB = {}
-            #raise Exception("gradesB problem")
+            
+        gradesA = self.getGradesForQuarter(trueQtr)
+        gradesB = other.getGradesForQuarter(trueQtr)
 
         diffs += formatDiffs('Final grades', gradesA, gradesB)
         return diffs
 
-    dateRanges = getMultiDateRange(LastDayInstr + 1, NextQtrClassesBegin - 1)
+    def shouldAppear(self, date):
+        if super(self.__class__, self).shouldAppear(date):
+            return True
+
+        year = date.shortYear
+        hasSummerAGrades = ('SA' + str(year)) in self.gradeDict
+        summerAGradeDates = getMultiDateRange(SummerBTermBegins, NextQtrClassesBegin - 1)
+        inDateRange = False
+        for dr in summerAGradeDates:
+            if date in dr:
+                inDateRange = True
+        
+        if hasSummerAGrades and inDateRange:
+            return True
+        else:
+            return False
+        
+
+
+
+    dateRanges = getMultiDateRange(LastDayInstr + 1, NextQtrClassesBegin - 1, exclude = ['SU'])
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
     #visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1)
@@ -320,9 +348,7 @@ class VisualScheduleCard(myuwCard):
     @classmethod
     @packElement
     def fromElement(cls, date, e):
-        ncc = e.find_elements_by_xpath('.//div[@data-name="NoCourseCard"]')
-        #qtrEls = e.find_elts_by_xpath('.//div[@data-name="FutureCard"]')
-        if ncc:
+        if checkNCC(e):
             return NoCourseCard()
             
         qtr = dateToTerm(date)
@@ -418,6 +444,14 @@ class TextbookCard(myuwCard):
     dateRanges.append(myuwDateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
+
+    #def shouldAppear(self, date):
+    #    # Shouldn't display if no textbooks for the upcoming quarter
+    #    if super(self.__class__, self).shouldAppear(self, date):
+    #        qtr = 
+
+    #    else:
+    #        return False
 
 @isaCard
 class GradCommitteeCard(myuwCard):
@@ -717,6 +751,25 @@ class FinalExamCard(myuwCard):
     visCheck = visCDM(dateRanges)
     significantDates = rangesToSigDates(dateRanges)
 
+    @classmethod
+    def fromElement(cls, date, e):
+        if checkNCC(e):
+            return NoCourseCard()
+
+        return cls()
+
+def checkNCC(e):
+    '''Check if a card is actually the NoCourseCard
+    (No Registration Found; You don't appear to be registered)
+    '''
+    try:
+        e.find_element_by_xpath('.//div[@data-name="NoCourseCard"]')
+        return True
+    except NoSuchElementException:
+        return False
+        
+        
+
 @isaCard
 class CourseCard(myuwCard):
     
@@ -724,8 +777,7 @@ class CourseCard(myuwCard):
     @classmethod
     @packElement
     def fromElement(cls, date, e):
-        ncc = e.find_elements_by_xpath('.//[@data-name="NoCourseCard"]')
-        if ncc:
+        if checkNCC(e):
             return NoCourseCard()
 
         return cls()
