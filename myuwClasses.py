@@ -37,12 +37,15 @@ class myuwDate(object):
 
             elif isinstance(arg, basestring):
                 try:
-                    # TODO: use standard time (un)formatting functions instead 
-                    # of splitting it
                     dateParts = [int(s) for s in arg.split('-')]
-                    self.dateObj = datetime.date(*dateParts)
                 except:
                     raise self.MyuwDateTypeError(*args)
+
+                if len(dateParts) != 3:
+                    raise self.MyuwDateTypeError(*args)
+
+
+                self.dateObj = datetime.date(*dateParts)
 
             else:
                 raise self.MyuwDateTypeError(*args)
@@ -53,6 +56,11 @@ class myuwDate(object):
 
         else: 
             raise self.MyuwDateTypeError(*args)
+
+        if self.year < 2000:
+            raise ValueError(
+                'Got %s for year. Did you mean %s?' %(self.year, self.year + 2000)
+            )
 
     class MyuwDateTypeError(TypeError):
         def __init__(self, args):
