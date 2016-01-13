@@ -351,8 +351,8 @@ class sampleMyuwTestCase(mainMyuwTestCase):
     testDates = {}
     #testDates['jinter'] = ('2013-02-09',)
     #testDates['javerage'] = ('2013-02-08',)
-    #testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
-    #testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
+    testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
+    testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
     testDates['seagrad'] = ('2013-1-15', )
     usersToTest = testDates.keys()
 
@@ -362,7 +362,7 @@ class autoDateMyuwTestCase(mainMyuwTestCase):
 
     startDate = '2013-1-1'
     #startDate = '2013-6-1'
-    endDate = '2013-12-25'
+    endDate = '2013-12-17'
     #endDate = '2013-7-25'
     @property
     def testDates(self):
@@ -378,7 +378,7 @@ class mainMyuwHandler(object):
     
     # Go to override page and set override username
     def changeUser(self, username):
-        '''Set override username. '''
+        '''Set override username. You probably want setUser instead. '''
         self.browseToPage(self.userUrl)
         time.sleep(.5)
         userBox = self.driver.find_element_by_xpath('//input[@name="override_as"]')
@@ -389,7 +389,7 @@ class mainMyuwHandler(object):
 
     # Go to override page and set override date
     def changeDate(self, dateStr):
-        '''Set override date. '''
+        '''Set override date. You probably want setDate instead. '''
         self.browseToPage(self.dateUrl)
         time.sleep(.5)
         dateBox = self.driver.find_element_by_xpath('//input[@name="date"]')
@@ -648,5 +648,5 @@ else:
             auto = 'autoDateMyuwTestCase'
 
             # This chooses what the default test case is
-            unittest.main(defaultTest = auto)
+            unittest.main(defaultTest = sample)
 
