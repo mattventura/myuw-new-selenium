@@ -306,8 +306,8 @@ class cardProxy(object):
             return self.card.__getattribute__(attr)
 
 
-    significantDates = []
-    _vis = visAlways
+    #significantDates = []
+    #_vis = visAlways
 
     def shouldAppear(self, date):
         # If we say the card shouldn't appear, it shouldn't. 
@@ -329,13 +329,19 @@ class cardProxy(object):
             cardDates = self.card.significantDates
         else:
             cardDates = []"""
-        cardDates = self._vis.significantDates + self._significantDates
+        cardDates = self._vis.significantDates# + self._significantDates
         return cardDates
         
         
-    def _significantDates(self):
-        return []
+    #def _significantDates(self):
+        #return []
+
+class cardCustom(cardProxy):
     
+    def __init__(self, card, vis):
+        super(self.__class__, self).__init__(card)
+        self._vis = vis
+
 
 # Process date ranges
 def processDateRanges(dates):
@@ -525,19 +531,30 @@ class visAfter(visClass):
 # Card proxies. These allow you to further customize the visibility
 # of a card without having to modify or create a new card class. 
 
+"""
 # Card that should always appear
 class cardAlways(cardProxy):
     def _shouldAppear(self, date):
         return True
+        """
 
+def cardAlways(card):
+    return cardCustom(card, visAlways)
+
+"""
 # Card that should never appear
 class cardNever(cardProxy):
     def _shouldAppear(self, date):
         return False
+        """
+
+def cardNever(card):
+    return cardCustom(card, visNever)
 
 # Card that appears conditionally based on date
 # cardCDM takes a list of date ranges. 
 # If you just want one, see cardCD below. 
+"""
 class cardCDM(cardProxy):
     def __init__(self, card, dates):
         self._vis = visCDM(dates)
@@ -559,16 +576,26 @@ class cardCDM(cardProxy):
             out.append(datePair.endDate)
             out.append(datePair.endDate + 1)
         return out
+        """
+
+def cardCDM(card, dates):
+    return cardCustom(card, visCDM(dates))
 
 # Like cardCDM, but just one single date range
 # Helps avoid parenthesis overload when defining expected dates for cards
+"""
 class cardCD(cardCDM):
     def __init__(self, card, dateRange):
         self.card = card
         self.dateRanges = [myuwDateRange(*dateRange)]
         self._vis = visCD(*dateRange)
+"""
+
+def cardCD(card, dateRange):
+    return cardCustom(card, visCD(*dateRange))
 
 # Lets you use multiDate (or even a plain old dict) for start and end
+"""
 class cardAuto(cardCDM):
     def __init__(self, card, startDates, endDates):
         dateRanges = []
@@ -581,7 +608,10 @@ class cardAuto(cardCDM):
             dateRanges.append(dateRange)
 
         super(self.__class__, self).__init__(card, dateRanges)
+"""
 
+def cardAuto(card, startDates, endDates):
+    return cardCustom(card, visAuto(startDates, endDates))
 
 
 class autoDiff(object):
