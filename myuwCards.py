@@ -289,7 +289,7 @@ class GradeCard(myuwCard):
 
     dateRanges = getMultiDateRange(LastDayInstr + 1, NextQtrClassesBegin - 1, exclude = ['SU'])
     visCheck = visCDM(dateRanges)
-    significantDates = rangesToSigDates(dateRanges)
+    #significantDates = rangesToSigDates(dateRanges)
     #visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1)
         
     
@@ -392,7 +392,7 @@ class VisualScheduleCard(myuwCard):
     # Fix for 'SP13 grade sub deadline is always tomorrow' thing
     #dateRanges.append(dateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
     visCheck = visCDM(dateRanges)
-    significantDates = rangesToSigDates(dateRanges)
+    #significantDates = rangesToSigDates(dateRanges)
 
     def shouldAppear(self, date):
         # If the normal visibility function determines that the card shouldn't appear,
@@ -443,7 +443,7 @@ class TextbookCard(myuwCard):
     # Fix for 'SP13 grade sub deadline is always tomorrow' thing
     dateRanges.append(myuwDateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
     visCheck = visCDM(dateRanges)
-    significantDates = rangesToSigDates(dateRanges)
+    #significantDates = rangesToSigDates(dateRanges)
 
     #def shouldAppear(self, date):
     #    # Shouldn't display if no textbooks for the upcoming quarter
@@ -688,7 +688,7 @@ class ThriveCard(myuwCard):
         myuwDateRange('2013-2-3', '2013-3-16'),
     ]
     visCheck = visCDM(dateRanges)
-    significantDates = rangesToSigDates(dateRanges)
+    #significantDates = rangesToSigDates(dateRanges)
     '''
 
     def shouldAppear(self, date):
@@ -749,7 +749,7 @@ class FinalExamCard(myuwCard):
     #visCheck = visAuto(FirstDayQtr, ClassesBegin)
     dateRanges = getMultiDateRange(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
     visCheck = visCDM(dateRanges)
-    significantDates = rangesToSigDates(dateRanges)
+    #significantDates = rangesToSigDates(dateRanges)
 
     @classmethod
     def fromElement(cls, date, e):

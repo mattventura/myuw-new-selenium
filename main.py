@@ -24,12 +24,12 @@ debug = False
 # Run each user in parallel
 parallel = True
 # Split up tests for each user into separate parallel processes
-parallelDateSplit = 2
+parallelDateSplit = 4
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 
 # Delay between starting processes for parallel mode
-parallelDelay = 8
+parallelDelay = 4
 
 class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
@@ -651,5 +651,4 @@ else:
             auto = 'autoDateMyuwTestCase'
 
             # This chooses what the default test case is
-            unittest.main(defaultTest = auto)
-
+            unittest.main(defaultTest = sample)
