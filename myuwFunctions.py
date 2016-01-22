@@ -170,3 +170,15 @@ def driverRetry(driverFunc, numTries = 3):
             return driverRetry(driverFunc, numTries - 1)
         else:
             raise ex
+
+def filterListVis(inList, date):
+    '''Filter a list down to elements whose
+    shouldAppear method returns true on that
+    date. '''
+    return [item for item in inList if item.shouldAppear(date)]
+    """
+    outList = []
+    for item in inList:
+        if item.shouldAppear(date):
+            outList.append(
+            """

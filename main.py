@@ -31,6 +31,21 @@ parallelDateSplit = 4
 # Delay between starting processes for parallel mode
 parallelDelay = 4
 
+# For auto date tests, restrict dates to this range
+defaultStartDate = '2013-1-1'
+#startDate = '2013-6-1'
+defaultEndDate = '2013-12-17'
+#endDate = '2013-7-25'
+
+def getTestDates(start = defaultStartDate, end = defaultEndDate):
+    userList = myuwExpected.cardList.keys()
+    tcDict = {}
+    for user in userList:
+        sd = myuwExpected.getSigDates(user, start, end)
+        tcDict[user] = sd
+    return tcDict
+    
+
 class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
     and usersToTest. '''
@@ -362,18 +377,12 @@ class sampleMyuwTestCase(mainMyuwTestCase):
 class autoDateMyuwTestCase(mainMyuwTestCase):
     '''Test case which automatically finds test users and dates. '''
 
-    startDate = '2013-1-1'
-    #startDate = '2013-6-1'
-    endDate = '2013-12-17'
-    #endDate = '2013-7-25'
+    startDate = defaultStartDate
+    endDate = defaultEndDate
+
     @property
     def testDates(self):
-        userList = myuwExpected.cardList.keys()
-        tcDict = {}
-        for user in userList:
-            sd = myuwExpected.getSigDates(user, self.startDate, self.endDate)
-            tcDict[user] = sd
-        return tcDict
+        return getTestDates(self.startDate, self.endDate)
 
 class mainMyuwHandler(object):
     '''Page object model handler for myuw. '''
@@ -641,6 +650,12 @@ else:
             # This handles the output
             unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
             
+        elif len(argv) >= 2 and argv[1] == '--dump-dates':
+            testUsers = getTestDates()
+            for user, dates in testUsers.items():
+                print 'Test dates for user %s:' %user
+                print '    ' + ', '.join([str(date) for date in dates])
+
         else:
             #del mainMyuwTestCase
             #del sampleMyuwTestCase

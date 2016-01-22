@@ -116,7 +116,6 @@ class myuwDate(object):
         newDateObj = self.dateObj + other
         return myuwDate(newDateObj)
 
-
     # Subtraction
     def __sub__(self, other):
         return self.__add__(-1 * other)
@@ -138,8 +137,6 @@ class myuwDate(object):
             return NotImplemented
 
         return self.dateObj > other
-            
-            
 
 class myuwDateRange(object):
     ''' Date range class, consisting of a start date and end date. 
@@ -165,7 +162,6 @@ class myuwDateRange(object):
         if self.startDate > self.endDate:
             raise Exception('Start date %s comes after end date %s'
                 %(self.startDate, self.endDate))
-
 
     # Get dates that should be tested based on this date range
     @property
@@ -201,6 +197,7 @@ class myuwDateRange(object):
         return (self.startDate < other.startDate) and \
             (self.endDate < other.endDate)
 
+    # There's a reason I'm not using @total_ordering but I forgot what it was
     def __ge__(self, other):
         return self == other or self > other
 
@@ -220,8 +217,6 @@ class nullDateRange(myuwDateRange):
 
     def __contains__(self, element):
         return False
-
-
 
 class cardPair(object):
     '''Holds an expected card and an actual card and allows
@@ -320,6 +315,7 @@ class cardProxy(object):
 
 
     #significantDates = []
+    # TODO: make this raise an exception if used directly
     #_vis = visAlways
 
     def shouldAppear(self, date):
@@ -352,7 +348,8 @@ class cardProxy(object):
         return cardDates
         
 class cardCustom(cardProxy):
-    
+    '''Quick way of creating a custom cardproxy using a specific
+    visibility function.'''
     def __init__(self, card, vis):
         super(self.__class__, self).__init__(card)
         self._vis = vis
@@ -464,12 +461,12 @@ def visCD(start, end):
     specified as a start and end date. '''
     return visCDM([(start, end)])
 
-def visAuto(starts, ends):
+def visAuto(starts, ends, exclude = []):
     '''Given a starting and ending multiDate object, return
     an appropriate visibility function that returns True when 
     the date is between a start date and its corresponding end
     date in the same quarter. '''
-    return visCDM(getMultiDateRange(starts, ends))
+    return visCDM(getMultiDateRange(starts, ends, exclude))
 
 
 
@@ -492,6 +489,19 @@ class visAfter(visClass):
     def visCheck(self, date):
         return self.afterDate < date
 
+class visUnion(visClass):
+    def __init__(self, *children):
+        self.children = children
+        self.sigDates = []
+        for child in children:
+            self.sigDates += child.sigDates
+
+    def visCheck(self, date):
+        for child in self.children:
+            if child(date):
+                return True
+        return False
+            
     
 # WIP/TODO
 
@@ -621,7 +631,6 @@ class errorCard(myuwCard):
 
         #TODO
 
-
     def __init__(self, name):
         self.name = name
         self.__name__ = name + '_error'
@@ -633,8 +642,6 @@ class errorCard(myuwCard):
             return ''
         else:
             return 'Error card vs non-error card'
-    
-
 
 # Make a cardproxy be considered a myuwCard subclass for the purposes of
 # issubclass() and isinstance()
@@ -651,7 +658,6 @@ class LandingWaitTimedOut(Exception):
             'Waited too long for landing page to finish loading. The following cards did\
             not load: %s' %(', '.join(cardNames))
         )
-    
 
 # Class for measuring how long certain things take
 class perfCounter(object):
@@ -685,8 +691,6 @@ class perfCounter(object):
     def endFmt(self):
         self.end()
         return self.formatted
-        
-        
 
 class gradRequest(autoDiff):
 
@@ -745,12 +749,12 @@ class gradRequest(autoDiff):
         'title': 'Request title',
     }
 
-
     def __eq__(self, other):
         result = self.findDiffs(other)
         return not(self.findDiffs(other))
         
 class simpleStatus:
+    '''Mixin for grad requests that only have a 'Status' property.''' 
     def statusFix(self):
         if isinstance(self.statuses, str):
             self.statuses = {'Status': self.statuses}
@@ -772,8 +776,6 @@ class leaveRequest(simpleStatus, gradRequest):
 
 class degreeRequest(simpleStatus, gradRequest):
     pass
-        
-        
 
 class link(autoDiff):
     @uesc
@@ -795,7 +797,6 @@ class link(autoDiff):
 
     def __repr__(self):
         return 'link(%s, %s, %s)' %(self.label, self.url, self.newTab)
-
 
     autoDiffs = {
         'label': 'Link Label',

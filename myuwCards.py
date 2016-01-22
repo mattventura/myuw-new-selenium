@@ -1,13 +1,12 @@
 #!/usr/bin/python
 
 from myuwFunctions import isCardVisible, packElement, formatDiffs, \
-rangesToSigDates
+rangesToSigDates, filterListVis
 from myuwDates import *
 import re
 from myuwClasses import *
 
 from selenium.common.exceptions import NoSuchElementException
-
 
 # Dictionary of IDs to card classes
 # This includes alternate names for cards
@@ -39,7 +38,6 @@ def isaCard(innerClass):
     addToCardDict(innerClass)
     return innerClass
 
-
 # TODO: Move these somewhere else
 stuHuskyCardLink = 'https://www.hfs.washington.edu/olco/Secure/AccountSummary.aspx'
 empHuskyCardLink = 'fill me in'
@@ -57,7 +55,7 @@ balanceLabels = {
 # TODO: last transaction date
 @isaCard
 class HFSCard(myuwCard):
-    
+
     title = 'Husky Card & Dining'
 
     def __init__(self, balanceDict = {}, 
@@ -127,7 +125,6 @@ class HFSCard(myuwCard):
         'addFundsUrl': 'HFS Add Funds URL',
     }
 
-
 # Student employee/instructor card
 @isaCard
 class EmpFacStudentCard(myuwCard):
@@ -162,7 +159,6 @@ class FutureQuarterCard(myuwCard):
 
     def __init__(self, quarterData, ):
         self.qtrs = quarterData
-            
 
     @classmethod
     @packElement
@@ -170,7 +166,6 @@ class FutureQuarterCard(myuwCard):
         qtrEls = e.find_elements_by_xpath('.//div[@data-name="FutureCard"]')
         qtrs = {}
         for qtrEl in qtrEls:
-            #try:
             titleEl = qtrEl.find_element_by_xpath('.//h4')
             qtrName = titleEl.text
             subElements = qtrEl.find_elements_by_xpath('.//p/span')
@@ -179,8 +174,6 @@ class FutureQuarterCard(myuwCard):
             sections = re.search('\((.*) section', sectionsText).groups()[0]
             credits = int(credits)
             sections = int(sections)
-            #except:
-            #    raise Exception('Could not parse future quarter cards')
 
             qtrDict = {
                 'credits': credits,
@@ -256,13 +249,11 @@ class GradeCard(myuwCard):
         newObj.quarter = qtr
         return newObj
 
-
     def getGradesForQuarter(self, qtr):
         try:
             grades = self.gradeDict[qtr]
         except:
             grades = {}
-
         return grades
 
     def findDiffs(self, other):
@@ -291,17 +282,9 @@ class GradeCard(myuwCard):
             return True
         else:
             return False
-        
 
+    visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1, exclude = ['SU'])
 
-
-    dateRanges = getMultiDateRange(LastDayInstr + 1, NextQtrClassesBegin - 1, exclude = ['SU'])
-    visCheck = visCDM(dateRanges)
-    #significantDates = rangesToSigDates(dateRanges)
-    #visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1)
-        
-    
-    
 @isaCard
 class SummerRegStatusCard(myuwCard):
     
@@ -347,7 +330,6 @@ class NoCourseCard(myuwCard):
 @isaCard
 class VisualScheduleCard(myuwCard):
     
-    #altNames = ['FinalExamCard']
     def __init__(self, quartersDict = None):
         # TODO
         self.quartersDict = quartersDict
@@ -360,7 +342,6 @@ class VisualScheduleCard(myuwCard):
             return NoCourseCard()
             
         qtr = dateToTerm(date)
-        #qtr = dateToQtr(date + 1)
         classEls = e.find_elements_by_css_selector('div.visual-course-id')
         classEls += e.find_elements_by_css_selector('div.course-info')
         thisQtrClasses = {}
@@ -395,14 +376,8 @@ class VisualScheduleCard(myuwCard):
         diffs = formatDiffs('Visual Schedule Content', classesA, classesB)
         return diffs
 
-    dateRanges = getMultiDateRange(FirstDayQtr, LastDayInstr)
-    #dateRanges = getMultiDateRange(FirstDayQtr, LastDayInstr, exclude = ['SU13'])
-    # Fix for 'SP13 grade sub deadline is always tomorrow' thing
-    #dateRanges.append(dateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
-    visCheck = visCDM(dateRanges)
-    #significantDates = rangesToSigDates(dateRanges)
+    visCheck = visAuto(FirstDayQtr, LastDayInstr)
 
-    '''
     def shouldAppear(self, date):
         # If the normal visibility function determines that the card shouldn't appear,
         # just go with that. 
@@ -410,6 +385,8 @@ class VisualScheduleCard(myuwCard):
             # If the vis func says it should, then we still need to handle the case where
             # if it is summer but the user has no summer classes, then the vis sched
             # shouldn't appear. 
+            # badDateRange handles the dates with problems due to 
+            # spring deadline tomorrow thing
             badDateRange = myuwDateRange(
                 LastDayQtr['SP13'],
                 ClassesBegin['SU13'] - 1
@@ -420,28 +397,22 @@ class VisualScheduleCard(myuwCard):
                 return True
         else:
             return False
-    '''
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
-        
 
 # TODO: Final exam card 
 
 @isaCard
 class LibraryCard(myuwCard):
-    
     pass
-    # TODO: figure out what this card can display
-    #def __init__(self):
-        
-    
+    # TODO: figure out what this card can display and write diffs accordingly
+
 @isaCard
 class TextbookCard(myuwCard):
-    #visCheck = visAuto(FirstDayQtr, ClassesBegin)
-    dateRanges = getMultiDateRange(FirstDayQtr, ClassesBegin + 6, exclude = ['SU13'])
-    # Fix for 'SP13 grade sub deadline is always tomorrow' thing
-    dateRanges.append(myuwDateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
-    visCheck = visCDM(dateRanges)
+    visCheck = visUnion(
+        visAuto(FirstDayQtr, ClassesBegin + 6, exclude = ['SU13']), 
+        visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6)
+    )
 
 @isaCard
 class GradCommitteeCard(myuwCard):
@@ -452,7 +423,7 @@ class GradCommitteeCard(myuwCard):
 
     @classmethod
     def fromElement(cls, date, el):
-        # Brak into individual committees
+        # Break into individual committees
         commSections = el.find_elements_by_xpath('.//ul[@class="card-list"]/li')
         commDict = {}
         for section in commSections:
@@ -535,8 +506,6 @@ class GradStatusCard(myuwCard):
         newObj = cls(petitions, leaves, degrees, date)
         return newObj
 
-
-    
     @staticmethod
     def processRequests(reqEls, reqClass):
         reqsOut = []
@@ -544,29 +513,22 @@ class GradStatusCard(myuwCard):
             req = reqClass.fromElement(reqEl)
             reqsOut.append(req)
         return reqsOut
-        
 
     # For the expected one, at the top level of each dictionary, rather than specifying an
     # item directly, you can specify 
     def filterToDate(self, date):
-        petitions = self.filterList(self.petitions, date)
-        leaves = self.filterList(self.leaves, date)
-        degrees = self.filterList(self.degrees, date)
+        '''Returns a new GradStatusCard based on expected date which
+        contains only the requests that should be visible on the 
+        specified date. 
+        Does not modify the original.'''
+        petitions = filterListVis(self.petitions, date)
+        leaves = filterListVis(self.leaves, date)
+        degrees = filterListVis(self.degrees, date)
 
         newObj = self.__class__(petitions, leaves, degrees)
         newObj.needsFiltering = False
         return newObj
 
-    # Returns a new dictionary returning only the visible items from the original
-    @staticmethod
-    def filterList(old, date):
-        new = []
-        for req in old:
-            if req.shouldAppear(date):
-                new.append(req)
-        return new
-
-    
     autoDiffs = {
         'petitions'    : 'Petition Requests',
         'leaves'        : 'Leave Requests',
@@ -583,17 +545,15 @@ class GradStatusCard(myuwCard):
         return super(self.__class__, self).findDiffs(other)
 
 class thriveContent(autoDiff):
+    '''Class for an individual thrive card. 
+    A thrive card has a title, description, an optional Try This
+    section, and one or more links. '''
     @uesc
     def __init__(self, title, desc = '', tryThis = '', links = []):
-        
         self.title = title
         self.desc = desc
         self.tryThis = tryThis
         self.links = links
-
-    # Temporary
-    #def findDiffs(self, other):
-    #    return ''
 
     autoDiffs = {
         'title': 'Thrive card title',
@@ -602,14 +562,18 @@ class thriveContent(autoDiff):
         #'links': 'Thrive card links'
     }
 
-
 @isaCard
 class ThriveCard(myuwCard):
+    '''Class for a Thrive card. 
+    This should never be an expected card. See ThriveCardExpected. '''
     def __init__(self, date = None, content = None):
         
         # Need to handle 3 scenarios:
         # 1. Actual card, in which case we get a date and a content
+        #    Content is a thriveContent instance. 
         # 2. Expected card list, in which case we get neither
+        #    (See ThriveCardExpected class below)
+        # 3. Any other combination, which raises an exception
         if date is None and content is None:
             self.actual = False
 
@@ -620,8 +584,6 @@ class ThriveCard(myuwCard):
 
         else:
             raise Exception('Illegal arguments %s and %s for thrive card' %(date, content))
-            
-            
 
     # Format: dateRange to card
     expectedContent = {}
@@ -651,7 +613,6 @@ class ThriveCard(myuwCard):
         diffs = expectedContent.findDiffs(actualContent)
         return diffs
 
-
     @classmethod
     def fromElement(cls, date, e):
         h4s = e.find_elements_by_xpath('.//h4')
@@ -679,6 +640,7 @@ class ThriveCard(myuwCard):
 
 # TODO: move this to its own file
 class ThriveCardExpected(ThriveCard):
+    '''Expected data for Thrive'''
     
     thriveCards = {}
     thriveCards['WI13'] = [
@@ -716,10 +678,7 @@ class ThriveCardExpected(ThriveCard):
 
 @isaCard
 class FinalExamCard(myuwCard):
-    #visCheck = visAuto(FirstDayQtr, ClassesBegin)
-    dateRanges = getMultiDateRange(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
-    visCheck = visCDM(dateRanges)
-    #significantDates = rangesToSigDates(dateRanges)
+    visCheck = visAuto(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
 
     @classmethod
     def fromElement(cls, date, e):
