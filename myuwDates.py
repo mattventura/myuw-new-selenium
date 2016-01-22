@@ -107,7 +107,7 @@ SummerRegHide = multiDate(SummerRegCardHideDates)
 
 
 
-# Try to convert 
+# Try to convert a date to quarter+year
 def dateToQtr(date):
     date = myuwDate(date)
     # Hack, TODO fix this

@@ -20,6 +20,13 @@ def addToCardDict(card):
         #if name in cardDict:
         #    raise Exception('Tried to put card name %s into known cards list twice' %name)
         cardDict[name] = card
+    # Return the card so this function can be used as a decorator
+    return card
+
+# Set name property automatically, if not manually specified
+def autoCardName(card):
+    if not(hasattr(card, 'name')):
+        card.name = card.__name__
 
 # Convenience all-in-one function for specifying a card. 
 # 1. Puts them in the dictionary of cards. 
@@ -28,8 +35,7 @@ def addToCardDict(card):
 # if you want to use it in non-decorator form you can do isaCard(foo) rather than
 # foo = isaCard(foo). 
 def isaCard(innerClass):
-    if not(hasattr(innerClass, 'name')):
-        innerClass.name = innerClass.__name__
+    autoCardName(innerClass)
     addToCardDict(innerClass)
     return innerClass
 
@@ -87,12 +93,14 @@ class HFSCard(myuwCard):
         titleText = titleEl.text
 
         # Find balances on the card
-        balancesContainer = e.find_element_by_xpath(
-            './/ul[@class="card_list"]')
-        balancesElements = balancesContainer.find_elements_by_xpath(
-            './li/div')
+        balContainer = e.find_element_by_xpath(
+            './/ul[@class="card_list"]'
+        )
+        balEls = balContainer.find_elements_by_xpath(
+            './li/div'
+        )
         balanceDict = {}
-        for be in balancesElements:
+        for be in balEls:
             label = be.find_element_by_css_selector(
                 'div.pull-left h4.card-badge-label').text
             balance = be.find_element_by_class_name('pull-right').text
@@ -152,7 +160,7 @@ class FutureQuarterCard(myuwCard):
         'FutureQuarterCard1',
     ]
 
-    def __init__(self, quarterData):
+    def __init__(self, quarterData, ):
         self.qtrs = quarterData
             
 
@@ -394,6 +402,7 @@ class VisualScheduleCard(myuwCard):
     visCheck = visCDM(dateRanges)
     #significantDates = rangesToSigDates(dateRanges)
 
+    '''
     def shouldAppear(self, date):
         # If the normal visibility function determines that the card shouldn't appear,
         # just go with that. 
@@ -401,17 +410,6 @@ class VisualScheduleCard(myuwCard):
             # If the vis func says it should, then we still need to handle the case where
             # if it is summer but the user has no summer classes, then the vis sched
             # shouldn't appear. 
-            """
-            qtrName = dateToTerm(date)
-            if qtrName in ('SA', 'SB'):
-                if self.getQtrInfo(qtrName):
-                    return True
-                else:
-                    return False
-            else:
-                return True
-            if qtrName.startswith('SA'):
-            """
             badDateRange = myuwDateRange(
                 LastDayQtr['SP13'],
                 ClassesBegin['SU13'] - 1
@@ -422,6 +420,7 @@ class VisualScheduleCard(myuwCard):
                 return True
         else:
             return False
+    '''
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
         
@@ -443,15 +442,6 @@ class TextbookCard(myuwCard):
     # Fix for 'SP13 grade sub deadline is always tomorrow' thing
     dateRanges.append(myuwDateRange(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6))
     visCheck = visCDM(dateRanges)
-    #significantDates = rangesToSigDates(dateRanges)
-
-    #def shouldAppear(self, date):
-    #    # Shouldn't display if no textbooks for the upcoming quarter
-    #    if super(self.__class__, self).shouldAppear(self, date):
-    #        qtr = 
-
-    #    else:
-    #        return False
 
 @isaCard
 class GradCommitteeCard(myuwCard):
@@ -605,7 +595,6 @@ class thriveContent(autoDiff):
     #def findDiffs(self, other):
     #    return ''
 
-
     autoDiffs = {
         'title': 'Thrive card title',
         #'desc': 'Thrive card first section',
@@ -678,19 +667,6 @@ class ThriveCard(myuwCard):
         card = ThriveCard(date, content)
         return card
 
-    '''
-    dateRanges = [
-        # Autumn 2012
-        myuwDateRange('2012-9-7', '2012-11-15'),
-        myuwDateRange('2012-11-23', '2012-12-6'),
-        # Winter 2013
-        myuwDateRange('2013-1-6', '2013-1-26'),
-        myuwDateRange('2013-2-3', '2013-3-16'),
-    ]
-    visCheck = visCDM(dateRanges)
-    #significantDates = rangesToSigDates(dateRanges)
-    '''
-
     def shouldAppear(self, date):
         for key in self.expectedContent.keys():
             if date in key:
@@ -700,9 +676,6 @@ class ThriveCard(myuwCard):
     @property
     def significantDates(self):
         return rangesToSigDates(self.expectedContent.keys())
-        
-
-        
 
 # TODO: move this to its own file
 class ThriveCardExpected(ThriveCard):
@@ -740,10 +713,7 @@ class ThriveCardExpected(ThriveCard):
             curDate = curDate + 7
 
     expectedContent = ec
-    #a = expectedContent.keys()
-    #a.sort()
-    #print a
-    
+
 @isaCard
 class FinalExamCard(myuwCard):
     #visCheck = visAuto(FirstDayQtr, ClassesBegin)
@@ -799,10 +769,9 @@ stubCards = [
 ]
 
 for cardName in stubCards:
-    
+
     vars()[cardName] = newCardClass = type(cardName, (myuwCard, ), {})
     # isaCard modifies in place so we don't care about its return. 
     isaCard(newCardClass)
-
 
 del newCardClass

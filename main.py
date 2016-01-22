@@ -34,10 +34,13 @@ parallelDelay = 4
 class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
     and usersToTest. '''
-    
     driverFunc = Firefox
     baseUrl = 'http://localhost:8081'
+    # This won't do anything, just there as a default in case
     usersToTest = ['javerage', 'jinter']
+
+    # These should be set to the values that myuw will default to
+    # with no override. 
     defaultUser = 'javerage'
     defaultDate = myuwDate(2013, 04, 15)
     testDates = {}
@@ -51,7 +54,7 @@ class mainMyuwTestCase(unittest.TestCase):
     def driverSetup(self):
         self.driver = driverRetry(self.driverFunc)
         self.driver.maximize_window()
-        self.pageHandler = mainMyuwHandler(self.driver, self.baseUrl, 
+        self.pageHandler = mainMyuwHandler(self.driver, self.baseUrl,
             self.defaultDate, self.defaultUser)
         # Not sure if these are necessary
         self.currentUser = self.defaultUser
@@ -67,9 +70,9 @@ class mainMyuwTestCase(unittest.TestCase):
 
     # Run tests and report discrepancies between expected and actual results
     def test_runtests(self):
-        '''Run all tests as defined in testDates and usersToTest. 
+        '''Run all tests as defined in testDates and usersToTest.
         Will parallelize on a per-user basis if the parallel option
-        is set. usersToTest should be a list of usernames to test with, 
+        is set. usersToTest should be a list of usernames to test with,
         while testDates should be a dictionary mapping usernames to a list
         of dates which they should be tested on. '''
         # Parallel test currently just spawns 1 process for each user to test
@@ -80,7 +83,6 @@ class mainMyuwTestCase(unittest.TestCase):
             # List for holding each Popen object
             processes = []
             for user, dates in self.testDates.items():
-                
                 # If there are no dates to test, skip this user
                 if not(dates):
                     continue
@@ -95,8 +97,8 @@ class mainMyuwTestCase(unittest.TestCase):
                     mainFile = __file__
                     # Run it
                     process = subprocess.Popen(
-                        ['python', mainFile, '--single', user] + datesStr, 
-                        stdout = subprocess.PIPE, 
+                        ['python', mainFile, '--single', user] + datesStr,
+                        stdout = subprocess.PIPE,
                         stderr = subprocess.PIPE,
                         # Reduce priority of child process (doesn't work on Windows)
                         preexec_fn = lambda: os.nice(15),
@@ -204,7 +206,7 @@ class mainMyuwTestCase(unittest.TestCase):
         '''Merge multiple dicts of differences together. '''
         out = {}
         for dic in diffDicts:
-            
+
             sortedUsers = sorted(dic.items())
             for user, dateDict in sortedUsers:
                 if user not in out:
@@ -278,8 +280,9 @@ class mainMyuwTestCase(unittest.TestCase):
             # Might get more than one at a time, separated
             # by linefeeds. 
             for diff in diffs.split('\n'):
+                # Ignore empty lines
                 if diff:
-                    # Make sure user exists in diffs dictionary
+                    # Make sure user exists in diffs dictionary, else create
                     if user not in self.diffs:
                         self.diffs[user] = {}
                     userDiffs = self.diffs[user]
@@ -291,11 +294,9 @@ class mainMyuwTestCase(unittest.TestCase):
                     # Add diff
                     dateDiffs.append(diff)
 
-
     def getFormattedDiffs(self):
         '''Returns formatted version of the diff dictionary. '''
         return self.formatDiffsFull(self.diffs)
-
 
     @staticmethod 
     def formatDiffsFull(diffs, indentChar = '  '):
@@ -316,7 +317,6 @@ class mainMyuwTestCase(unittest.TestCase):
                     diffStr += indentChar * 2 + '%s\n' %diff
         return diffStr
         
-
     def getJsonDiffs(self):
         '''Dump raw diff dictionary as json. Return None if there are no diffs. '''
         diffDict = self.diffs
@@ -358,7 +358,6 @@ class sampleMyuwTestCase(mainMyuwTestCase):
     testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
     testDates['seagrad'] = ('2013-1-15', )
     usersToTest = testDates.keys()
-
 
 class autoDateMyuwTestCase(mainMyuwTestCase):
     '''Test case which automatically finds test users and dates. '''
@@ -451,7 +450,7 @@ class mainMyuwHandler(object):
         self.driver = driver
         self.currentUser = user
         self.currentDate = date
-        
+
     def _parsePage(self):
         '''Internal function for parsing cards. '''
         # If requested, set up timing
@@ -651,4 +650,4 @@ else:
             auto = 'autoDateMyuwTestCase'
 
             # This chooses what the default test case is
-            unittest.main(defaultTest = sample)
+            unittest.main(defaultTest = auto)

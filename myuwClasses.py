@@ -12,6 +12,7 @@ from myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs, \
 def toDate(obj):
     '''Convert string, timedelta, or myuw date to datetime.date'''
     # Convert string to myuwDate
+    # basestring catches both str and unicode
     if isinstance(obj, basestring):
         obj = myuwDate(obj)
 

@@ -192,12 +192,25 @@ cardList['javerage'] = [
     ),
     cardCD(
         FutureQuarterCard({
+            'Summer 2013 B-Term': {
+                'credits' : 2, 
+                'sections': 2,
+            },
             'Autumn 2013': {
                 'credits' : 5,
                 'sections': 1,
             },
         }),
-        (FirstDayQtr['SU13'], LastDayQtr['SU13'])
+        (FirstDayQtr['SU13'], SummerBTermBegins['SU13'] - 1)
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Autumn 2013': {
+                'credits' : 5,
+                'sections': 1,
+            },
+        }),
+        (SummerBTermBegins['SU13'], LastDayQtr['SU13'])
     ),
     cardCD(
         FutureQuarterCard({
