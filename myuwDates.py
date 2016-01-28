@@ -62,6 +62,8 @@ BreakBegins = multiDate({
     'AU13': '2013-12-14',
 })
 
+FinalsEnd = BreakBegins - 1
+
 # Day before myuw switches quarter,
 # also grade sub deadline. 
 LastDayQtr = multiDate({
@@ -107,8 +109,8 @@ SummerRegHide = multiDate(SummerRegCardHideDates)
 
 
 
-# Try to convert a date to quarter+year
 def dateToQtr(date):
+    '''Try to convert a date to quarter in the form of 'SP13'. '''
     date = myuwDate(date)
     # Hack, TODO fix this
     if date < myuwDate('2013-01-01'):
@@ -122,12 +124,14 @@ def dateToQtr(date):
             continue
     raise Exception("Couldn't find quarter for date %s" %date)
 
-# As above, but calls summer terms SA and SB
 def dateToTerm(date):
-    
+    '''Like dateToQtr, but differentiates between the two
+    summer terms. Will return 'SA13' or 'SB13' for summer
+    A/B in 2013. '''
     qtr = dateToQtr(date)
     qtrPart = qtr[0:2]
     year = qtr[2:4]
+
     if qtr[0:2] == 'SU':
         bStart = SummerBTermBegins[qtr]
         if date >= bStart:
@@ -138,3 +142,22 @@ def dateToTerm(date):
     
     else:
         return qtr
+
+def getAllMultiDates():
+    '''Get a list of all multiDates defined here. '''
+    mds = []
+    for md in globals().values():
+        if isinstance(md, multiDate):
+            mds.append(md)
+
+    return mds
+
+def getAllDates():
+    '''Get a list of all dates defined in all multiDates defined here. '''
+    mds = getAllMultiDates()
+    dates = []
+    for md in mds:
+        for date in md.values():
+            dates.append(date)
+
+    return dates

@@ -41,7 +41,7 @@ def getTestDates(start = defaultStartDate, end = defaultEndDate):
     userList = myuwExpected.cardList.keys()
     tcDict = {}
     for user in userList:
-        sd = myuwExpected.getSigDates(user, start, end)
+        sd = myuwExpected.getSigDates(user, start, end, True)
         tcDict[user] = sd
     return tcDict
     
@@ -233,10 +233,8 @@ class mainMyuwTestCase(unittest.TestCase):
 
         return out
 
-    # TODO
     def _test_json_out(self):
         '''Run tests, but report results in json.'''
-        # TODO
         self.runAllUsers()
         diffs = self.getJsonDiffs()
         if diffs:
@@ -255,8 +253,6 @@ class mainMyuwTestCase(unittest.TestCase):
         self.setUser(user)
         for date in dates:
             self.setDate(date)
-            # TODO: make browseLanding throw a specific exception when it times
-            # out so it can be differentiated from an actual failure. 
             try:
                 self.browseLanding()
             except LandingWaitTimedOut as e:
@@ -530,8 +526,6 @@ class mainMyuwHandler(object):
             if perf:
                 parseTime = cardTimer.endFmt()
                 print parseTime
-            #    raise e
-
 
         # Mark the card list as being fresh
         self.cardsValid = True
@@ -539,7 +533,7 @@ class mainMyuwHandler(object):
             allParseTime = allParseTimer.endFmt()
             print allParseTime
 
-        # Do other stuff too, like directory info, email link
+        # TODO: Do other stuff too, like directory info, email link
 
     @property
     def cards(self):

@@ -24,6 +24,8 @@ def toDate(obj):
     return obj
 
 class MyuwDateTypeError(TypeError):
+    '''Pre-packaged exception for when an invalid date format is 
+    specified when constructing a myuwDate. '''
     def __init__(self, args):
         args = repr(args)
         message = 'Arguments to mywDate must be "yyyy-mm-dd" or yyyy, mm, dd, got %s instead' %args
@@ -290,6 +292,156 @@ class multiDate(IterableUserDict):
     def __sub__(self, other):
         return self.__add__(-1 * other)
 
+    def __repr__(self):
+        return 'multiDate(%s)' %IterableUserDict.__repr__(self)
+
+    __str__ = __repr__
+
+# Visibility check classes
+
+# Most of them need to be called with arguments, but others are 
+# singletons thus need to be used directly
+
+class visClass(object):
+    '''New visClass, intended to replace old vis functions with
+    an actual class so that significantDates can be rolled 
+    into this. 
+    This class is not meant to be used directly, you should
+    subclass it. 
+    Subclasses should override visCheck and the significantDates 
+    property. 
+    '''
+    def __call__(self, date):
+        return self.shouldAppear(date)
+
+    def shouldAppear(self, date):
+        return self.visCheck(date)
+
+    @property
+    def significantDates(self):
+        return self.sigDates
+
+    def __add__(self, other):
+        return visUnion(self, other)
+
+class visException(visClass):
+    '''Dummy class to cause an exception whenever any of the vis 
+    methods are used. Used by the base cardProxy class to make sure
+    its _vis property gets overridden in a subclass. '''
+
+    def makeExc(self):
+        raise Exception('_vis must be overridden in a subclass of myuwCard')
+
+    def shouldAppear(self, date):
+        self.makeExc()
+
+    @property
+    def significantDates(self):
+        self.makeExc()
+
+class visNever(visClass):
+    visCheck = lambda self, date: True
+    sigDates = []
+
+class visAlways(visClass):
+    visCheck = lambda self, date: True
+    sigDates = []
+
+# Turn these into singletons
+visNever = visNever()
+visAlways = visAlways()
+visException = visException()
+
+def dateArgs(c):
+    '''Given a callable, convert string args to myuwDate'''
+    def inner(*args):
+        newArgs = []
+        for arg in args:
+            if isinstance(arg, basestring):
+                newArgs.append(myuwDate(arg))
+            else:
+                newArgs.append(arg)
+        return c(*newArgs)
+    return inner
+
+class visRanges(visClass):
+    def __init__(self, dateRanges):
+        self.dateRanges = dateRanges[:]
+        self.sigDates = []
+        for dateRange in self.dateRanges:
+            self.sigDates += dateRange.significantDates
+            
+    def visCheck(self, date):
+        for dateRange in self.dateRanges:
+            if date in dateRange:
+                return True
+        return False
+
+class visCDM(visRanges):
+    def __init__(self, dates):
+        dateRanges = processDateRanges(dates)
+        super(self.__class__, self).__init__(dateRanges)
+
+
+def visCD(start, end):
+    '''Visibility function creator for a single date range,
+    specified as a start and end date. '''
+    return visCDM([(start, end)])
+
+def visAuto(starts, ends, exclude = []):
+    '''Given a starting and ending multiDate object, return
+    an appropriate visibility function that returns True when 
+    the date is between a start date and its corresponding end
+    date in the same quarter. '''
+    return visCDM(getMultiDateRange(starts, ends, exclude))
+
+
+
+class visBefore(visClass):
+    @dateArgs
+    def __init__(self, end):
+        self.endDate = end
+        self.sigDates = [self.endDate - 1, self.endDate]
+
+    def visCheck(self, date):
+        return self.endDate > date
+
+            
+class visAfter(visClass):
+    @dateArgs
+    def __init__(self, after):
+        self.afterDate = after
+        self.sigDates = [self.afterDate, self.afterDate + 1]
+
+    def visCheck(self, date):
+        return self.afterDate < date
+
+class visUnion(visClass):
+    def __init__(self, *children):
+        self.children = children
+        self.sigDates = []
+        for child in children:
+            self.sigDates += child.sigDates
+
+    def visCheck(self, date):
+        for child in self.children:
+            if child(date):
+                return True
+        return False
+            
+    
+# WIP/TODO
+
+'''def visFilterQtr(include = [], exclude = []):
+    if include and exclude:
+        raise Exception('visFilterQtr needs an include or exclude list, not both')
+
+    elif include:
+        dateRanges = []
+        '''
+
+
+
 class cardProxy(object):
     '''Proxy for attaching additional show/hide logic to a card, for 
     example if a user does not get a particular card in a certain 
@@ -316,7 +468,7 @@ class cardProxy(object):
 
     #significantDates = []
     # TODO: make this raise an exception if used directly
-    #_vis = visAlways
+    _vis = visException
 
     def shouldAppear(self, date):
         '''Logic for whether the card should appear is:
@@ -392,127 +544,6 @@ def getMultiDateRange(starts, ends, exclude = []):
         dateRanges.append(dateRange)
     return dateRanges
 
-# Visibility check functions
-
-# visAlways and visNever should just be used as-is, whereas
-# the others should be called with arguments, upon which
-# they will return the actual function. 
-
-class visClass(object):
-    '''New visClass, intended to replace old vis functions with
-    an actual class so that significantDates can be rolled 
-    into this. 
-    This class is not meant to be used directly, you should
-    subclass it. 
-    Subclasses should override visCheck and the significantDates 
-    property. 
-    '''
-    def __call__(self, date):
-        return self.shouldAppear(date)
-
-    def shouldAppear(self, date):
-        return self.visCheck(date)
-
-    @property
-    def significantDates(self):
-        return self.sigDates
-
-class visNever(visClass):
-    visCheck = lambda self, date: True
-    sigDates = []
-
-
-class visAlways(visClass):
-    visCheck = lambda self, date: True
-    sigDates = []
-
-# Turn these into singletons
-visNever = visNever()
-visAlways = visAlways()
-
-def dateArgs(c):
-    '''Given a callable, convert string args to myuwDate'''
-    def inner(*args):
-        newArgs = []
-        for arg in args:
-            if isinstance(arg, basestring):
-                newArgs.append(myuwDate(arg))
-            else:
-                newArgs.append(arg)
-        return c(*newArgs)
-    return inner
-
-class visCDM(visClass):
-    def __init__(self, dates):
-        self.dateRanges = processDateRanges(dates)
-        self.sigDates = []
-        for dateRange in self.dateRanges:
-            self.sigDates += dateRange.significantDates
-            
-    def visCheck(self, date):
-        for dateRange in self.dateRanges:
-            if date in dateRange:
-                return True
-        return False
-
-
-def visCD(start, end):
-    '''Visibility function creator for a single date range,
-    specified as a start and end date. '''
-    return visCDM([(start, end)])
-
-def visAuto(starts, ends, exclude = []):
-    '''Given a starting and ending multiDate object, return
-    an appropriate visibility function that returns True when 
-    the date is between a start date and its corresponding end
-    date in the same quarter. '''
-    return visCDM(getMultiDateRange(starts, ends, exclude))
-
-
-
-class visBefore(visClass):
-    @dateArgs
-    def __init__(self, end):
-        self.endDate = end
-        self.sigDates = [self.endDate - 1, self.endDate]
-
-    def visCheck(self, date):
-        return self.endDate > date
-
-            
-class visAfter(visClass):
-    @dateArgs
-    def __init__(self, after):
-        self.afterDate = after
-        self.sigDates = [self.afterDate, self.afterDate + 1]
-
-    def visCheck(self, date):
-        return self.afterDate < date
-
-class visUnion(visClass):
-    def __init__(self, *children):
-        self.children = children
-        self.sigDates = []
-        for child in children:
-            self.sigDates += child.sigDates
-
-    def visCheck(self, date):
-        for child in self.children:
-            if child(date):
-                return True
-        return False
-            
-    
-# WIP/TODO
-
-'''def visFilterQtr(include = [], exclude = []):
-    if include and exclude:
-        raise Exception('visFilterQtr needs an include or exclude list, not both')
-
-    elif include:
-        dateRanges = []
-        '''
-
         
 # Card proxies. These allow you to further customize the visibility
 # of a card without having to modify or create a new card class. 
@@ -532,7 +563,10 @@ def cardCDM(card, dates):
 # Like cardCDM, but just one single date range
 # Helps avoid parenthesis overload when defining expected dates for cards
 def cardCD(card, dateRange):
-    return cardCustom(card, visCD(*dateRange))
+    # If argument is specified as a tuple, convert to myuwDate
+    if isinstance(dateRange, tuple):
+        dateRange = myuwDateRange(dateRange[0], dateRange[1])
+    return cardCustom(card, visRanges([dateRange]))
 
 # Lets you use multiDate (or even a plain old dict) for start and end
 def cardAuto(card, startDates, endDates):
@@ -624,12 +658,11 @@ class errorCard(myuwCard):
     @classmethod
     @packElement
     def fromElement(cls, date, cardEl):
-        # TODO: verify it is an error
+        cardText = cardEl.text
+        assert 'An error has occurred' in cardText
         cardName = cardEl.get_attribute('id')
         newObj = cls.__init__(cardName)
         return newObj
-
-        #TODO
 
     def __init__(self, name):
         self.name = name
@@ -752,6 +785,11 @@ class gradRequest(autoDiff):
     def __eq__(self, other):
         result = self.findDiffs(other)
         return not(self.findDiffs(other))
+
+    @property
+    def significantDates(self):
+        return self.visCheck.significantDates
+        
         
 class simpleStatus:
     '''Mixin for grad requests that only have a 'Status' property.''' 
@@ -807,3 +845,24 @@ class link(autoDiff):
     def __eq__(self, other):
         return (self.label == other.label and self.url == other.url \
             and self.newTab == other.newTab)
+
+
+class thriveContent(autoDiff):
+    '''Class for an individual thrive card. 
+    A thrive card has a title, description, an optional Try This
+    section, and one or more links. '''
+    @uesc
+    def __init__(self, title, desc = '', tryThis = '', links = []):
+        self.title = title
+        self.desc = desc
+        self.tryThis = tryThis
+        self.links = links
+
+    autoDiffs = {
+        'title': 'Thrive card title',
+        # TODO: these can be re-enabled once we get the rest of 
+        # the thrive mock data in
+        #'desc': 'Thrive card first section',
+        #'tryThis': 'Thrive card "Try This" section',
+        #'links': 'Thrive card links'
+    }

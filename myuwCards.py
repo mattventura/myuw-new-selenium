@@ -14,26 +14,28 @@ cardDict = {}
 # Function to add something to this, automatically including all
 # alternate names
 def addToCardDict(card):
+    '''Add a card class to the card dict. 
+    Can be used standalone or as a decorator. '''
     for name in card.getAllNames():
-        # On second thought, we might want duplicates
-        #if name in cardDict:
-        #    raise Exception('Tried to put card name %s into known cards list twice' %name)
         cardDict[name] = card
     # Return the card so this function can be used as a decorator
     return card
 
 # Set name property automatically, if not manually specified
 def autoCardName(card):
+    '''Set a card class's 'name' property based off its __name__. 
+    Can be used standalone or as a decorator. '''
+
     if not(hasattr(card, 'name')):
         card.name = card.__name__
-
-# Convenience all-in-one function for specifying a card. 
-# 1. Puts them in the dictionary of cards. 
-# 2. Automatically sets the name property of the class if not already set. 
-# Because it modifies the class in-place rather than returning a new object, 
-# if you want to use it in non-decorator form you can do isaCard(foo) rather than
-# foo = isaCard(foo). 
+    # Return the card so this function can be used as a decorator
+    return card
+    
+# Does both of the above
 def isaCard(innerClass):
+    '''Sets a card class's name automatically with autoCardName, 
+    then adds it to the card dict. 
+    Can be used standalone or as a decorator. '''
     autoCardName(innerClass)
     addToCardDict(innerClass)
     return innerClass
@@ -49,24 +51,26 @@ balanceLabels = {
     'Resident Dining': 'din',
 }
 
-# If a and b are different, write a message using
-# 'label' to describe what component is different
-
 # TODO: last transaction date
 @isaCard
 class HFSCard(myuwCard):
+    '''Housing and Food Services card (husky card balances card)'''
 
     title = 'Husky Card & Dining'
 
     def __init__(self, balanceDict = {}, 
         addFundsUrl = stuHuskyCardLink, title = title):
+        '''balanceDict should be provided in the form:
+            {'stu' = '$123.45', 'emp' = '$0.00', 'fac' = '$9.87'}, 
+        leaving out balances the user doesn't have. 
+        addFundsUrl can be supplied either as the exact URL, or as
+        'emp' to automatically fill in the employee add funds URL. '''
 
         if addFundsUrl == 'emp':
             self.addFundsUrl = empHuskyCardLink
         else:
             self.addFundsUrl = addFundsUrl
 
-        # TODO: make this better
         self.balanceDict = balanceDict
 
         try:
@@ -128,11 +132,11 @@ class HFSCard(myuwCard):
 # Student employee/instructor card
 @isaCard
 class EmpFacStudentCard(myuwCard):
+    '''Employee/Faculty information card'''
     
-    # Takes two arguments, whether they have the student
-    # employee part of the card, and whether they have
-    # the instructor part of the card
     def __init__(self, stuEmp = False, instructor = False):
+        '''stuEmp is whether or not they have the student employee part
+        of the card, same for instructor. '''
         self.stuEmp = stuEmp
         self.instructor = instructor
 
@@ -151,6 +155,7 @@ class EmpFacStudentCard(myuwCard):
 
 @isaCard
 class FutureQuarterCard(myuwCard):
+    '''Future Quarter Card'''
 
     altNames = [
         'FutureQuarterCardA',
@@ -158,6 +163,11 @@ class FutureQuarterCard(myuwCard):
     ]
 
     def __init__(self, quarterData, ):
+        '''Right now, FutureQuarterCard requires you to manually specify
+        multiple instances of the card using cardCD in the expected data. 
+        Each one should have the future quarter data that is supposed to
+        appear specifically at that time. This is easier than handling every
+        possible case with summer terms in here.'''
         self.qtrs = quarterData
 
     @classmethod
@@ -182,11 +192,14 @@ class FutureQuarterCard(myuwCard):
             qtrs[qtrName] = qtrDict
         return cls(qtrs)
 
-    #autoDiffs = {'qtrs': 'Future Quarter Data'}
+    autoDiffs = {'qtrs': 'Future Quarter Data'}
 
 @isaCard
 class SummerEFSCard(myuwCard):
+    '''Critical Summer Reg info/Early Fall Start information card. '''
     def __init__(self, summerReg = True, considerEFS = True):
+        '''summerReg and considerEFS refer to whether the user
+        should see those parts of the card. '''
         self.sumReg = summerReg
         self.efs = considerEFS
 
@@ -205,12 +218,16 @@ class SummerEFSCard(myuwCard):
 
 @isaCard
 class GradeCard(myuwCard):
+    '''Final Grades Card'''
 
     noGradeStr = 'No grade yet\nX'
-
     def __init__(self, gradeDict):
-        # Use None as a shortcut for the "No grade yet" text 
-        # defined above. 
+        '''gradeDict is specified as a dictionary of the form:
+            { 'WI13': {'PHYS 123': '4.0'} }
+        All quarters should be specified in one expected card, and
+        the card class figures out the rest for you. The grade should
+        be specified as a string exactly as it appears. 
+        None is shorthand for No grade yet/X.'''
         for qtrGrades in gradeDict.values():
             for className, grade in qtrGrades.items():
                 if grade == None:
@@ -230,8 +247,6 @@ class GradeCard(myuwCard):
                 qtr = 'SB13'
             else:
                 qtr = 'SA13'
-                
-
 
         qtrEls = e.find_elements_by_xpath('.//li[@class="clearfix"]')
         thisQtrDict = {}
@@ -250,9 +265,11 @@ class GradeCard(myuwCard):
         return newObj
 
     def getGradesForQuarter(self, qtr):
+        '''Get the final grades for a specific quarter. Returns
+        an empty dictionary if we don't have that quarter. '''
         try:
             grades = self.gradeDict[qtr]
-        except:
+        except KeyError:
             grades = {}
         return grades
 
@@ -287,6 +304,8 @@ class GradeCard(myuwCard):
 
 @isaCard
 class SummerRegStatusCard(myuwCard):
+    '''Summer Registration Status card. Covers both the positions
+    in which the card can appear. '''
     
     altNames = [
         'SummerRegStatusCardA',
@@ -295,9 +314,13 @@ class SummerRegStatusCard(myuwCard):
 
 @isaCard
 class CriticalInfoCard(myuwCard):
+    '''Update Critical Info Card'''
     
     def __init__(self, email = True,
         directory = True, residency = True):
+        '''email: Set Up UW Email section
+        directory: Update Student Directory section
+        residency: Non-resident classification section'''
         self.email = email
         self.directory = directory
         self.residency = residency
@@ -325,19 +348,36 @@ class CriticalInfoCard(myuwCard):
 
 @isaCard
 class NoCourseCard(myuwCard):
+    '''No Course Card. Not called directly, rather it is created 
+    and returned in the fromElement methods of VisualScheduleCard 
+    and FinalExamCard.'''
+    visCheck = visAuto(FirstDayQtr, FinalsEnd)
     pass
+
+class NoCourseCardGrad(myuwCard):
+    name = 'NoCourseCard'
+    visCheck = visAuto(FirstDayQtr, FinalsEnd, exclude = ['SU']) \
+        + visCD(ClassesBegin['SU13'], LastDayInstr['SU13'])
+    
 
 @isaCard
 class VisualScheduleCard(myuwCard):
+    '''Visual Schedule Card. Does not encompass the final exam only VS. '''
     
     def __init__(self, quartersDict = None):
-        # TODO
+        '''quartersDict is of the form:
+            {'WI13': {'PHYS 123 A': None, 'PHYS 456 AC': None}}
+        None is just a placeholder, there may be data such as room
+        number there later. Expected data should define one instance
+        of this card will all quarters.'''
         self.quartersDict = quartersDict
         self.quarter = None
 
     @classmethod
     @packElement
     def fromElement(cls, date, e):
+        '''This fromElement method will return a NoCourseCard instead of a 
+        VisualScheduleCard if applicable. '''
         if checkNCC(e):
             return NoCourseCard()
             
@@ -400,15 +440,41 @@ class VisualScheduleCard(myuwCard):
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
 
-# TODO: Final exam card 
+@isaCard
+class FinalExamCard(myuwCard):
+    '''Final exam card. Like VisualScheduleCard but is the 
+    finals-only version of it. Does not currently check any
+    data.'''
+    visCheck = visAuto(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
+    #TODO: actually check data here
+    @classmethod
+    def fromElement(cls, date, e):
+        '''Will return a NoCourseCard if applicable. '''
+        if checkNCC(e):
+            return NoCourseCard()
+
+        return cls()
+
+def checkNCC(e):
+    '''Check if a card is actually the NoCourseCard
+    (No Registration Found; You don't appear to be registered)
+    '''
+    try:
+        e.find_element_by_xpath('.//div[@data-name="NoCourseCard"]')
+        return True
+    except NoSuchElementException:
+        return False
 
 @isaCard
 class LibraryCard(myuwCard):
+    '''Library Account card'''
     pass
     # TODO: figure out what this card can display and write diffs accordingly
 
 @isaCard
 class TextbookCard(myuwCard):
+    '''Textbooks card'''
+    # TODO: check data
     visCheck = visUnion(
         visAuto(FirstDayQtr, ClassesBegin + 6, exclude = ['SU13']), 
         visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6)
@@ -416,7 +482,22 @@ class TextbookCard(myuwCard):
 
 @isaCard
 class GradCommitteeCard(myuwCard):
+    '''Grad Committees Card'''
     def __init__(self, commDict):
+        '''commDict is of the form:
+        {'Doctoral Supervisory Committee': # one key for each committee
+            [ # This list should have one dict for each member
+                {
+                    'dept': 'Anthropology',
+                    'chair': True,
+                    'rcc': True, # Reading committee chair
+                    'gsr': True,
+                    'name': u'John Doe',
+                    'email' :123@test.com
+                } # If chair/gsr/rcc are not specified, False is assumed
+            ]
+        }'''
+
         self.commDict = commDict
     
     autoDiffs = {'commDict': 'Grad Committee Members'}
@@ -471,13 +552,25 @@ class GradCommitteeCard(myuwCard):
 # Do later
 @isaCard
 class GradStatusCard(myuwCard):
+    '''Graduate Status Card. Encompasses petition, leave, and
+    degree/exam requests. '''
     
     def __init__(self, petitions, leaves, degrees, date = None):
+        '''petitions, leaves, degrees are lists of
+        petRequest, leaveRequest, and degreeRequest instances, 
+        respectively. '''
         self.petitions = petitions
         self.leaves = leaves
         self.degrees = degrees
         self.date = date
         self.needsFiltering = not(date)
+
+    @property
+    def significantDates(self):
+        sigDates = []
+        for req in (self.petitions + self.leaves + self.degrees):
+            sigDates += req.significantDates
+        return sigDates
 
     # Shorthand replacements for longer strings
     replacements = {
@@ -497,17 +590,18 @@ class GradStatusCard(myuwCard):
         requestEls = petEls + leaveEls + degreeEls
         
         # Iterate through petitions
-        # TODO: need to find a way to get the date in here
-        # We'll just use a special version in fromElements that adds in date stuff
         petitions = cls.processRequests(petEls, petRequest)
         leaves = cls.processRequests(leaveEls, leaveRequest)
         degrees = cls.processRequests(degreeEls, degreeRequest)
 
+        # Need to add date for data to be useful
         newObj = cls(petitions, leaves, degrees, date)
         return newObj
 
     @staticmethod
     def processRequests(reqEls, reqClass):
+        '''For each reqEl, make a reqClass out of it using the reqClass's
+        fromElement classmethod. '''
         reqsOut = []
         for reqEl in reqEls:
             req = reqClass.fromElement(reqEl)
@@ -536,6 +630,9 @@ class GradStatusCard(myuwCard):
     }
 
     def findDiffs(self, other):
+        # Filter the expected data based on the date specified in the
+        # actual data, then compare them as we normally would using
+        # autoDiffs. 
         date = self.date or other.date
         if self.needsFiltering:
             self = self.filterToDate(date)
@@ -543,24 +640,6 @@ class GradStatusCard(myuwCard):
             other = other.filterToDate(date)
 
         return super(self.__class__, self).findDiffs(other)
-
-class thriveContent(autoDiff):
-    '''Class for an individual thrive card. 
-    A thrive card has a title, description, an optional Try This
-    section, and one or more links. '''
-    @uesc
-    def __init__(self, title, desc = '', tryThis = '', links = []):
-        self.title = title
-        self.desc = desc
-        self.tryThis = tryThis
-        self.links = links
-
-    autoDiffs = {
-        'title': 'Thrive card title',
-        #'desc': 'Thrive card first section',
-        #'tryThis': 'Thrive card "Try This" section',
-        #'links': 'Thrive card links'
-    }
 
 @isaCard
 class ThriveCard(myuwCard):
@@ -638,74 +717,16 @@ class ThriveCard(myuwCard):
     def significantDates(self):
         return rangesToSigDates(self.expectedContent.keys())
 
-# TODO: move this to its own file
-class ThriveCardExpected(ThriveCard):
-    '''Expected data for Thrive'''
-    
-    thriveCards = {}
-    thriveCards['WI13'] = [
-        thriveContent('New Year, Fresh Start',
-            #'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
-            'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
-            u'Finish this sentence: This year, I wish to ______. When you come to Mary Gates Hall this week \u2013 for advising, career coaching, or CLUE tutoring \u2013 share your aspirations on the board outside of First Year Programs (MGH 120), or using #ThriveUW.',
-            [ link('New Year\u2019s Resolutions for College Students', 
-                'http://collegelife.about.com/od/cocurricularlife/a/10-Sample-New-Years-Resolutions-For-College-Students.htm', True)
-            ]
-        ),
-        thriveContent('Learn to Lead'),
-        thriveContent('Activate your Activism'),
-        None,
-        thriveContent('Research smarter, not harder!'),
-        thriveContent('Internships and Exploration'),
-        thriveContent('Revisiting Plans, Exploring Options'),
-        thriveContent('Battle the Winter Blues'),
-        thriveContent('What\'s Your Dream Summer?'),
-        thriveContent('Finals: Pace Your Prep'),
-    ]
-        
-    ec = {}
 
-    for key, value in thriveCards.items():
-        startDate = ClassesBegin[key] - 1
-        curDate = startDate
-        for card in value:
-            if card is not None:
-                dr = myuwDateRange(curDate, curDate + 6)
-                ec[dr] = card
-            curDate = curDate + 7
-
-    expectedContent = ec
-
-@isaCard
-class FinalExamCard(myuwCard):
-    visCheck = visAuto(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
-
-    @classmethod
-    def fromElement(cls, date, e):
-        if checkNCC(e):
-            return NoCourseCard()
-
-        return cls()
-
-def checkNCC(e):
-    '''Check if a card is actually the NoCourseCard
-    (No Registration Found; You don't appear to be registered)
-    '''
-    try:
-        e.find_element_by_xpath('.//div[@data-name="NoCourseCard"]')
-        return True
-    except NoSuchElementException:
-        return False
-        
-        
 
 @isaCard
 class CourseCard(myuwCard):
-    
+    '''Course Cards'''
 
     @classmethod
     @packElement
     def fromElement(cls, date, e):
+        '''Can return a NoCourseCard'''
         if checkNCC(e):
             return NoCourseCard()
 
@@ -720,16 +741,13 @@ stubCards = [
     'PCEBanner',
     'app_notices',
     'app_acal',
-    'NoCourseCard',
     'ToRegisterCard',
-    'LibraryCard',
-    'CourseCard',
     'InternationalStuCard',
 ]
 
 for cardName in stubCards:
 
-    vars()[cardName] = newCardClass = type(cardName, (myuwCard, ), {})
+    globals()[cardName] = newCardClass = type(cardName, (myuwCard, ), {})
     # isaCard modifies in place so we don't care about its return. 
     isaCard(newCardClass)
 

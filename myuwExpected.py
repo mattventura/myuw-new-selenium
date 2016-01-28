@@ -5,6 +5,7 @@ cardAlways, cardNever, cardCDM, cardCD, cardAuto, errorCard, \
 cardProxy
 from myuwCards import *
 from myuwDates import *
+from myuwThrive import ThriveCardExpected
 
 
 # Assemble actual lists of users and their expected cards
@@ -97,7 +98,7 @@ cardList['javerage'] = [
                 'email': u'jjj@uw.edu'
             }
         ], 
-        u"Master's Committee": [
+        "Master's Committee": [
             {
                 'dept': u'Epidemiology - Public Health', 
                 'chair': True, 
@@ -119,7 +120,7 @@ cardList['javerage'] = [
                 'dept': u'Ministry of Health, Peru'
             }
         ], 
-        u'Advisor': [
+        'Advisor': [
             {
                 'rcm': True, 
                 'email': u'bbb@u.washington.edu', 
@@ -188,7 +189,9 @@ cardList['javerage'] = [
                 'sections': 1,
             },
         }),
-        (FirstDayQtr['SP13'], LastDayQtr['SP13'])
+        #Spring gradesub known issue
+        #(FirstDayQtr['SP13'], LastDayQtr['SP13'])
+        (FirstDayQtr['SP13'], ClassesBegin['SU13'] - 1)
     ),
     cardCD(
         FutureQuarterCard({
@@ -201,7 +204,9 @@ cardList['javerage'] = [
                 'sections': 1,
             },
         }),
-        (FirstDayQtr['SU13'], SummerBTermBegins['SU13'] - 1)
+        #Spring gradesub known issue
+        #(FirstDayQtr['SU13'], SummerBTermBegins['SU13'] - 1)
+        (ClassesBegin['SU13'], SummerBTermBegins['SU13'] - 1)
     ),
     cardCD(
         FutureQuarterCard({
@@ -223,6 +228,7 @@ cardList['javerage'] = [
     ),
     cardCD(
         TextbookCard(),
+        # No textbooks for summer
         ('2013-1-1', LastDayQtr['SU13'])
     ),
     GradeCard({
@@ -248,10 +254,8 @@ cardList['javerage'] = [
             'ENGL 207': None,
         },
     }),
-
     FinalExamCard(),
     ThriveCardExpected(),
-        
 ]
 
 cardList['jinter'] = [
@@ -265,10 +269,8 @@ cardList['jinter'] = [
     app_notices(),
     app_acal(),
     SummerEFSCard(summerReg = False, considerEFS = True), 
-    #VisualScheduleCard(),
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
-    
     cardAuto(
         RegStatusCard(),
         RegCardShow,
@@ -281,11 +283,6 @@ cardList['jinter'] = [
     ),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
-    #cardCDM(
-    #    CourseCard(),
-    #    getMultiDateRange(LastDayInstr + 1, LastDayQtr, exclude = ['SU13', 'WI13'])
-    #    + [myuwDateRange('2013-6-19', '2013-6-23')], 
-    #)
     NoCourseCard(), 
 ]
 
@@ -294,13 +291,7 @@ cardList['seagrad'] = [
     errorCard('TuitionCard'),
     app_acal(),
     ThriveCardExpected(),
-    NoCourseCard(),
-    #cardCDM(
-    #    VisualScheduleCard(),
-    #    getMultiDateRange(FirstDayQtr, LastDayInstr, exclude = ['SU'])
-    #), 
-        
-    #FinalExamCard(),
+    NoCourseCardGrad(),
     GradStatusCard(
         [
             petRequest("Doctoral degree - Extend ten year limit", 
@@ -358,7 +349,7 @@ cardList['seagrad'] = [
             degreeRequest('Masters Request, Spring 2013', 
                 'Withdrawn',
                 title = 'Master Of Architecture',
-                visCheck = visBefore('2013-4-5'),
+                visCheck = visBefore('2013-4-25'),
             ),
             degreeRequest('Masters Request, Spring 2013', 
                 'Candidacy Granted',
@@ -375,7 +366,6 @@ cardList['seagrad'] = [
                 title = 'Master Of Science In Construction Management',
                 visCheck = visBefore('2013-8-28'),
             ),
-        
         ]
     ),
     GradCommitteeCard({
@@ -432,7 +422,7 @@ cardList['seagrad'] = [
         ]
     }),
 ]
-#del cardList['javerage']
+del cardList['javerage']
 #del cardList['seagrad']
 #del cardList['jinter']
 
@@ -479,7 +469,9 @@ def getExpectedResults(user, date):
 # Get significant dates to test for user. 
 # Each card is allowed to report its own dates. 
 # Done: implement start and end
-def getSigDates(user, start = None, end = None): 
+def getSigDates(user, start = None, end = None, extras = False): 
+    '''Extras: add generic dates from myuwDates'''
+
     # Expected cards for the given user
     userCards = cardList[user]
     # Convert start/end to myuwDate
@@ -488,6 +480,23 @@ def getSigDates(user, start = None, end = None):
     if end:
         end = myuwDate(end)
     sigDates = []
+    # Internal function to ensure date is in range
+    def checkDate(date):
+        if start and date < start:
+            return False
+        if end and date > end:
+            return False
+        return True
+
+    # Internal function to do duplicate checking then
+    # add to list
+    def addSigDate(date):
+        if sigDate not in sigDates:
+            sigDates.append(date)
+
+    def checkAndAdd(date):
+        if checkDate(date):
+            addSigDate(date)
     # Go through each card collection (set of each
     # different version a card might be in depending on 
     # date, as an alternative to natively supporting
@@ -499,14 +508,13 @@ def getSigDates(user, start = None, end = None):
             # it falls within the desired range
             if hasattr(card, 'significantDates'):
                 for sigDate in card.significantDates:
-                    # start and end are optional
-                    if start and sigDate < start:
-                        continue
-                    elif end and sigDate > end:
-                        continue
-                    elif sigDate not in sigDates:
-                        sigDates.append(sigDate)
+                    checkAndAdd(sigDate)
+
+    if extras:
+        for sigDate in getAllDates():
+            checkAndAdd(sigDate)
     outList = sigDates
+
     outList.sort()
     return outList
 
