@@ -24,7 +24,7 @@ debug = False
 # Run each user in parallel
 parallel = True
 # Split up tests for each user into separate parallel processes
-parallelDateSplit = 4
+parallelDateSplit = 3
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 
@@ -33,9 +33,7 @@ parallelDelay = 4
 
 # For auto date tests, restrict dates to this range
 defaultStartDate = '2013-1-1'
-#startDate = '2013-6-1'
 defaultEndDate = '2013-12-17'
-#endDate = '2013-7-25'
 
 def getTestDates(start = defaultStartDate, end = defaultEndDate):
     userList = myuwExpected.cardList.keys()
@@ -51,14 +49,18 @@ class mainMyuwTestCase(unittest.TestCase):
     and usersToTest. '''
     driverFunc = Firefox
     baseUrl = 'http://localhost:8081'
-    # This won't do anything, just there as a default in case
-    usersToTest = ['javerage', 'jinter']
+    # By default, don't test anything. Real test cases should subclass
+    # this class and define these two variables. 
+    # usersToTest: List of usernames in string format
+    usersToTest = []
+    # testDates: Dictionary of usernames as strings -> list or tuple of 
+    # dates as strings. 
+    testDates = {}
 
     # These should be set to the values that myuw will default to
     # with no override. 
     defaultUser = 'javerage'
     defaultDate = myuwDate(2013, 04, 15)
-    testDates = {}
 
     def setUp(self):
         if not(parallel):
@@ -71,7 +73,7 @@ class mainMyuwTestCase(unittest.TestCase):
         self.driver.maximize_window()
         self.pageHandler = mainMyuwHandler(self.driver, self.baseUrl,
             self.defaultDate, self.defaultUser)
-        # Not sure if these are necessary
+
         self.currentUser = self.defaultUser
         self.currentDate = self.defaultDate
 
@@ -90,12 +92,12 @@ class mainMyuwTestCase(unittest.TestCase):
         is set. usersToTest should be a list of usernames to test with,
         while testDates should be a dictionary mapping usernames to a list
         of dates which they should be tested on. '''
-        # Parallel test currently just spawns 1 process for each user to test
+        # Parallel test spawns 'parallelDateSplit' number of processes per user
+        # to test. 
         if parallel:
-            # List for holding diffs
-            # These will each be a string of json
+            # List for holding diffs. These will each be a string of json.
             diffList = []
-            # List for holding each Popen object
+            # List for holding each Popen instance.
             processes = []
             for user, dates in self.testDates.items():
                 # If there are no dates to test, skip this user
@@ -110,7 +112,7 @@ class mainMyuwTestCase(unittest.TestCase):
                     datesStr = [str(date) for date in dates]
                     # Use this file's name as the script to run
                     mainFile = __file__
-                    # Run it
+                    # Command line is 'python file.py --single username date1 date2 ...
                     process = subprocess.Popen(
                         ['python', mainFile, '--single', user] + datesStr,
                         stdout = subprocess.PIPE,
@@ -120,12 +122,11 @@ class mainMyuwTestCase(unittest.TestCase):
                     )
                     processes.append(process)
 
-                    # Stagger processes to even out load and reduce
-                    # bottlenecking. 
+                    # Stagger processes to even out load and reduce bottlenecks
                     time.sleep(parallelDelay)
 
-            finished = False
             # Wait for every process to finish
+            finished = False
             while not(finished):
                 time.sleep(2)
 

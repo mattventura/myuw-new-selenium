@@ -422,7 +422,7 @@ cardList['seagrad'] = [
         ]
     }),
 ]
-del cardList['javerage']
+#del cardList['javerage']
 #del cardList['seagrad']
 #del cardList['jinter']
 

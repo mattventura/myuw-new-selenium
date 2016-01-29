@@ -745,9 +745,12 @@ stubCards = [
     'InternationalStuCard',
 ]
 
+class stubCard(myuwCard):
+    pass
+
 for cardName in stubCards:
 
-    globals()[cardName] = newCardClass = type(cardName, (myuwCard, ), {})
+    globals()[cardName] = newCardClass = type(cardName, (stubCard, ), {})
     # isaCard modifies in place so we don't care about its return. 
     isaCard(newCardClass)
 

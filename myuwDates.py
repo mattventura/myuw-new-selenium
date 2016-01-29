@@ -4,8 +4,8 @@ from myuwClasses import multiDate, myuwDate
 
 # These are in chronological order
 
-# Day when myuw switches quarter, 
-# also day after grade sub deadline. 
+# Day when myuw switches quarter,
+# also day after grade sub deadline.
 FirstDayQtr = multiDate({
     'WI13': '2013-01-01',
     'SP13': '2013-03-27',
@@ -46,15 +46,15 @@ LastDayInstr = multiDate({
 })
 
 # First day of finals
+# No date for summer
 FinalsBegin = multiDate({
     'WI13': '2013-03-18',
     'SP13': '2013-06-10',
-#    'SU13': '2013-08-23', # TODO: decide what to do about summer finals date
     'AU13': '2013-12-07'
 })
 
 # Break begins, also first day after
-# the end of finals. 
+# the end of finals.
 BreakBegins = multiDate({
     'WI13': '2013-03-23',
     'SP13': '2013-06-15',
@@ -65,9 +65,9 @@ BreakBegins = multiDate({
 FinalsEnd = BreakBegins - 1
 
 # Day before myuw switches quarter,
-# also grade sub deadline. 
+# also grade sub deadline.
 LastDayQtr = multiDate({
-    'WI13': '2013-03-26', 
+    'WI13': '2013-03-26',
     'SP13': '2013-06-18',
     'SU13': '2013-08-27',
     'AU13': '2013-12-17',
@@ -93,7 +93,7 @@ SummerRegCardShowDates = {}
 RegCardHideDates = {}
 SummerRegCardHideDates = {}
 for key, value in RegPd1.items():
-    # If it's summer, put it in a special summer 
+    # If it's summer, put it in a special summer
     # quarter reg card date
     if key[0:2] == 'SU':
         SummerRegCardShowDates[key] = value - 7
@@ -108,9 +108,9 @@ RegCardHide = multiDate(RegCardHideDates)
 SummerRegHide = multiDate(SummerRegCardHideDates)
 
 
-
 def dateToQtr(date):
     '''Try to convert a date to quarter in the form of 'SP13'. '''
+
     date = myuwDate(date)
     # Hack, TODO fix this
     if date < myuwDate('2013-01-01'):
@@ -120,7 +120,7 @@ def dateToQtr(date):
             end = LastDayQtr[qtr]
             if start <= date <= end:
                 return qtr
-        except: 
+        except:
             continue
     raise Exception("Couldn't find quarter for date %s" %date)
 
@@ -139,9 +139,10 @@ def dateToTerm(date):
         else:
             termPart = 'SA'
         return termPart + year
-    
+
     else:
         return qtr
+
 
 def getAllMultiDates():
     '''Get a list of all multiDates defined here. '''
@@ -151,6 +152,7 @@ def getAllMultiDates():
             mds.append(md)
 
     return mds
+
 
 def getAllDates():
     '''Get a list of all dates defined in all multiDates defined here. '''
