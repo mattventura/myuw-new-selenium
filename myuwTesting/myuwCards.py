@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
-from myuwFunctions import isCardVisible, packElement, formatDiffs, \
+from .myuwFunctions import isCardVisible, packElement, formatDiffs, \
 rangesToSigDates, filterListVis
-from myuwDates import *
+from .myuwDates import *
 import re
-from myuwClasses import *
+from .myuwClasses import *
 
 from selenium.common.exceptions import NoSuchElementException
 

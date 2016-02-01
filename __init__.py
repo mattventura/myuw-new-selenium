@@ -1,3 +1,3 @@
 #!/usr/bin/python
 
-__all__ = ['myuwCards', 'myuwClasses', 'myuwDates', 'myuwFunctions', 'myuwFunctions', 'myuwThrive']
+__all__ = ['__main__', 'myuwTesting', 'testconfig']

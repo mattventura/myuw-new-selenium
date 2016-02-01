@@ -228,7 +228,7 @@ cardList['javerage'] = [
     ),
     cardCD(
         TextbookCard(),
-        # No textbooks for summer
+        # No textbooks for AU13
         ('2013-1-1', LastDayQtr['SU13'])
     ),
     GradeCard({

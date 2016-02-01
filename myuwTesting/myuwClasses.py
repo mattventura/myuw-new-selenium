@@ -6,9 +6,10 @@ from UserDict import IterableUserDict
 from abc import ABCMeta, abstractmethod
 import time
 
-from myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs, \
-    getCardName, uesc
+from .myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs, \
+    getCardName, uesc, isCardVisible, isVisibleFast, getCardName
 
+from .testconfig import perf
 
 
 def toDate(obj):
@@ -178,8 +179,8 @@ class myuwDateRange(object):
         return (
             self.startDate - 1, 
             self.startDate, 
-            self.endDate - 1, 
-            self.endDate
+            self.endDate, 
+            self.endDate + 1,
         )
 
     # Lets us use 'date in dateRange' syntax to check if 
