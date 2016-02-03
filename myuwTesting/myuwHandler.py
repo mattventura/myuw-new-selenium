@@ -136,7 +136,7 @@ class mainMyuwHandler(object):
                     except KeyError as e:
                         # KeyError implies the card was not in the list card classes
                         # This doesn't fail the test as it might just be a new card. 
-                        print 'WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName
+                        raise Exception('WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName)
                     else:
                         newCard = cardClass.fromElement(self.currentDate, cardEl)
                         # For cards with multiple names, take the name from the class

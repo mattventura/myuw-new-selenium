@@ -718,10 +718,11 @@ class ThriveCard(myuwCard):
         return rangesToSigDates(self.expectedContent.keys())
 
 
-
 @isaCard
 class CourseCard(myuwCard):
     '''Course Cards'''
+
+    altNames = ['CourseCards']
 
     @classmethod
     @packElement
@@ -748,9 +749,12 @@ stubCards = [
 class stubCard(myuwCard):
     pass
 
-for cardName in stubCards:
+def mkStub(name):
+    return type(name, (stubCard, ), {})
 
-    globals()[cardName] = newCardClass = type(cardName, (stubCard, ), {})
+for cardName in stubCards:
+    newCardClass = mkStub(cardName)
+    globals()[cardName] = newCardClass
     # isaCard modifies in place so we don't care about its return. 
     isaCard(newCardClass)
 
