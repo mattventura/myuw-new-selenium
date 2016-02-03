@@ -73,21 +73,6 @@ class HFSCard(myuwCard):
 
         self.balanceDict = balanceDict
 
-        try:
-            self.stuBalance = balanceDict['stu']
-        except KeyError:
-            self.stuBalance = None
-
-        try:
-            self.empBalance = balanceDict['emp']
-        except KeyError:
-            self.empBalance = None
-
-        try:
-            self.dinBalance = balanceDict['din']
-        except KeyError:
-            self.dinBalance = None
-
     @classmethod
     @packElement
     def fromElement(cls, date, e):
@@ -355,6 +340,7 @@ class NoCourseCard(myuwCard):
     pass
 
 class NoCourseCardGrad(myuwCard):
+    '''Possible different version for grads?'''
     name = 'NoCourseCard'
     visCheck = visAuto(FirstDayQtr, FinalsEnd, exclude = ['SU']) \
         + visCD(ClassesBegin['SU13'], LastDayInstr['SU13'])
@@ -362,7 +348,8 @@ class NoCourseCardGrad(myuwCard):
 
 @isaCard
 class VisualScheduleCard(myuwCard):
-    '''Visual Schedule Card. Does not encompass the final exam only VS. '''
+    '''Visual Schedule Card. Does not encompass the final-exam-only VS, 
+    that's the FinalExamCard. '''
     
     def __init__(self, quartersDict = None):
         '''quartersDict is of the form:
