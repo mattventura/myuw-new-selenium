@@ -69,17 +69,23 @@ else:
         argv = sys.argv
         # --single option causes it to run individual test cases and report
         # them in json format rather than doing everything
-        if len(argv) >= 4 and argv[1] == '--single':
+        if len(argv) >= 3 and argv[1] == '--single':
             # Parse arguments
-            user = argv[2]
-            dates = argv[3:]
+            pairs = argv[2:]
+            testDates = {}
+            for pair in pairs:
+                user, date = pair.split(':')
+                if user not in testDates:
+                    testDates[user] = []
+                testDates[user].append(date)
+            users = testDates.keys()
             # Disable parallelization
             testconfig.parallel = False
 
             class singleTestCase(jsonMyuwTestCase):
                 '''Test class for --single mode'''
-                testDates = {user: dates}
-                usersToTest = [user]
+                testDates = testDates
+                usersToTest = users
 
             # Run the test
             # This handles the output

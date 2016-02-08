@@ -20,7 +20,7 @@ cardList['javerage'] = [
     CriticalInfoCard(True, True, False),
     TuitionCard(),
     LibraryCard(),
-    CourseCard(),
+    CourseCards(),
     GradStatusCard(
         [
             petRequest("Master's degree - Extend six year limit", 
@@ -271,16 +271,8 @@ cardList['jinter'] = [
     SummerEFSCard(summerReg = False, considerEFS = True), 
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
-    cardAuto(
-        RegStatusCard(),
-        RegCardShow,
-        RegCardHide
-    ), 
-    cardAuto(
-        SummerRegStatusCard(),
-        SummerRegShow,
-        SummerRegHide
-    ),
+    RegStatusCard(),
+    SummerRegStatusCard(),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
     NoCourseCard(), 
@@ -422,15 +414,73 @@ cardList['seagrad'] = [
         ]
     }),
 ]
+cardList['jbothell'] = [
+    HFSCard({'stu': '$5.10'}),
+    ToRegisterCard(),
+    SummerEFSCard(summerReg = False, considerEFS = True),
+    TuitionCard(),
+    CriticalInfoCard(email = False, directory = True, residency = False),
+    VisualScheduleCard({
+        'SP13': {
+            'BESS 102 A': None,
+            'BESS 102 AB': None,
+            'BISSEB 259 A': None,
+            'BCWRIT 500 A': None,
+        }
+    }),
+    app_acal(),
+    app_notices(),
+    LibraryCard(),
+    ThriveCardExpected(),
+    cardQtr(
+        FutureQuarterCard({
+            'Spring 2013': {
+                'credits' : 20,
+                'sections': 4,
+            }
+        }),
+        ['WI13']
+    ),
+    cardQtr(
+        NoCourseCard(),
+        ['WI13', 'SU13', 'AU13']
+    ),
+    cardQtr(
+        CourseCards(),
+        ['SP13']
+    ),
+    cardQtr(
+        FinalExamCard(),
+        ['SP13']
+    ),
+    cardQtr(
+        GradeCard({
+            'SP13': {
+                'BCWRIT 500': None,
+                'BESS 102': None,
+                'BISSEB 259': None,
+            }
+        }),
+        ['SP13']
+    ),
+    cardQtr(
+        RegStatusCard(),
+        ['SP13']
+    ),
+    SummerRegStatusCard(),
+    
+]
+
 #del cardList['javerage']
 #del cardList['seagrad']
 #del cardList['jinter']
+#del cardList['jbothell']
 
-# We want these to be dictionaries, but no need to cause a bunch of 
-# extra typing when listing them. 
-# It puts them in a list so that cards that move around depending
-# on date can have multiple entries. 
 def cardListToDict(cl):
+    '''Convert a list of cards to a dictionary of the form:
+    { name: [card1, card2] }
+    Multiple cards could have the same name, for example to specify 
+    different mock data for different time periods. '''
     cd = {}
     for card in cl:
         name = card.name
@@ -443,8 +493,8 @@ def cardListToDict(cl):
 for name, cl in cardList.items():
     cardList[name] = cardListToDict(cl)
 
-# Function to get expected results for a date and user
 def getExpectedResults(user, date):
+    '''Get expected results for user on date. Returns a list of cards. '''
     if isinstance(date, str):
         date = myuwDate(date)
     userCards = cardList[user]
@@ -466,12 +516,10 @@ def getExpectedResults(user, date):
             
     return userCardsVisible
 
-# Get significant dates to test for user. 
-# Each card is allowed to report its own dates. 
-# Done: implement start and end
 def getSigDates(user, start = None, end = None, extras = False): 
-    '''Extras: add generic dates from myuwDates'''
-
+    '''Get significant dates to test for the given user. Optionally filters
+    dates to only those between 'start' and 'end'. If 'extras' is true, then
+    it will include generic events in myuwDates. '''
     # Expected cards for the given user
     userCards = cardList[user]
     # Convert start/end to myuwDate
@@ -518,21 +566,18 @@ def getSigDates(user, start = None, end = None, extras = False):
     outList.sort()
     return outList
 
-# Given two dictionaries of cards, find the differences between them. 
-# This includes missing/unexpected cards as well as differences in card content. 
 def findDiffs(expected, actual):
+    '''Given dictionaries of expected and actual cards (of the form 
+    {name: card}), find differences between which cards were found as well
+    as content of the cards. '''
 
-    # Cards in common. 
-    # These will need to be compared to each other individually to find 
-    # differences between actual and expected data
+    # Populate a dictionary of name: cardPair objects, where the cardPair
+    # holds the expected and actual version of the card
     common = {}
-
-    # Figure out what we have in common
     for cardName in actual:
         if cardName in expected:
             actualCard = actual[cardName]
             expectedCard = expected[cardName]
-            # Assemble a cardPair object for these two cards. 
             common[cardName] = cardPair(expectedCard, actualCard)
 
     # For the cards in common, remove them from the dictionaries of 
@@ -560,9 +605,8 @@ def findDiffs(expected, actual):
         
         if pairDiff == None:
             raise TypeError('Diff for %s returned None\n' %name)
-        elif (not(isinstance(pairDiff, str))
-            and not(isinstance(pairDiff, unicode))):
 
+        elif not(isinstance(pairDiff, basestring)):
             raise TypeError(
                 'Diff for %s returned a non-string value "%s"\n' %(name, diffs)
             )
@@ -571,5 +615,4 @@ def findDiffs(expected, actual):
             diffs += pairDiff
 
     return diffs
-
 

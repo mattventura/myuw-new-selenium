@@ -81,33 +81,31 @@ class mainMyuwTestCase(unittest.TestCase):
             diffList = []
             # List for holding each Popen instance.
             processes = []
+            # User-date pairs
+            udpairs = []
             for user, dates in self.testDates.items():
-                # If there are no dates to test, skip this user
                 if not(dates):
                     continue
-                dateLists = splitList(dates, testconfig.parallelDateSplit)
-                # splitList() correctly handles the situation where we have
-                # more splits than actual dates, so we don't have to handle the
-                # blank list case here
-                for dates in dateLists:
-                    # Turn dates from myuwDate objects to strings
-                    datesStr = [str(date) for date in dates]
-                    # Use this file's name as the script to run
-                    #mainFile = __file__
-                    #TODO: fix this
-                    mainFile = 'main.py'
-                    # Command line is 'python file.py --single username date1 date2 ...
-                    process = subprocess.Popen(
-                        ['python', mainFile, '--single', user] + datesStr,
-                        stdout = subprocess.PIPE,
-                        stderr = subprocess.PIPE,
-                        # Reduce priority of child process (doesn't work on Windows)
-                        preexec_fn = lambda: os.nice(15),
-                    )
-                    processes.append(process)
+                for date in dates:
+                    pair = '%s:%s' %(user, date)
+                    udpairs.append(pair)
 
-                    # Stagger processes to even out load and reduce bottlenecks
-                    time.sleep(testconfig.parallelDelay)
+            datesplits = splitList(udpairs, testconfig.parallelNum)
+
+            for datepairs in datesplits:
+                mainFile = 'main.py'
+
+                process = subprocess.Popen(
+                    ['python', mainFile, '--single'] + datepairs,
+                    stdout = subprocess.PIPE,
+                    stderr = subprocess.PIPE,
+                    # Reduce priority of child process (doesn't work on Windows)
+                    preexec_fn = lambda: os.nice(15),
+                )
+                processes.append(process)
+
+                # Stagger processes to even out load and reduce bottlenecks
+                time.sleep(testconfig.parallelDelay)
 
             # Wait for every process to finish
             finished = False

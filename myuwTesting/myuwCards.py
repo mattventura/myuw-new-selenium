@@ -269,6 +269,7 @@ class GradeCard(myuwCard):
         return diffs
 
     def shouldAppear(self, date):
+        # TODO: revisit this logic
         if super(self.__class__, self).shouldAppear(date):
             return True
 
@@ -288,6 +289,11 @@ class GradeCard(myuwCard):
     visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1, exclude = ['SU'])
 
 @isaCard
+class RegStatusCard(myuwCard):
+    '''Registration status card'''
+    visCheck = visAuto(RegCardShow, RegCardHide)
+
+@isaCard
 class SummerRegStatusCard(myuwCard):
     '''Summer Registration Status card. Covers both the positions
     in which the card can appear. '''
@@ -296,6 +302,8 @@ class SummerRegStatusCard(myuwCard):
         'SummerRegStatusCardA',
         'SummerRegStatusCard1'
     ]
+
+    visCheck = visAuto(SummerRegShow, SummerRegHide)
 
 @isaCard
 class CriticalInfoCard(myuwCard):
@@ -333,18 +341,16 @@ class CriticalInfoCard(myuwCard):
 
 @isaCard
 class NoCourseCard(myuwCard):
-    '''No Course Card. Not called directly, rather it is created 
-    and returned in the fromElement methods of VisualScheduleCard 
-    and FinalExamCard.'''
+    '''No Course Card. Not called directly, rather it is created and 
+    returned in the fromElement methods of VisualScheduleCard and 
+    FinalExamCard.'''
     visCheck = visAuto(FirstDayQtr, FinalsEnd)
-    pass
 
 class NoCourseCardGrad(myuwCard):
     '''Possible different version for grads?'''
     name = 'NoCourseCard'
     visCheck = visAuto(FirstDayQtr, FinalsEnd, exclude = ['SU']) \
         + visCD(ClassesBegin['SU13'], LastDayInstr['SU13'])
-    
 
 @isaCard
 class VisualScheduleCard(myuwCard):
@@ -421,7 +427,10 @@ class VisualScheduleCard(myuwCard):
             if date in badDateRange:
                 return False
             else:
-                return True
+                # This is now a little smarter, it will automatically hide itself
+                # if there are no classes for the current quarter
+                term = dateToTerm(date)
+                return term in self.quartersDict and bool(self.quartersDict)
         else:
             return False
 
@@ -443,7 +452,7 @@ class FinalExamCard(myuwCard):
         return cls()
 
 def checkNCC(e):
-    '''Check if a card is actually the NoCourseCard
+    '''Check if a card element is actually the NoCourseCard
     (No Registration Found; You don't appear to be registered)
     '''
     try:
@@ -706,10 +715,10 @@ class ThriveCard(myuwCard):
 
 
 @isaCard
-class CourseCard(myuwCard):
+class CourseCards(myuwCard):
     '''Course Cards'''
 
-    altNames = ['CourseCards']
+    #altNames = ['CourseCards']
 
     @classmethod
     @packElement
@@ -725,7 +734,6 @@ class CourseCard(myuwCard):
 stubCards = [
     'TuitionCard', 
     'EventsCard',
-    'RegStatusCard',
     'PCEBanner',
     'app_notices',
     'app_acal',
@@ -734,10 +742,13 @@ stubCards = [
 ]
 
 class stubCard(myuwCard):
+    '''Class for quickly generating simple cards'''
     pass
 
 def mkStub(name):
-    return type(name, (stubCard, ), {})
+    '''Function for creating stub card classes'''
+    docstring = 'Stub card class for card "%s"' %name
+    return type(name, (stubCard, ), {'__doc__': docstring})
 
 for cardName in stubCards:
     newCardClass = mkStub(cardName)

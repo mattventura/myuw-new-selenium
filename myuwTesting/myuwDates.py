@@ -4,26 +4,7 @@ from . import myuwClasses
 from .myuwClasses import myuwDate
 from .myuwClasses import multiDate
 
-# These are in chronological order
-
-# Day when myuw switches quarter,
-# also day after grade sub deadline.
-FirstDayQtr = multiDate({
-    'WI13': '2013-01-01',
-    'SP13': '2013-03-27',
-    'SU13': '2013-06-19',
-    'AU13': '2013-08-28',
-    'WI14': '2013-12-18',
-})
-
-
-# First day of classes
-ClassesBegin = multiDate({
-    'WI13': '2013-01-07',
-    'SP13': '2013-04-01',
-    'SU13': '2013-06-24',
-    'AU13': '2013-09-25',
-})
+# These are in (roughly) chronological order
 
 # Reg period 1 begin
 RegPd1 = multiDate({
@@ -37,6 +18,29 @@ RegPd2 = multiDate({
     'SP13': '2013-03-04',
     'SU13': '2013-05-23',
     'AU13': '2013-06-24',
+})
+
+# Day when myuw switches quarter,
+# also day after grade sub deadline.
+FirstDayQtr = multiDate({
+    'WI13': '2013-01-01',
+    'SP13': '2013-03-27',
+    'SU13': '2013-06-19',
+    'AU13': '2013-08-28',
+    'WI14': '2013-12-18',
+})
+
+# First day of classes
+ClassesBegin = multiDate({
+    'WI13': '2013-01-07',
+    'SP13': '2013-04-01',
+    'SU13': '2013-06-24',
+    'AU13': '2013-09-25',
+})
+
+# First day of summer B-term
+SummerBTermBegins = multiDate({
+    'SU13': '2013-7-25',
 })
 
 # Last day of instruction
@@ -56,7 +60,7 @@ FinalsBegin = multiDate({
 })
 
 # Break begins, also first day after
-# the end of finals.
+# the end of finals for non-summer qtrs. 
 BreakBegins = multiDate({
     'WI13': '2013-03-23',
     'SP13': '2013-06-15',
@@ -84,12 +88,8 @@ NextQtrClassesBegin = multiDate({
     'AU13': '2014-01-06',
 })
 
-SummerBTermBegins = multiDate({
-    'SU13': '2013-7-25',
-})
 
-# Special dates
-
+# Generate reg card dates based off existing dates
 RegCardShowDates = {}
 SummerRegCardShowDates = {}
 RegCardHideDates = {}
@@ -109,10 +109,8 @@ SummerRegShow = multiDate(SummerRegCardShowDates)
 RegCardHide = multiDate(RegCardHideDates)
 SummerRegHide = multiDate(SummerRegCardHideDates)
 
-
 def dateToQtr(date):
     '''Try to convert a date to quarter in the form of 'SP13'. '''
-
     date = myuwDate(date)
     # Hack, TODO fix this
     if date < myuwDate('2013-01-01'):
@@ -145,7 +143,6 @@ def dateToTerm(date):
     else:
         return qtr
 
-
 def getAllMultiDates():
     '''Get a list of all multiDates defined here. '''
     mds = []
@@ -154,7 +151,6 @@ def getAllMultiDates():
             mds.append(md)
 
     return mds
-
 
 def getAllDates():
     '''Get a list of all dates defined in all multiDates defined here. '''

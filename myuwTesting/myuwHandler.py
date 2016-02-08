@@ -5,7 +5,7 @@ import time
 from .myuwCards import cardDict, errorCard
 from .myuwFunctions import getCardName, isCardVisible, isVisibleFast
 from .testconfig import perf
-from .myuwClasses import myuwDate, perfCounter, LandingWaitTimedOut
+from .myuwClasses import myuwDate, perfCounter, LandingWaitTimedOut, hungCard
 
 class mainMyuwHandler(object):
     '''Page object model handler for myuw. '''
@@ -105,6 +105,17 @@ class mainMyuwHandler(object):
             '//div[@id="landing_accounts_cards"]/div',
         )
 
+        # Cards that didn't finish loading
+        failedCards = []
+        for el in self.driver.find_elements_by_css_selector('i.fa-spin'):
+            cardName = None
+            while cardName is None:
+                el = el.find_element_by_xpath('..')
+                cardName = getCardName(el)
+            else:
+                failedCards.append(el)
+        
+
         # Using each search string above, find cards
         for xpath in cardxpaths:
             cardEls += self.driver.find_elements_by_xpath(xpath)
@@ -153,6 +164,11 @@ class mainMyuwHandler(object):
             if perf:
                 parseTime = cardTimer.endFmt()
                 print parseTime
+
+        failedCards = filter(isVisibleFast, failedCards)
+        for cardEl in failedCards:
+            cardName = getCardName(el)
+            self._cards[cardName] = hungCard(cardName)
 
         # Mark the card list as being fresh
         self.cardsValid = True

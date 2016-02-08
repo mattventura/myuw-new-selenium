@@ -7,8 +7,11 @@ perf = False
 debug = False
 # Run each user in parallel
 parallel = True
-# Split up tests for each user into separate parallel processes
-parallelDateSplit = 3
+# Split tests into parallel processes
+# The webserver process generally doesn't use that much, 
+# and the processes are niced anyway, so whatever you would
+# use for make -jX will probably work here. 
+parallelNum = 9
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 

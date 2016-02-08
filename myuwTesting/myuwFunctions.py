@@ -142,7 +142,7 @@ def uesc(func):
                 v = v.encode('unicode-escape')
             newKw[k] = v
 
-        func(*newArgs, **newKw)
+        return func(*newArgs, **newKw)
     
     return inner
 

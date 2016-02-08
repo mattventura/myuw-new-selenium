@@ -196,18 +196,21 @@ class myuwDateRange(object):
         return 'myuwDateRange(%s, %s)' %(self.startDate, self.endDate)
 
     def __eq__(self, other):
+        '''Equality check. Returns True if start and end are equal. '''
         return (self.startDate == other.startDate) and \
             (self.endDate == other.endDate)
 
     def __gt__(self, other):
+        '''Greater-than check. Start and end must both be greater. '''
         return (self.startDate > other.startDate) and \
             (self.endDate > other.endDate)
 
     def __lt__(self, other):
+        '''Less-than check. Start and end must both be lesser. '''
         return (self.startDate < other.startDate) and \
             (self.endDate < other.endDate)
 
-    # There's a reason I'm not using @total_ordering but I forgot what it was
+    # @total_ordering doesn't quite work for this
     def __ge__(self, other):
         return self == other or self > other
 
@@ -218,12 +221,13 @@ class myuwDateRange(object):
         return not(self == other)
 
 class nullDateRange(myuwDateRange):
-    '''Dummy date range for when there are no dates whatsoever'''
+    '''Dummy date range for when there are no dates whatsoever. 
+    Has no significant dates, and __contains__ is always false. '''
     def __init__(self):
         pass
 
     def significantDates(self):
-        return ()
+        return []
 
     def __contains__(self, element):
         return False
@@ -275,7 +279,7 @@ class multiDate(IterableUserDict):
 
     Supports all the operations a normal dictionary does. 
     '''
-    
+
     def __init__(self, qtrsDict):
         qtrsDict = qtrsDict.copy()
         # Iterate through and turn everything into a myuwDate
@@ -632,6 +636,9 @@ def cardAuto(card, startDates, endDates):
     Example: cardCustom(HFSCard(), QtrStart + 2, LastDayInstr - 1)'''
     return cardCustom(card, visAuto(startDates, endDates))
 
+def cardQtr(card, include = [], exclude = []):
+    return cardCustom(card, visQtr(include, exclude))
+
 
 class autoDiff(object):
     '''Mixin that provides a findDiffs method which uses the autoDiffs 
@@ -931,3 +938,11 @@ class thriveContent(autoDiff):
         #'tryThis': 'Thrive card "Try This" section',
         #'links': 'Thrive card links'
     }
+
+# Cards that didn't finish loading
+class hungCardClass(myuwCard):
+    pass
+
+@uesc
+def hungCard(name):
+    return type(name, (hungCardClass, ), {'name': name})()
