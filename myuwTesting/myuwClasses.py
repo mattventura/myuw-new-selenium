@@ -351,7 +351,7 @@ class visException(visClass):
         self.makeExc()
 
 class visNever(visClass):
-    visCheck = lambda self, date: True
+    visCheck = lambda self, date: False
     sigDates = []
 
 class visAlways(visClass):
@@ -945,4 +945,4 @@ class hungCardClass(myuwCard):
 
 @uesc
 def hungCard(name):
-    return type(name, (hungCardClass, ), {'name': name})()
+    return type('hungcard_%s' %name, (hungCardClass, ), {'name': name})()

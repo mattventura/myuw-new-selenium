@@ -5,6 +5,7 @@ rangesToSigDates, filterListVis
 from .myuwDates import *
 import re
 from .myuwClasses import *
+from .myuwData import stuHuskyCardLink, empHuskyCardLink
 
 from selenium.common.exceptions import NoSuchElementException
 
@@ -39,10 +40,6 @@ def isaCard(innerClass):
     autoCardName(innerClass)
     addToCardDict(innerClass)
     return innerClass
-
-# TODO: Move these somewhere else
-stuHuskyCardLink = 'https://www.hfs.washington.edu/olco/Secure/AccountSummary.aspx'
-empHuskyCardLink = 'fill me in'
 
 # Shorthand versions of these
 balanceLabels = {
@@ -220,14 +217,23 @@ class GradeCard(myuwCard):
 
         self.gradeDict = gradeDict
         self.quarter = None
+        self.visCheck = self.makeVisCheck()
 
     @classmethod
     @packElement
     def fromElement(cls, date, e):
         # We have to adjust the date a bit, since the final grades
         # card will appear a bit past the end of the quarter
+
         qtr = dateToQtr(date - 10)
-        if qtr.startswith('SU'):
+
+        # Correct for large break between summer and autumn
+        if 'AU' in qtr:
+            qtr = dateToQtr(date - 40)
+
+        # If it's past the last day of instruction for summer, that means
+        # the grades displayed will include summer B/full grades. 
+        if 'SU' in qtr:
             if date >= LastDayInstr[qtr] + 1:
                 qtr = 'SB13'
             else:
@@ -268,25 +274,41 @@ class GradeCard(myuwCard):
         diffs += formatDiffs('Final grades', gradesA, gradesB)
         return diffs
 
-    def shouldAppear(self, date):
-        # TODO: revisit this logic
-        if super(self.__class__, self).shouldAppear(date):
-            return True
 
-        year = date.shortYear
-        hasSummerAGrades = ('SA' + str(year)) in self.gradeDict
-        summerAGradeDates = getMultiDateRange(SummerBTermBegins, NextQtrClassesBegin - 1)
-        inDateRange = False
-        for dr in summerAGradeDates:
-            if date in dr:
-                inDateRange = True
-        
-        if hasSummerAGrades and inDateRange:
-            return True
-        else:
-            return False
+    def makeVisCheck(self):
 
-    visCheck = visAuto(LastDayInstr + 1, NextQtrClassesBegin - 1, exclude = ['SU'])
+        visChecks = []
+        for gradesQtr in self.gradeDict.keys():
+            short = gradesQtr[0:2]
+            year = gradesQtr[2:4]
+
+            if short in ('WI', 'AU'):
+                show = LastDayInstr[gradesQtr] + 1
+                hide = NextQtrClassesBegin[gradesQtr] - 1
+
+            elif short == 'SP':
+                show = LastDayInstr[gradesQtr] + 1
+                hide = NextQtrClassesBegin[gradesQtr] - 1
+
+            elif short == 'SA':
+                show = SummerBTermBegins['SU' + year]
+                hide = NextQtrClassesBegin['SU' + year] - 1
+
+            elif short == 'SB':
+                show = LastDayInstr['SU' + year]
+                hide = NextQtrClassesBegin['SU' + year] - 1
+
+            else:
+                exStr = 'Invalid short quarter name %s from quarter %s.'%(short, gradesQtr)
+                raise Exception(exStr)
+
+            visNew = visCD(show, hide)
+            #print visNew
+            visChecks.append(visNew)
+
+        visCheck = visUnion(*visChecks)
+        return visCheck
+
 
 @isaCard
 class RegStatusCard(myuwCard):

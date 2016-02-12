@@ -5,12 +5,18 @@ from selenium.common.exceptions import WebDriverException
 
 def isCardVisible(cardEl):
     '''Attempt to determine if a card is visible using numerous indicators. '''
-    if not cardEl.is_displayed():
+    try:
+        cardName = getCardName(cardEl)
+    except:
+        pass
+    if not(cardEl.is_displayed()):
         return False
     #if not cardEl.get_attribute('innerHTML'):
     #    return False
-    if not cardEl.text:
+    text = cardEl.text
+    if not(cardEl.text):
         return False
+
     return True
 
 # Like above but checks less stuff

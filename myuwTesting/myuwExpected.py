@@ -43,7 +43,7 @@ cardList['javerage'] = [
                 visCheck = visBefore('2013-3-27')),
             leaveRequest('Autumn 2013 Leave', 'Paid',
                 visCheck = visBefore('2013-12-18')),
-            #TODO: verify above date
+            # Done: verify above date
             leaveRequest('Winter 2014 Leave', 'Paid'),
             leaveRequest('Spring 2014 Leave', 'Paid'),
         ], 
@@ -453,19 +453,18 @@ cardList['jbothell'] = [
         FinalExamCard(),
         ['SP13']
     ),
-    cardQtr(
-        GradeCard({
-            'SP13': {
-                'BCWRIT 500': None,
-                'BESS 102': None,
-                'BISSEB 259': None,
-            }
-        }),
-        ['SP13']
-    ),
+    GradeCard({
+        'SP13': {
+            'BCWRIT 500': None,
+            'BESS 102': None,
+            'BISSEB 259': None,
+        }
+    }),
     cardQtr(
         RegStatusCard(),
-        ['SP13']
+        ['SP13', 'SU13']
+        # Date range for which the card is visible cuts into summer, so we
+        # need to include that too (doesn't cause issues later). 
     ),
     SummerRegStatusCard(),
     

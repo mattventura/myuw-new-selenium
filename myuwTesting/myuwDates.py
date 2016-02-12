@@ -128,6 +128,7 @@ def dateToTerm(date):
     '''Like dateToQtr, but differentiates between the two
     summer terms. Will return 'SA13' or 'SB13' for summer
     A/B in 2013. '''
+    date = myuwDate(date)
     qtr = dateToQtr(date)
     qtrPart = qtr[0:2]
     year = qtr[2:4]
@@ -142,6 +143,17 @@ def dateToTerm(date):
 
     else:
         return qtr
+
+def getPastTerm(date):
+    '''Get the term that you're either in or just finished'''
+    date = myuwDate(date)
+    qtr = dateToQtr(date)
+    if 'SU' not in qtr:
+        qtr = dateToQtr(date - 40)
+    else:
+        qtr = dateToTerm(date - 10)
+    return qtr
+    
 
 def getAllMultiDates():
     '''Get a list of all multiDates defined here. '''

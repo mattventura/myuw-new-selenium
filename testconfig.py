@@ -9,12 +9,12 @@ parallel = True
 # The webserver process generally doesn't use that much, 
 # and the processes are niced anyway, so whatever you would
 # use for make -jX will probably work here. 
-parallelNum = 8
+parallelNum = 10
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 
 # Delay between starting processes for parallel mode
-parallelDelay = 5
+parallelDelay = 3
 
 # For auto date tests, restrict dates to this range
 defaultStartDate = '2013-1-1'

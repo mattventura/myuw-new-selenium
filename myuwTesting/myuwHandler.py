@@ -7,6 +7,9 @@ from .myuwFunctions import getCardName, isCardVisible, isVisibleFast
 from .testconfig import perf
 from .myuwClasses import myuwDate, perfCounter, LandingWaitTimedOut, hungCard
 
+# temp
+import sys
+
 class mainMyuwHandler(object):
     '''Page object model handler for myuw. '''
     
@@ -147,7 +150,7 @@ class mainMyuwHandler(object):
                     except KeyError as e:
                         # KeyError implies the card was not in the list card classes
                         # This doesn't fail the test as it might just be a new card. 
-                        raise Exception('WARNING: Card %s unknown. Please write at least a stub class for it. ' %cardName)
+                        raise Exception('Error: Card %s unknown. Please write at least a stub class for it. ' %cardName)
                     else:
                         newCard = cardClass.fromElement(self.currentDate, cardEl)
                         # For cards with multiple names, take the name from the class
@@ -159,7 +162,7 @@ class mainMyuwHandler(object):
                 # Card is hidden
                 if perf:
                     cardTimer.label = 'Parsing hidden card'
-                continue
+                #continue
 
             if perf:
                 parseTime = cardTimer.endFmt()
@@ -167,7 +170,7 @@ class mainMyuwHandler(object):
 
         failedCards = filter(isVisibleFast, failedCards)
         for cardEl in failedCards:
-            cardName = getCardName(el)
+            cardName = getCardName(cardEl)
             self._cards[cardName] = hungCard(cardName)
 
         # Mark the card list as being fresh

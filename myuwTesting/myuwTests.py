@@ -15,6 +15,7 @@ from . import testconfig
 from myuwTesting.myuwHandler import mainMyuwHandler
 
 def getTestDates(start = defaultStartDate, end = defaultEndDate):
+    '''Get test dates based off expected cards and known dates. '''
     userList = myuwExpected.cardList.keys()
     tcDict = {}
     for user in userList:
