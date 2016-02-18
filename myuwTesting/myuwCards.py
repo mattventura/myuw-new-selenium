@@ -309,6 +309,17 @@ class GradeCard(myuwCard):
         visCheck = visUnion(*visChecks)
         return visCheck
 
+class GradeCardDummy(GradeCard):
+    def __init__(self):
+        dummyDict = {
+            'AU13': {},
+            'WI13': {},
+            'SP13': {},
+            'SA13': {},
+            'SB13': {},
+        }
+        super(GradeCardDummy, self).__init__(dummyDict)
+
 
 @isaCard
 class RegStatusCard(myuwCard):

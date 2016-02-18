@@ -83,16 +83,16 @@ if __name__ == '__main__':
         d.maximize_window()
         m = mainMyuwHandler(d, 'http://localhost:8081/')
 
-        m.setUser('jbothell')
-        m.setDate('2013-4-7')
+        m.setUser('seagrad')
+        m.setDate('2013-3-27')
         try:
             m.browseLanding()
         except Exception as e:
             print e
-        el = d.find_element_by_id('SummerRegStatusCard1')
-        print el.is_displayed()
-        print repr(el.text)
-        time.sleep(4)
+        #el = d.find_element_by_id('SummerRegStatusCard1')
+        #print el.is_displayed()
+        #print repr(el.text)
+        #time.sleep(4)
         a = m.cards
         #
         #e = myuwExpected.getExpectedResults('javerage', '2013-06-10')

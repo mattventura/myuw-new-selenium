@@ -726,6 +726,8 @@ class myuwCard(autoDiff):
 
 class errorCard(myuwCard):
 
+    isErrorCard = True
+
     @classmethod
     @packElement
     def fromElement(cls, date, cardEl):
@@ -735,9 +737,22 @@ class errorCard(myuwCard):
         newObj = cls.__init__(cardName)
         return newObj
 
-    def __init__(self, name):
-        self.name = name
-        self.__name__ = name + '_error'
+    def __init__(self, base, forcename = None):
+        if isinstance(base, basestring):
+            self.name = base
+
+        elif hasattr(base, 'name'):
+            self.name = forcename or base.name
+            self.altNames = base.altNames
+            self.visCheck = base.visCheck
+
+
+        else:
+            raise Exception('errorCard.fromElement requires either a name\
+            or a card as its argument.')
+
+        self.__name__ = self.name + '_error'
+            
 
     # This is checked elsewhere, so it shouldn't ever fail
     # here. 

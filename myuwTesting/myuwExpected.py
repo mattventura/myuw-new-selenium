@@ -280,10 +280,15 @@ cardList['jinter'] = [
 
 
 cardList['seagrad'] = [
-    errorCard('TuitionCard'),
+    #errorCard('TuitionCard'),
+    TuitionCard(),
+    errorCard(GradeCardDummy()),
+    errorCard(CourseCards()),
+    errorCard(HFSCard({})),
+    errorCard(TextbookCard()),
     app_acal(),
     ThriveCardExpected(),
-    NoCourseCardGrad(),
+    #NoCourseCardGrad(),
     GradStatusCard(
         [
             petRequest("Doctoral degree - Extend ten year limit", 
@@ -590,6 +595,17 @@ def findDiffs(expected, actual):
     
     # Calculate actual differences
     diffs = ''
+
+    # TODO: do the same thing for expected
+    temp = {}
+    unexpErrors = {}
+    for name, card in onlyInActual.items():
+        if isinstance(card, errorCard):
+            unexpErrors[name] = card
+        else:
+            temp.append[name] = card
+    onlyInActual = temp
+
     # Report cards which were found but not expected
     if onlyInActual:
         fmtdList = ', '.join(onlyInActual.keys())
@@ -598,6 +614,11 @@ def findDiffs(expected, actual):
     if onlyInExpected:
         fmtdList = ', '.join(onlyInExpected.keys())
         diffs += 'Didn\'t find the following expected cards: %s\n' %fmtdList
+    # Report cards that gave errors when the card itself was unexpected
+    if unexpErrors:
+        fmtdList = ', '.join(unexpErrors.keys())
+        diffs += 'Unexpected cards showed with errors: %s\n' %fmtdList
+
     # Report differences between actual and expected data on the cards
     for name, pair in common.items():
         pairDiff = pair.findDiffs()

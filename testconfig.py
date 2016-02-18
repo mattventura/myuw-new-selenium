@@ -17,5 +17,5 @@ parallelNum = 10
 parallelDelay = 3
 
 # For auto date tests, restrict dates to this range
-defaultStartDate = '2013-1-1'
+defaultStartDate = '2013-1-7'
 defaultEndDate = '2013-12-17'
