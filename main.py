@@ -99,6 +99,14 @@ if __name__ == '__main__':
         #diff = myuwExpected.findDiffs(a, e)
         #h = a['GradStatusCard']
         #e = h.originalElement
+    elif len(argv) == 3 and argv[1] == '--user':
+        
+        user = argv[2]
+        class userTest(autoDateMyuwTestCase):
+            usersToTest = [user]
+
+        unittest.TextTestRunner().run(userTest('test_runtests'))
+
     else:
         main = 'mainMyuwTestCase'
         sample = 'sampleMyuwTestCase'

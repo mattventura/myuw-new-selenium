@@ -455,13 +455,13 @@ class visIntersect(visUnion):
 class visSub(visClass):
     '''Visibility difference class that will return true if the date is
     in visA but not visB. '''
-    def __init__(visA, visB):
+    def __init__(self, visA, visB):
         self.visA = visA
         self.visB = visB
         self.sigDates = visA.sigDates + visB.sigDates
 
     def visCheck(self, date):
-        return self.visA and not(self.visB)
+        return self.visA(date) and not(self.visB(date))
     
 def visQtr(include = [], exclude = []):
     '''Function to filter by quarter (qtr switch, not start of instruction). 
@@ -482,8 +482,11 @@ def visQtr(include = [], exclude = []):
 
 class visQtrIn(visClass):
     '''Class for restricting visibility to particular quarters. '''
+
     def __init__(self, include):
         self.qtrs = include
+
+    sigDates = []
 
     def visCheck(self, date):
         # Workaround for circular dependencies
@@ -595,6 +598,7 @@ def getMultiDateRange(starts, ends, exclude = []):
             for ex in exclude:
                 if qtr.startswith(ex):
                     skip = True
+        # If there is no corresponding date in the ending multidate, skip it
         if qtr not in ends:
             skip = True
         if skip: 
@@ -761,6 +765,16 @@ class errorCard(myuwCard):
             return ''
         else:
             return 'Error card vs non-error card'
+
+#class errorCardDated(myuwCard):
+#   
+#   def __init__(self, base):
+#       self._card = base
+#       self.name = base.name
+#       self.altNames = base.altNames
+#
+#   def shouldAppear(self, other):
+        
 
 # Make a cardproxy be considered a myuwCard subclass for the purposes of
 # issubclass() and isinstance()

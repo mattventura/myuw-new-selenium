@@ -84,7 +84,13 @@ class mainMyuwTestCase(unittest.TestCase):
             processes = []
             # User-date pairs
             udpairs = []
-            for user, dates in self.testDates.items():
+            if self.usersToTest:
+                testUsers = self.usersToTest
+            else:
+                testUsers = self.testDates.keys()
+            for user in testUsers:
+                dates = self.testDates[user]
+            #for user, dates in self.testDates.items():
                 if not(dates):
                     continue
                 for date in dates:

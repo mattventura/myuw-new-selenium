@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from myuwClasses import myuwDate, myuwDateRange, cardPair, \
-cardAlways, cardNever, cardCDM, cardCD, cardAuto, errorCard, \
+cardAlways, cardNever, cardCDM, cardCD, errorCard, \
 cardProxy
 from myuwCards import *
 from myuwDates import *
@@ -21,6 +21,150 @@ cardList['javerage'] = [
     TuitionCard(),
     LibraryCard(),
     CourseCards(),
+    SummerEFSCard(True, True),
+    cardCD(
+        EventsCard(),
+        ('2013-03-19', '2013-04-30')
+    ),
+    ToRegisterCard(),
+    VisualScheduleCard({
+        'WI13': {
+            'EMBA 503 A': None,
+            'EMBA 533 A': None,
+            'EMBA 590 A': None,
+        },
+        'SP13': {
+            'TRAIN 101 A': None,
+            'PHYS 121 A': None,
+            'PHYS 121 AQ': None,
+            'PHYS 121 AC': None,
+            'TRAIN 100 A': None,
+        }, 
+        'SA13': {
+            'TRAIN 102 A': None,
+            'ELCBUS 451 A': None,
+        },
+        'SB13': {
+            'TRAIN 101 A': None,
+            'TRAIN 102 A': None,
+        },
+        'AU13': {
+            'ENGL 207 A': None,
+        },
+    }),
+    app_notices(),
+    PCEBanner(),
+    app_acal(),
+    cardQtr(
+        FutureQuarterCard({
+            'Spring 2013': {
+                'credits' : 15,
+                'sections': 6,
+            },
+        }),
+        # Bugged?
+        #(RegPd1['WI13'], LastDayQtr['WI13'])
+        ['WI13']
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Summer 2013 A-Term': {
+                'credits' : 2,
+                'sections': 2,
+            },
+            'Summer 2013 B-Term': {
+                'credits' : 2,
+                'sections': 2,
+            },
+            'Autumn 2013': {
+                'credits' : 5,
+                'sections': 1,
+            },
+        }),
+        #Spring gradesub known issue
+        (FirstDayQtr['SP13'], ClassesBegin['SU13'] - 1)
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Summer 2013 B-Term': {
+                'credits' : 2, 
+                'sections': 2,
+            },
+            'Autumn 2013': {
+                'credits' : 5,
+                'sections': 1,
+            },
+        }),
+        #Spring gradesub known issue
+        (ClassesBegin['SU13'], SummerBTermBegins['SU13'] - 1)
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Autumn 2013': {
+                'credits' : 5,
+                'sections': 1,
+            },
+        }),
+        (SummerBTermBegins['SU13'], LastDayQtr['SU13'])
+    ),
+    cardCD(
+        FutureQuarterCard({
+            'Winter 2014': {
+                'credits' : 15,
+                'sections': 5,
+            },
+        }),
+        (FirstDayQtr['AU13'], LastDayQtr['AU13'])
+    ),
+    TextbookCard(),
+    GradeCard({
+        'WI13': {
+            'EMBA 503': None,
+            'EMBA 533': None,
+            'EMBA 590': None,
+        },
+        'SP13': {
+            'PHYS 121': '4.0',
+            'TRAIN 100': 'P',
+            'TRAIN 101': 'HP',
+        }, 
+        'SA13': {
+            'ELCBUS 451': None,
+        },
+        'SB13': {
+            'ELCBUS 451': None,
+            'TRAIN 101': None,
+            'TRAIN 102': None,
+        },
+        'AU13': {
+            'ENGL 207': None,
+        },
+    }),
+    FinalExamCard(),
+    ThriveCardExpected(),
+]
+
+cardList['jinter'] = [
+    HFSCard({'emp': '$1.00'}),
+    ToRegisterCard(),
+    TuitionCard(),
+    LibraryCard(),
+    PCEBanner(),
+    app_notices(),
+    app_acal(),
+    SummerEFSCard(summerReg = False, considerEFS = True), 
+    InternationalStuCard(),
+    EmpFacStudentCard(True, True),
+    cardQtr(
+        RegStatusCard(),
+        ['WI13']
+    ),
+    #SummerRegStatusCard(),
+    cardAlways(CriticalInfoCard()),
+    ThriveCardExpected(),
+    NoCourseCard(), 
+#   errorCard('GradCommitteeCard'),
+#   errorCard('GradStatusCard'),
     GradStatusCard(
         [
             petRequest("Master's degree - Extend six year limit", 
@@ -129,166 +273,16 @@ cardList['javerage'] = [
             }
         ]
     }),
-    SummerEFSCard(True, True),
-    cardCD(
-        EventsCard(),
-        ('2013-03-19', '2013-04-30')
-    ),
-    ToRegisterCard(),
-    VisualScheduleCard({
-        'WI13': {
-            'EMBA 503 A': None,
-            'EMBA 533 A': None,
-            'EMBA 590 A': None,
-        },
-        'SP13': {
-            'TRAIN 101 A': None,
-            'PHYS 121 A': None,
-            'PHYS 121 AQ': None,
-            'PHYS 121 AC': None,
-            'TRAIN 100 A': None,
-        }, 
-        'SA13': {
-            'TRAIN 102 A': None,
-            'ELCBUS 451 A': None,
-        },
-        'SB13': {
-            'TRAIN 101 A': None,
-            'TRAIN 102 A': None,
-        },
-        'AU13': {
-            'ENGL 207 A': None,
-        },
-    }),
-    app_notices(),
-    PCEBanner(),
-    app_acal(),
-    cardCD(
-        FutureQuarterCard({
-            'Spring 2013': {
-                'credits' : 15,
-                'sections': 6,
-            },
-        }),
-        # Bugged?
-        #(RegPd1['WI13'], LastDayQtr['WI13'])
-        (FirstDayQtr['WI13'], LastDayQtr['WI13'])
-    ),
-    cardCD(
-        FutureQuarterCard({
-            'Summer 2013 A-Term': {
-                'credits' : 2,
-                'sections': 2,
-            },
-            'Summer 2013 B-Term': {
-                'credits' : 2,
-                'sections': 2,
-            },
-            'Autumn 2013': {
-                'credits' : 5,
-                'sections': 1,
-            },
-        }),
-        #Spring gradesub known issue
-        #(FirstDayQtr['SP13'], LastDayQtr['SP13'])
-        (FirstDayQtr['SP13'], ClassesBegin['SU13'] - 1)
-    ),
-    cardCD(
-        FutureQuarterCard({
-            'Summer 2013 B-Term': {
-                'credits' : 2, 
-                'sections': 2,
-            },
-            'Autumn 2013': {
-                'credits' : 5,
-                'sections': 1,
-            },
-        }),
-        #Spring gradesub known issue
-        #(FirstDayQtr['SU13'], SummerBTermBegins['SU13'] - 1)
-        (ClassesBegin['SU13'], SummerBTermBegins['SU13'] - 1)
-    ),
-    cardCD(
-        FutureQuarterCard({
-            'Autumn 2013': {
-                'credits' : 5,
-                'sections': 1,
-            },
-        }),
-        (SummerBTermBegins['SU13'], LastDayQtr['SU13'])
-    ),
-    cardCD(
-        FutureQuarterCard({
-            'Winter 2014': {
-                'credits' : 15,
-                'sections': 5,
-            },
-        }),
-        (FirstDayQtr['AU13'], LastDayQtr['AU13'])
-    ),
-    cardCD(
-        TextbookCard(),
-        # No textbooks for AU13
-        ('2013-1-1', LastDayQtr['SU13'])
-    ),
-    GradeCard({
-        'WI13': {
-            'EMBA 503': None,
-            'EMBA 533': None,
-            'EMBA 590': None,
-        },
-        'SP13': {
-            'PHYS 121': '4.0',
-            'TRAIN 100': 'P',
-            'TRAIN 101': 'HP',
-        }, 
-        'SA13': {
-            'ELCBUS 451': None,
-        },
-        'SB13': {
-            'ELCBUS 451': None,
-            'TRAIN 101': None,
-            'TRAIN 102': None,
-        },
-        'AU13': {
-            'ENGL 207': None,
-        },
-    }),
-    FinalExamCard(),
-    ThriveCardExpected(),
-]
-
-cardList['jinter'] = [
-    HFSCard({'emp': '$1.00'}),
-    ToRegisterCard(),
-    TuitionCard(),
-    LibraryCard(),
-    errorCard('GradStatusCard'),
-    errorCard('GradCommitteeCard'),
-    PCEBanner(),
-    app_notices(),
-    app_acal(),
-    SummerEFSCard(summerReg = False, considerEFS = True), 
-    InternationalStuCard(),
-    EmpFacStudentCard(True, True),
-    RegStatusCard(),
-    SummerRegStatusCard(),
-    cardAlways(CriticalInfoCard()),
-    ThriveCardExpected(),
-    NoCourseCard(), 
 ]
 
 
 cardList['seagrad'] = [
-    #errorCard('TuitionCard'),
     TuitionCard(),
-    errorCard(GradeCardDummy()),
-    errorCard(CourseCards()),
-    errorCard(HFSCard({})),
-    errorCard(TextbookCard()),
+    HFSCard({'stu': '$1.00'}),
     app_acal(),
     ThriveCardExpected(),
-    #NoCourseCardGrad(),
+    LibraryCard(),
+    NoCourseCard(),
     GradStatusCard(
         [
             petRequest("Doctoral degree - Extend ten year limit", 
@@ -447,12 +441,16 @@ cardList['jbothell'] = [
         ['WI13']
     ),
     cardQtr(
-        NoCourseCard(),
-        ['WI13', 'SU13', 'AU13']
+        NoCourseCardAlt(),
+        ['WI13', 'AU13', 'SU13']
     ),
     cardQtr(
         CourseCards(),
         ['SP13']
+    ),
+    cardCD(CourseCards(),
+        ('2013-6-19', 
+        '2013-6-23')
     ),
     cardQtr(
         FinalExamCard(),
@@ -465,13 +463,47 @@ cardList['jbothell'] = [
             'BISSEB 259': None,
         }
     }),
+    
+]
+
+cardList['jerror'] = [
+    ThriveCardExpected(),
     cardQtr(
-        RegStatusCard(),
-        ['SP13', 'SU13']
-        # Date range for which the card is visible cuts into summer, so we
-        # need to include that too (doesn't cause issues later). 
+        errorCard(FutureQuarterCard({})),
+        ['WI13']
     ),
-    SummerRegStatusCard(),
+    cardCD(
+        errorCard(FutureQuarterCard({})),
+        (FirstDayQtr['SP13'], ClassesBegin['SU13'] - 1)
+    ),
+    app_acal(),
+    errorCard('ThankYouCard'),
+    cardCustom(
+        errorCard(RegStatusCard()),
+        visAlways - visCD('2013-6-24', '2013-6-30')
+    ),
+    errorCard(ToRegisterCard()),
+    errorCard(SummerEFSCard()),
+    errorCard(CriticalInfoCard()),
+    errorCard(InternationalStuCard()),
+    cardQtr(
+        errorCard('CourseCards'),
+        ['SP13', 'SU13']
+    ),
+    cardQtr(
+        NoCourseCard(),
+        ['WI13', 'AU13']
+    ),
+    errorCard('GradStatusCard'),
+    errorCard('GradCommitteeCard'),
+    errorCard(HFSCard()),
+    errorCard(TuitionCard()),
+    errorCard(LibraryCard()),
+    errorCard(GradeCardDummy(['SP13', 'SA13', 'SB13'])),
+    cardQtr(
+        errorCard(TextbookCard()),
+        ['SP13', 'SU13']
+    )
     
 ]
 
@@ -479,6 +511,7 @@ cardList['jbothell'] = [
 #del cardList['seagrad']
 #del cardList['jinter']
 #del cardList['jbothell']
+#del cardList['jerror']
 
 def cardListToDict(cl):
     '''Convert a list of cards to a dictionary of the form:
@@ -603,7 +636,7 @@ def findDiffs(expected, actual):
         if isinstance(card, errorCard):
             unexpErrors[name] = card
         else:
-            temp.append[name] = card
+            temp[name] = card
     onlyInActual = temp
 
     # Report cards which were found but not expected
@@ -632,7 +665,10 @@ def findDiffs(expected, actual):
             )
         elif pairDiff:
             diffs += 'Found differences in card %s:\n' %name
-            diffs += pairDiff
+            pairDiffStr = ''
+            for pd in pairDiff.split('\n'):
+                pairDiffStr += '  %s\n' %pd
+            diffs += pairDiffStr
 
     return diffs
 

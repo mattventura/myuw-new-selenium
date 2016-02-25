@@ -140,6 +140,8 @@ class mainMyuwHandler(object):
                 # the name. This allows us to give an error card as the expected
                 # result. 
                 if cardIsError:
+                    if cardName in cardDict:
+                        cardName = cardDict[cardName].name
                     newCard = errorCard(cardName)
                     self._cards[cardName] = newCard
 

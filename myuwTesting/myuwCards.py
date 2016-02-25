@@ -310,15 +310,10 @@ class GradeCard(myuwCard):
         return visCheck
 
 class GradeCardDummy(GradeCard):
-    def __init__(self):
-        dummyDict = {
-            'AU13': {},
-            'WI13': {},
-            'SP13': {},
-            'SA13': {},
-            'SB13': {},
-        }
-        super(GradeCardDummy, self).__init__(dummyDict)
+    def __init__(self, qtrs = ['AU13', 'WI13', 'SP13', 'SA13', 'SB13']):
+
+        gradeDict = {qtr: {} for qtr in qtrs}
+        super(GradeCardDummy, self).__init__(gradeDict)
 
 
 @isaCard
@@ -371,19 +366,6 @@ class CriticalInfoCard(myuwCard):
         'directory': 'Student Directory notice',
         'residency': 'Residency notice',
     }
-
-@isaCard
-class NoCourseCard(myuwCard):
-    '''No Course Card. Not called directly, rather it is created and 
-    returned in the fromElement methods of VisualScheduleCard and 
-    FinalExamCard.'''
-    visCheck = visAuto(FirstDayQtr, FinalsEnd)
-
-class NoCourseCardGrad(myuwCard):
-    '''Possible different version for grads?'''
-    name = 'NoCourseCard'
-    visCheck = visAuto(FirstDayQtr, FinalsEnd, exclude = ['SU']) \
-        + visCD(ClassesBegin['SU13'], LastDayInstr['SU13'])
 
 @isaCard
 class VisualScheduleCard(myuwCard):
@@ -505,8 +487,8 @@ class TextbookCard(myuwCard):
     '''Textbooks card'''
     # TODO: check data
     visCheck = visUnion(
-        visAuto(FirstDayQtr, ClassesBegin + 6, exclude = ['SU13']), 
-        visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 6)
+        visAuto(FirstDayQtr, ClassesBegin + 7, exclude = ['SU13']), 
+        visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 7)
     )
 
 @isaCard
@@ -761,6 +743,28 @@ class CourseCards(myuwCard):
             return NoCourseCard()
 
         return cls()
+
+@isaCard
+class NoCourseCard(myuwCard):
+    '''No Course Card. Not called directly, rather it is created and 
+    returned in the fromElement methods of VisualScheduleCard and 
+    FinalExamCard.'''
+    #visCheck = visAuto(FirstDayQtr, FinalsEnd)
+    #visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+
+class NoCourseCardAlt(NoCourseCard):
+    visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+    
+
+"""
+class NoCourseCardGrad(myuwCard):
+    '''Possible different version for grads?'''
+    name = 'NoCourseCard'
+    visCheck = visAuto(FirstDayQtr, FinalsEnd, exclude = ['SU']) \
+        + visCD(ClassesBegin['SU13'], LastDayInstr['SU13'])
+
+    #visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+"""
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
