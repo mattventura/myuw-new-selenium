@@ -463,6 +463,10 @@ cardList['jbothell'] = [
             'BISSEB 259': None,
         }
     }),
+    cardQtr(
+        TextbookCard(),
+        ['SP13']
+    ),
     
 ]
 
