@@ -32,7 +32,7 @@ class MyuwDateTypeError(TypeError):
     def __init__(self, args):
         args = repr(args)
         message = 'Arguments to myuwDate must be "yyyy-mm-dd" or yyyy, mm, dd, got %s instead' %args
-        super(self.__class__, self).__init__(message)
+        super(self.MyuwDateTypeError, self).__init__(message)
 
 @total_ordering
 class myuwDate(object):
@@ -49,7 +49,7 @@ class myuwDate(object):
         if len(args) == 1:
             arg = args[0]
             # If it's already a myuwDate object, make a new one with the same values
-            if isinstance(arg, self.__class__):
+            if isinstance(arg, myuwDate):
                 newDate = (arg.year, arg.month, arg.day)
                 self.__init__(*newDate)
 
@@ -294,7 +294,7 @@ class multiDate(IterableUserDict):
         newQtrs = {}
         for qtr, date in self.items():
             newQtrs[qtr] = date + other
-        return self.__class__(newQtrs)
+        return multiDate(newQtrs)
 
     def __sub__(self, other):
         return self.__add__(-1 * other)
@@ -394,7 +394,7 @@ class visCDM(visRanges):
     or tuples of (startDate, endDate). '''
     def __init__(self, dates):
         dateRanges = processDateRanges(dates)
-        super(self.__class__, self).__init__(dateRanges)
+        super(visCDM, self).__init__(dateRanges)
 
 
 def visCD(start, end):
@@ -502,7 +502,7 @@ class visQtrEx(visQtrIn):
     '''Class for restricting visibility to everything but the 
     specified quarters. '''
     def visCheck(self, date):
-        return not(super(self.__class__, self).visCheck(date))
+        return not(super(visQtrEx, self).visCheck(date))
 
 
 class cardProxy(object):
@@ -567,7 +567,7 @@ class cardCustom(cardProxy):
     '''Quick way of creating a custom cardproxy using a specific
     visibility function.'''
     def __init__(self, card, vis):
-        super(self.__class__, self).__init__(card)
+        super(cardCustom, self).__init__(card)
         self._vis = vis
 
 def processDateRanges(dates):
@@ -787,7 +787,7 @@ class LandingWaitTimedOut(Exception):
             cardName = getCardName(el)
             cardNames.append(cardName)
         self.cardsNotLoaded = cardNames
-        super(self.__class__, self).__init__(
+        super(LandingWaitTimedOut, self).__init__(
             'Waited too long for landing page to finish loading. The following cards did\
             not load: %s' %(', '.join(cardNames))
         )

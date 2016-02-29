@@ -429,7 +429,7 @@ class VisualScheduleCard(myuwCard):
     def shouldAppear(self, date):
         # If the normal visibility function determines that the card shouldn't appear,
         # just go with that. 
-        if super(self.__class__, self).shouldAppear(date):
+        if super(VisualScheduleCard, self).shouldAppear(date):
             # If the vis func says it should, then we still need to handle the case where
             # if it is summer but the user has no summer classes, then the vis sched
             # shouldn't appear. 
@@ -630,7 +630,7 @@ class GradStatusCard(myuwCard):
         leaves = filterListVis(self.leaves, date)
         degrees = filterListVis(self.degrees, date)
 
-        newObj = self.__class__(petitions, leaves, degrees)
+        newObj = GradStatusCard(petitions, leaves, degrees)
         newObj.needsFiltering = False
         return newObj
 
@@ -650,7 +650,7 @@ class GradStatusCard(myuwCard):
         if other.needsFiltering:
             other = other.filterToDate(date)
 
-        return super(self.__class__, self).findDiffs(other)
+        return super(GradStatusCard, self).findDiffs(other)
 
 @isaCard
 class ThriveCard(myuwCard):
@@ -733,8 +733,6 @@ class ThriveCard(myuwCard):
 class CourseCards(myuwCard):
     '''Course Cards'''
 
-    #altNames = ['CourseCards']
-
     @classmethod
     @packElement
     def fromElement(cls, date, e):
@@ -755,16 +753,6 @@ class NoCourseCard(myuwCard):
 class NoCourseCardAlt(NoCourseCard):
     visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
     
-
-"""
-class NoCourseCardGrad(myuwCard):
-    '''Possible different version for grads?'''
-    name = 'NoCourseCard'
-    visCheck = visAuto(FirstDayQtr, FinalsEnd, exclude = ['SU']) \
-        + visCD(ClassesBegin['SU13'], LastDayInstr['SU13'])
-
-    #visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
-"""
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
