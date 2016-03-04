@@ -536,7 +536,7 @@ for name, cl in cardList.items():
 
 def getExpectedResults(user, date):
     '''Get expected results for user on date. Returns a list of cards. '''
-    if isinstance(date, str):
+    if isinstance(date, basestring):
         date = myuwDate(date)
     userCards = cardList[user]
     userCardsVisible = {}

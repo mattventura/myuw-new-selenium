@@ -891,7 +891,7 @@ class gradRequest(autoDiff):
 class simpleStatus:
     '''Mixin for grad requests that only have a 'Status' property.''' 
     def statusFix(self):
-        if isinstance(self.statuses, str):
+        if isinstance(self.statuses, basestring):
             self.statuses = {'Status': self.statuses}
 
     def __repr__(self):
