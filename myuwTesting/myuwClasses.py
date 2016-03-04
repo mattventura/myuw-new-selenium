@@ -226,7 +226,7 @@ class nullDateRange(myuwDateRange):
     def __init__(self):
         pass
 
-	 @property
+    @property
     def significantDates(self):
         return []
 
@@ -664,7 +664,7 @@ class myuwCard(autoDiff):
     '''
     # Lets things that aren't actually cards (like cardProxies) be 
     # considered real subclasses of myuwCard. Easier than duck typing. 
-    __metaclass__ = ABCMeta
+    #__metaclass__ = ABCMeta
 
     # Subclasses should define the class method fromElement, which should
     # return an instance of the class constructed by selenium element cardEl
@@ -758,10 +758,12 @@ class errorCard(myuwCard):
     # This is checked elsewhere, so it shouldn't ever fail
     # here. 
     def findDiffs(self, other):
-        if isinstance(other, errorCard):
-            return ''
-        else:
-            return 'Error card vs non-error card'
+        raise Exception('Hit errorCard.findDiffs which should never run')
+
+        #if isinstance(other, errorCard):
+        #    return ''
+        #else:
+        #    return 'Error card vs non-error card'
 
 #class errorCardDated(myuwCard):
 #   
@@ -775,7 +777,7 @@ class errorCard(myuwCard):
 
 # Make a cardproxy be considered a myuwCard subclass for the purposes of
 # issubclass() and isinstance()
-myuwCard.register(cardProxy)
+#myuwCard.register(cardProxy)
 
 class LandingWaitTimedOut(Exception):
     def __init__(self, els):
