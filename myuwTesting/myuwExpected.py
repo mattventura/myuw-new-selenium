@@ -552,9 +552,11 @@ def getExpectedResults(user, date):
 
     for name, card in userCardsVisible.items():
         # If it's a card proxy, replace it with the real card
-        if hasattr(card, 'card'):
+        #if hasattr(card, 'card'):
+        if isinstance(card, cardProxy):
             #TODO: do we even need this?
-            userCardsVisible[name] = card.card
+            pass
+            #userCardsVisible[name] = card.card
             
     return userCardsVisible
 

@@ -6,7 +6,7 @@ from myuwDates import ClassesBegin
 
 class ThriveCardExpected(ThriveCard):
     '''Expected data for Thrive'''
-    
+
     thriveCards = {}
     thriveCards['WI13'] = [
         thriveContent('New Year, Fresh Start',
@@ -27,8 +27,8 @@ class ThriveCardExpected(ThriveCard):
         thriveContent('What\'s Your Dream Summer?'),
         thriveContent('Finals: Pace Your Prep'),
     ]
-    ec = {}
 
+    ec = {}
     for key, value in thriveCards.items():
         startDate = ClassesBegin[key] - 1
         curDate = startDate

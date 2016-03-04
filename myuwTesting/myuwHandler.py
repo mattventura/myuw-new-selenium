@@ -36,6 +36,10 @@ class mainMyuwHandler(object):
         time.sleep(1)
         self.currentDate = myuwDate(dateStr)
 
+    def changeTime(self, timeStr):
+        '''Set override time. NOT IMPLEMENTED YET!'''
+        pass
+
     # Set user if it is different from the current user
     def setUser(self, username):
         '''Set override username only if that isn't already our username. '''
@@ -48,6 +52,12 @@ class mainMyuwHandler(object):
         newDate = myuwDate(newDate)
         if self.currentDate != newDate:
             self.changeDate(str(newDate))
+
+        try:
+            timeOverride = newDate.getTimeOverride()
+            self.changeTime(timeOverride)
+        except AttributeError:
+            pass
 
     # Go to landing page
     def browseLanding(self):

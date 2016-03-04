@@ -751,8 +751,8 @@ class NoCourseCard(myuwCard):
     #visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
 
 class NoCourseCardAlt(NoCourseCard):
+    '''No course card with alternate dates. '''
     visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
-    
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 
