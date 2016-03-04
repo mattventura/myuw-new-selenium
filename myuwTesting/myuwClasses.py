@@ -226,6 +226,7 @@ class nullDateRange(myuwDateRange):
     def __init__(self):
         pass
 
+	 @property
     def significantDates(self):
         return []
 
@@ -253,8 +254,6 @@ class cardPair(object):
 
     def __repr__(self):
         return 'cardPair(%s, %s)' %(actual, expected)
-
-    __str__ = __repr__
 
     def findDiffs(self):
         '''Find and report the differences between expected and actual card. '''
@@ -301,8 +300,6 @@ class multiDate(IterableUserDict):
 
     def __repr__(self):
         return 'multiDate(%s)' %IterableUserDict.__repr__(self)
-
-    __str__ = __repr__
 
 # Visibility check classes
 
