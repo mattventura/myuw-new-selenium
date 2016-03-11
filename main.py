@@ -19,8 +19,10 @@ from myuwTesting.myuwHandler import mainMyuwHandler
 from myuwTesting.myuwTests import mainMyuwTestCase, autoDateMyuwTestCase, \
     jsonMyuwTestCase
 
+from myuwTesting.myuwTests import getTestDates
+
 # This import is different depending on whether we're using this as a package
-# or not. 
+# or not.
 try:
     from .testconfig import *
     # We may need to write values here
@@ -32,7 +34,7 @@ except:
 
 class sampleMyuwTestCase(mainMyuwTestCase):
     '''Sample test case where you can specify what users/dates to test on. '''
-    
+
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
     #testDates['jinter'] = ('2013-02-09',)
@@ -70,12 +72,13 @@ if __name__ == '__main__':
         # Run the test
         # This handles the output
         unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
-        
+
     elif len(argv) >= 2 and argv[1] == '--dump-dates':
         testUsers = getTestDates()
         for user, dates in testUsers.items():
-            print 'Test dates for user %s:' %user
+            print 'Test dates for user %s:' % user
             print '    ' + ', '.join([str(date) for date in dates])
+
     elif len(argv) >= 2 and argv[1] == '--debug':
 
         # Scratch area where you can put whatever debug code
@@ -100,8 +103,9 @@ if __name__ == '__main__':
         #h = a['GradStatusCard']
         #e = h.originalElement
     elif len(argv) == 3 and argv[1] == '--user':
-        
+
         user = argv[2]
+
         class userTest(autoDateMyuwTestCase):
             usersToTest = [user]
 

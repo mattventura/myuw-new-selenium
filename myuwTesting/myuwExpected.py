@@ -511,6 +511,12 @@ cardList['jerror'] = [
     
 ]
 
+cardList['none'] = [
+    ThriveCardExpected(),
+    app_acal(),
+    app_notices(),
+]
+
 #del cardList['javerage']
 #del cardList['seagrad']
 #del cardList['jinter']

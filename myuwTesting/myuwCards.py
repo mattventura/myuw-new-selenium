@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from .myuwFunctions import isCardVisible, packElement, formatDiffs, \
-rangesToSigDates, filterListVis
+    rangesToSigDates, filterListVis
 from .myuwDates import *
 import re
 from .myuwClasses import *
@@ -12,30 +12,34 @@ from selenium.common.exceptions import NoSuchElementException
 # Dictionary of IDs to card classes
 # This includes alternate names for cards
 cardDict = {}
+
+
 # Function to add something to this, automatically including all
 # alternate names
 def addToCardDict(card):
-    '''Add a card class to the card dict. 
+    '''Add a card class to the card dict.
     Can be used standalone or as a decorator. '''
     for name in card.getAllNames():
         cardDict[name] = card
     # Return the card so this function can be used as a decorator
     return card
 
+
 # Set name property automatically, if not manually specified
 def autoCardName(card):
-    '''Set a card class's 'name' property based off its __name__. 
+    '''Set a card class's 'name' property based off its __name__.
     Can be used standalone or as a decorator. '''
 
     if not(hasattr(card, 'name')):
         card.name = card.__name__
     # Return the card so this function can be used as a decorator
     return card
-    
+
+
 # Does both of the above
 def isaCard(innerClass):
-    '''Sets a card class's name automatically with autoCardName, 
-    then adds it to the card dict. 
+    '''Sets a card class's name automatically with autoCardName,
+    then adds it to the card dict.
     Can be used standalone or as a decorator. '''
     autoCardName(innerClass)
     addToCardDict(innerClass)
@@ -47,6 +51,7 @@ balanceLabels = {
     'Employee Husky Card': 'emp',
     'Resident Dining': 'din',
 }
+
 
 # TODO: last transaction date
 @isaCard
