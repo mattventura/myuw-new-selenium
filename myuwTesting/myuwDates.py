@@ -90,6 +90,9 @@ NextQtrClassesBegin = multiDate({
 
 
 # Generate reg card dates based off existing dates
+# Reg card date logic:
+# Show Reg Period 1 minus 14 days (7 for summer)
+# Hide Reg Period 2 plus 7 days (written as 6 since it's inclusive)
 RegCardShowDates = {}
 SummerRegCardShowDates = {}
 RegCardHideDates = {}
@@ -108,6 +111,8 @@ RegCardShow = multiDate(RegCardShowDates)
 SummerRegShow = multiDate(SummerRegCardShowDates)
 RegCardHide = multiDate(RegCardHideDates)
 SummerRegHide = multiDate(SummerRegCardHideDates)
+
+SummerRegSwitch = RegPd1 + 7
 
 def dateToQtr(date):
     '''Try to convert a date to quarter in the form of 'SP13'. '''

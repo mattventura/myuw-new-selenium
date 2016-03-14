@@ -155,10 +155,8 @@ cardList['jinter'] = [
     SummerEFSCard(summerReg = False, considerEFS = True), 
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
-    cardQtr(
-        RegStatusCard(),
-        ['WI13']
-    ),
+    RegStatusCard(qtrs = ['SP13', 'AU13'], holds = 2),
+    SummerRegStatusCard(holds = 2),
     #SummerRegStatusCard(),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
@@ -467,6 +465,8 @@ cardList['jbothell'] = [
         TextbookCard(),
         ['SP13']
     ),
+    SummerRegStatusCard(holds = 1),
+    RegStatusCard(qtrs = ['AU13'], holds = 1),
     
 ]
 
@@ -482,10 +482,8 @@ cardList['jerror'] = [
     ),
     app_acal(),
     errorCard('ThankYouCard'),
-    cardCustom(
-        errorCard(RegStatusCard()),
-        visAlways - visCD('2013-6-24', '2013-6-30')
-    ),
+    errorCard(RegStatusCard(qtrs = ['SP13', 'AU13'])),
+    errorCard(SummerRegStatusCard()),
     errorCard(ToRegisterCard()),
     errorCard(SummerEFSCard()),
     errorCard(CriticalInfoCard()),
@@ -508,13 +506,31 @@ cardList['jerror'] = [
         errorCard(TextbookCard()),
         ['SP13', 'SU13']
     )
-    
 ]
 
 cardList['none'] = [
     ThriveCardExpected(),
     app_acal(),
     app_notices(),
+]
+
+cardList['botgrad'] = [
+    NoCourseCard(),
+    GradStatusCard(
+        [],
+        [],
+        [
+            degreeRequest('Masters Request, Spring 2013', 
+                'Awaiting Dept Action (Final Exam)',
+                title = 'Master Of Science In Computational Finance & Risk Management'
+            )
+        ]
+    ),
+    HFSCard({'stu': '$1.00'}),
+    TuitionCard(),
+    LibraryCard(),
+    app_acal(),
+    ignoreSig(ThriveCardExpected()),
 ]
 
 #del cardList['javerage']
@@ -680,7 +696,7 @@ def findDiffs(expected, actual):
             diffs += 'Found differences in card %s:\n' %name
             pairDiffStr = ''
             for pd in pairDiff.split('\n'):
-                pairDiffStr += '  %s\n' %pd
+                pairDiffStr += '\t%s\n' %pd
             diffs += pairDiffStr
 
     return diffs

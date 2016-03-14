@@ -324,19 +324,119 @@ class GradeCardDummy(GradeCard):
 @isaCard
 class RegStatusCard(myuwCard):
     '''Registration status card'''
+
+    # quarters is the quarters that the reg card corresponds to, not the 
+    # quarters in which it should appear. 
+    def __init__(self, qtrs = [], holds = 0, qtr = None):
+        self.qtrs = qtrs
+        self.holds = holds
+        self.qtr = qtr
+        # If there are holds, card should always appear
+        #if holds:
+        #   self.visCheck = visAlways
+
+    @classmethod
+    def fromElement(cls, date, e):
+
+        title = e.find_element_by_tag_name('h3').text
+        # Quarter = middle word of title
+        # Year = last word
+        titleSplit = title.split(' ')
+        qtr = titleSplit[1]
+        year = titleSplit[2]
+        qtr = qtr[0:2].upper()
+        year = year[2:4]
+        # Assemble date of the form 'SU13'
+        qtrString = qtr + year
+        eleclasses = [
+            'a.reg_disclosure',
+            'a.reg_disclosure_summerA',
+            'a.reg_disclosure_summer1',
+        ]
+        for eleclass in eleclasses:
+            try:
+                banner = e.find_element_by_css_selector(eleclass)
+                break
+            except NoSuchElementException:
+                continue
+        else:
+            return cls(holds = 0)
+
+        bannerText = banner.text
+        numHolds = int(bannerText.split(' ')[1])
+
+        return cls(holds = numHolds, qtr = qtrString)
+
+    def shouldAppear(self, date):
+
+        for qtr in self.qtrs:
+            qtrShow = self.show[qtr]
+            qtrHide = self.hide[qtr]
+
+            if date in myuwDateRange(qtrShow, qtrHide):
+                return True
+
+        return False
+
+
+    show = RegCardShow
+    hide = RegCardHide
+
     visCheck = visAuto(RegCardShow, RegCardHide)
 
+    autoDiffs = {
+        'holds': 'Number of registration holds',
+    }
+
+
+
 @isaCard
-class SummerRegStatusCard(myuwCard):
+class SummerRegStatusCard(RegStatusCard):
     '''Summer Registration Status card. Covers both the positions
     in which the card can appear. '''
     
+    def __init__(self, holds = 0, qtr = None, position = 'top'):
+        qtrs = ['SU13']
+        super(SummerRegStatusCard, self).__init__(qtrs, holds, qtr)
+
+    @classmethod
+    def fromElement(cls, date, e):
+        if getCardName(e) == 'SummerRegStatusCardA':
+            pos = 'top'
+        elif getCardName(e) == 'SummerRegStatusCard1':
+            pos = 'bot'
+        else:
+            pos = 'invalid'
+
+        # Need to un-classmethod this
+        newCard = RegStatusCard.fromElement.__func__(cls, date, e)
+        newCard.pos = pos
+        newCard.date = date
+        return newCard
+
+    name = 'SummerRegStatusCard'
     altNames = [
         'SummerRegStatusCardA',
         'SummerRegStatusCard1'
     ]
 
+    def findDiffs(self, other):
+        diffs = super(SummerRegStatusCard, self).findDiffs(other)
+        expPos = 'top' if self.topCheck(other.date) else 'bot'
+        #if expPos != other.pos:
+        diffs += formatDiffs('Summer Reg Card Position', expPos, other.pos)
+        return diffs
+                
+
+    show = SummerRegShow
+    hide = SummerRegHide
+
     visCheck = visAuto(SummerRegShow, SummerRegHide)
+    topCheck = visAuto(SummerRegShow, SummerRegSwitch - 1)
+
+    @property
+    def significantDates(self):
+        return self.visCheck.significantDates + self.topCheck.significantDates
 
 @isaCard
 class CriticalInfoCard(myuwCard):
@@ -363,8 +463,7 @@ class CriticalInfoCard(myuwCard):
         directory = 'Update Student Directory' in titles
         residency = 'Non-Resident Classification' in titles
 
-        newObj = cls(email, directory, residency)
-        return newObj
+        return cls(email, directory, residency)
 
     autoDiffs = {
         'email': 'Set Up UW Email notice',

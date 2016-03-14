@@ -31,7 +31,7 @@ class MyuwDateTypeError(TypeError):
     def __init__(self, args):
         args = repr(args)
         message = 'Arguments to myuwDate must be "yyyy-mm-dd" or yyyy, mm, dd, got %s instead' %args
-        super(self.MyuwDateTypeError, self).__init__(message)
+        super(MyuwDateTypeError, self).__init__(message)
 
 class myuwDateMeta(type):
     '''Metaclass to allow us to provide a myuwDate or subclass instance as
@@ -789,11 +789,12 @@ class errorCard(myuwCard):
     def __init__(self, base, forcename = None):
         if isinstance(base, basestring):
             self.name = base
+            self.base = None
 
         elif hasattr(base, 'name'):
             self.name = forcename or base.name
             self.altNames = base.altNames
-            self.visCheck = base.visCheck
+            self.base = base
 
         else:
             raise Exception('errorCard.fromElement requires either a name\
@@ -804,6 +805,13 @@ class errorCard(myuwCard):
     def findDiffs(self, other):
         '''Returns an empty string because this is done elsewhere. '''
         return ''
+
+    visCheck = visAlways
+    def shouldAppear(self, date):
+        if self.base:
+            return self.base.shouldAppear(date)
+        else:
+            return super(errorCard, self).shouldAppear(date)
 
 class LandingWaitTimedOut(Exception):
     def __init__(self, els):
@@ -1000,3 +1008,10 @@ class hungCardClass(myuwCard):
 @uesc
 def hungCard(name):
     return type('hungcard_%s' %name, (hungCardClass, ), {'name': name})()
+
+
+class ignoreSig(cardProxy):
+    '''Card proxy which removes significant dates. Use for reducing the
+    number of unnecessary dates tested. '''
+    _vis = visAlways
+    significantDates = []

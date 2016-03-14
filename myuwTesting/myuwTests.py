@@ -308,7 +308,10 @@ class mainMyuwTestCase(unittest.TestCase):
                 diffStr += indentChar + 'On date %s:\n' %date
 
                 for diff in diffs:
+                    # Newline is already there
+                    diff = diff.strip()
                     diffStr += indentChar * 2 + '%s\n' %diff
+                    diffStr = diffStr.replace('\t', indentChar)
         return diffStr
         
                 
