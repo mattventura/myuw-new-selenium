@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from myuwClasses import thriveContent, link, myuwDateRange
-from myuwCards import ThriveCard
-from myuwDates import ClassesBegin
+from classes import thriveContent, link, myuwDateRange
+from cards import ThriveCard
+from dates import ClassesBegin
 
 class ThriveCardExpected(ThriveCard):
     '''Expected data for Thrive'''
@@ -27,6 +27,23 @@ class ThriveCardExpected(ThriveCard):
         thriveContent('What\'s Your Dream Summer?'),
         thriveContent('Finals: Pace Your Prep'),
     ]
+    thriveCards['SP13'] = [
+        thriveContent('Keep Calm and Cherry On'),
+        thriveContent('Springboard Your Sophomore Self'),
+        thriveContent('Fail Forward'),
+        thriveContent('People Power: Connections Count'),
+        thriveContent('Research Made Easier'),
+        thriveContent('Experience is Golden'),
+        thriveContent('De-stress with Mindfulness'),
+        thriveContent('Make the Most of Your Summer'),
+        None,
+        None,
+        None,
+        thriveContent('Celebrate Your Growth'),
+    ]
+
+    # XXX
+    del thriveCards['WI13']
 
     ec = {}
     for key, value in thriveCards.items():

@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
-from . import myuwClasses
-from .myuwClasses import myuwDate
-from .myuwClasses import multiDate
+from . import classes
+from .classes import myuwDate, multiDate
 
 # These are in (roughly) chronological order
 

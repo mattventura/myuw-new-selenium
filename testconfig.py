@@ -19,3 +19,6 @@ parallelDelay = 3
 # For auto date tests, restrict dates to this range
 defaultStartDate = '2013-1-7'
 defaultEndDate = '2013-12-17'
+
+# Testing URL
+testUrl = 'http://localhost:8081' 

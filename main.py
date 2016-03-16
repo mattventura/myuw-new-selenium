@@ -8,18 +8,18 @@ import time
 import sys
 
 # myuw-specific imports
-from myuwTesting.myuwClasses import myuwDate, errorCard, \
+from myuwtesting.classes import myuwDate, errorCard, \
     LandingWaitTimedOut, perfCounter
-from myuwTesting import myuwExpected
-from myuwTesting.myuwCards import cardDict
-from myuwTesting.myuwFunctions import isCardVisible, isVisibleFast, \
+from myuwtesting import expected
+from myuwtesting.cards import cardDict
+from myuwtesting.functions import isCardVisible, isVisibleFast, \
     getCardName, splitList, driverRetry
-from myuwTesting.myuwHandler import mainMyuwHandler
+from myuwtesting.handler import mainMyuwHandler
 
-from myuwTesting.myuwTests import mainMyuwTestCase, autoDateMyuwTestCase, \
+from myuwtesting.tests import mainMyuwTestCase, autoDateMyuwTestCase, \
     jsonMyuwTestCase
 
-from myuwTesting.myuwTests import getTestDates
+from myuwtesting.tests import getTestDates
 
 # This import is different depending on whether we're using this as a package
 # or not.
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         # Scratch area where you can put whatever debug code
         d = Firefox()
         d.maximize_window()
-        m = mainMyuwHandler(d, 'http://localhost:8081/')
+        m = mainMyuwHandler(d, testconfig.testUrl)
 
         m.setUser('seagrad')
         m.setDate('2013-3-27')

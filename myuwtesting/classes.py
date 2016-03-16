@@ -5,11 +5,10 @@ from functools import total_ordering
 from UserDict import IterableUserDict
 import time
 
-from .myuwFunctions import toTimeDelta, packElement, formatDiffs, findDiffs, \
+from .functions import toTimeDelta, packElement, formatDiffs, findDiffs, \
     getCardName, uesc, isCardVisible, isVisibleFast, getCardName
 
 from .testconfig import perf
-
 
 def toDate(obj):
     '''Convert string, timedelta, or myuw date to datetime.date'''
@@ -28,7 +27,7 @@ def toDate(obj):
 class MyuwDateTypeError(TypeError):
     '''Pre-packaged exception for when an invalid date format is 
     specified when constructing a myuwDate. '''
-    def __init__(self, args):
+    def __init__(self, *args):
         args = repr(args)
         message = 'Arguments to myuwDate must be "yyyy-mm-dd" or yyyy, mm, dd, got %s instead' %args
         super(MyuwDateTypeError, self).__init__(message)
@@ -544,7 +543,7 @@ class visQtrIn(visClass):
 
     def visCheck(self, date):
         # Workaround for circular dependencies
-        from myuwDates import dateToQtr, dateToTerm
+        from dates import dateToQtr, dateToTerm
         qtr = dateToQtr(date)
         term = dateToTerm(date)
         for inc in self.qtrs:

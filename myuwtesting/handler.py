@@ -2,10 +2,10 @@
 
 import time
 
-from .myuwCards import cardDict, errorCard
-from .myuwFunctions import getCardName, isCardVisible, isVisibleFast
+from .cards import cardDict, errorCard
+from .functions import getCardName, isCardVisible, isVisibleFast
 from .testconfig import perf
-from .myuwClasses import myuwDate, perfCounter, LandingWaitTimedOut, hungCard
+from .classes import myuwDate, perfCounter, LandingWaitTimedOut, hungCard
 
 # temp
 import sys
@@ -116,6 +116,8 @@ class mainMyuwHandler(object):
             '//div[@id="landing_content_cards"]/div',
             # Right column on desktop layout
             '//div[@id="landing_accounts_cards"]/div',
+            # Email link
+            '//div[@id="app_header"]//div[@id="uwemail"]'
         )
 
         # Cards that didn't finish loading

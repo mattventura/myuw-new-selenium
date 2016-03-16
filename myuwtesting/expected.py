@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-from myuwClasses import myuwDate, myuwDateRange, cardPair, \
+from classes import myuwDate, myuwDateRange, cardPair, \
 cardAlways, cardNever, cardCDM, cardCD, errorCard, \
 cardProxy
-from myuwCards import *
-from myuwDates import *
-from myuwThrive import ThriveCardExpected
+from cards import *
+from dates import *
+from thrive import ThriveCardExpected
 
 
 # Assemble actual lists of users and their expected cards
@@ -16,6 +16,7 @@ from myuwThrive import ThriveCardExpected
 # ideally this should be put in the card itself. 
 cardList = {}
 cardList['javerage'] = [
+    gmail,
     HFSCard({'stu': '$1.23', 'emp': '$1.00', 'din': '$5.10'}),
     CriticalInfoCard(True, True, False),
     TuitionCard(),
@@ -275,6 +276,7 @@ cardList['jinter'] = [
 
 
 cardList['seagrad'] = [
+    gmail,
     TuitionCard(),
     HFSCard({'stu': '$1.00'}),
     app_acal(),
@@ -413,6 +415,7 @@ cardList['seagrad'] = [
 ]
 cardList['jbothell'] = [
     HFSCard({'stu': '$5.10'}),
+    outlook,
     ToRegisterCard(),
     SummerEFSCard(summerReg = False, considerEFS = True),
     TuitionCard(),
@@ -511,10 +514,11 @@ cardList['jerror'] = [
 cardList['none'] = [
     ThriveCardExpected(),
     app_acal(),
-    app_notices(),
+    #app_notices(),
 ]
 
 cardList['botgrad'] = [
+    gmail,
     NoCourseCard(),
     GradStatusCard(
         [],
@@ -532,12 +536,6 @@ cardList['botgrad'] = [
     app_acal(),
     ignoreSig(ThriveCardExpected()),
 ]
-
-#del cardList['javerage']
-#del cardList['seagrad']
-#del cardList['jinter']
-#del cardList['jbothell']
-#del cardList['jerror']
 
 def cardListToDict(cl):
     '''Convert a list of cards to a dictionary of the form:

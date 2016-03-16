@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-from .myuwFunctions import isCardVisible, packElement, formatDiffs, \
+from .functions import isCardVisible, packElement, formatDiffs, \
     rangesToSigDates, filterListVis
-from .myuwDates import *
+from .dates import *
 import re
-from .myuwClasses import *
-from .myuwData import stuHuskyCardLink, empHuskyCardLink
+from .classes import *
+from .data import stuHuskyCardLink, empHuskyCardLink
 
 from selenium.common.exceptions import NoSuchElementException
 
@@ -857,6 +857,36 @@ class NoCourseCard(myuwCard):
 class NoCourseCardAlt(NoCourseCard):
     '''No course card with alternate dates. '''
     visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+
+@isaCard
+class uwemail(myuwCard):
+    
+    def __init__(self, emailType = None):
+        #if emailType is None:
+        #   raise AssertionError('emailType must be specified')
+
+        self.emailType = emailType
+
+    @classmethod
+    def fromElement(cls, date, e):
+        
+        if 'Gmail' in e.text:
+            emailType = 'gmail'
+
+        elif 'Outlook' in e.text:
+            emailType = 'outlook'
+
+        else:
+            emailType = None
+            #raise AssertionError("Didn't find a known email type")
+
+        return cls(emailType = emailType)
+
+    autoDiffs = {'emailType': 'Email Type'}
+
+gmail = uwemail('gmail')
+outlook = uwemail('outlook')
+
 
 # Simple cards that have fixed content as well
 # as cards that simply aren't done yet. 

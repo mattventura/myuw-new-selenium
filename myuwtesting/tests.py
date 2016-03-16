@@ -7,19 +7,19 @@ import json
 import subprocess
 from selenium.webdriver import Firefox
 
-from .myuwClasses import myuwDate, perfCounter, LandingWaitTimedOut
-from .myuwFunctions import splitList, driverRetry
-from . import myuwExpected
+from .classes import myuwDate, perfCounter, LandingWaitTimedOut
+from .functions import splitList, driverRetry
+from . import expected
 from .testconfig import parallel, perf, defaultStartDate, defaultEndDate
 from . import testconfig
-from myuwTesting.myuwHandler import mainMyuwHandler
+from .handler import mainMyuwHandler
 
 def getTestDates(start = defaultStartDate, end = defaultEndDate):
     '''Get test dates based off expected cards and known dates. '''
-    userList = myuwExpected.cardList.keys()
+    userList = expected.cardList.keys()
     tcDict = {}
     for user in userList:
-        sd = myuwExpected.getSigDates(user, start, end, True)
+        sd = expected.getSigDates(user, start, end, True)
         tcDict[user] = sd
     return tcDict
 
@@ -27,7 +27,7 @@ class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
     and usersToTest. '''
     driverFunc = Firefox
-    baseUrl = 'http://localhost:8081'
+    baseUrl = testconfig.testUrl
     # By default, don't test anything. Real test cases should subclass
     # this class and define these two variables. 
     # usersToTest: List of usernames in string format
@@ -326,10 +326,10 @@ class mainMyuwTestCase(unittest.TestCase):
     def checkDiffs(self):
         '''Check diffs for the page as it currently stands. '''
         actualCards = self.pageHandler.cards
-        expectedCards = myuwExpected.getExpectedResults(self.currentUser, self.currentDate)
+        expectedCards = expected.getExpectedResults(self.currentUser, self.currentDate)
         if perf:
             diffTimer = perfCounter('Diff checking')
-        diffs = myuwExpected.findDiffs(expectedCards, actualCards)
+        diffs = expected.findDiffs(expectedCards, actualCards)
         if perf:
             diffTime = diffTimer.endFmt()
             print diffTime
