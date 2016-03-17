@@ -693,7 +693,7 @@ def findDiffs(expected, actual):
         elif pairDiff:
             diffs += 'Found differences in card %s:\n' %name
             pairDiffStr = ''
-            for pd in pairDiff.split('\n'):
+            for pd in pairDiff.splitlines():
                 pairDiffStr += '\t%s\n' %pd
             diffs += pairDiffStr
 

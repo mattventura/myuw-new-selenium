@@ -112,9 +112,5 @@ if __name__ == '__main__':
         unittest.TextTestRunner().run(userTest('test_runtests'))
 
     else:
-        main = 'mainMyuwTestCase'
-        sample = 'sampleMyuwTestCase'
-        auto = 'autoDateMyuwTestCase'
-
-        # This chooses what the default test case is
-        unittest.main(defaultTest = auto)
+        # Run default test case
+        unittest.main(defaultTest = 'autoDateMyuwTestCase')

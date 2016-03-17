@@ -70,158 +70,13 @@ class mainMyuwTestCase(unittest.TestCase):
 
     # Run tests and report discrepancies between expected and actual results
     def test_runtests(self):
-        '''Run all tests as defined in testDates and usersToTest.
-        Will parallelize on a per-user basis if the parallel option
-        is set. usersToTest should be a list of usernames to test with,
-        while testDates should be a dictionary mapping usernames to a list
-        of dates which they should be tested on. '''
-        # Parallel test spawns 'parallelDateSplit' number of processes per user
-        # to test. 
-        if self.parallel:
-            # List for holding diffs. These will each be a string of json.
-            diffList = []
-            # List for holding each Popen instance.
-            processes = []
-            # User-date pairs
-            udpairs = []
-            if self.usersToTest:
-                testUsers = self.usersToTest
-            else:
-                testUsers = self.testDates.keys()
-            for user in testUsers:
-                dates = self.testDates[user]
-            #for user, dates in self.testDates.items():
-                if not(dates):
-                    continue
-                for date in dates:
-                    pair = '%s:%s' %(user, date)
-                    udpairs.append(pair)
+        self.runAllUsers()
+        diffs = self.getFormattedDiffs()
+        if diffs:
+            errString  = 'Found differences between actual and expected data:\n'
+            errString += diffs
+            self.fail(errString)
 
-            datesplits = splitList(udpairs, testconfig.parallelNum)
-
-            for datepairs in datesplits:
-                mainFile = 'main.py'
-
-                process = subprocess.Popen(
-                    ['python', mainFile, '--single'] + datepairs,
-                    stdout = subprocess.PIPE,
-                    stderr = subprocess.PIPE,
-                    # Reduce priority of child process (doesn't work on Windows)
-                    preexec_fn = lambda: os.nice(15),
-                )
-                processes.append(process)
-
-                # Stagger processes to even out load and reduce bottlenecks
-                time.sleep(testconfig.parallelDelay)
-
-            # Wait for every process to finish
-            finished = False
-            while not(finished):
-                time.sleep(2)
-
-                # Set finished to True, but if any process is not finished
-                # then set it back to false
-                finished = True
-                for proc in processes:
-                    # Returns None if process is not finished, otherwise
-                    # gives the exit code 
-                    if proc.poll() is None:
-                        finished = False
-
-                # Grab output from each process
-                # The unittest stuff as well as any errors will go to stderr,
-                # while the actual output will
-                # go to stdout which we read from here
-                for proc in processes:
-                    try:
-                        (stdout, stderr) = proc.communicate()
-                        if stderr:
-                            errs = ''
-                            errLines = stderr.split('\n')
-                            # Filter out anything that isn't an error
-                            # There has to be a better way to do this, but right now
-                            # it's more important to make sure errors will be seen
-                            # if they exist. 
-                            for line in errLines:
-                                if len(line) == 0:
-                                    continue
-                                if line == 'E':
-                                    continue
-                                if line[0] in ('.', 'F'): 
-                                    continue
-                                if line[0:4] == '----':
-                                    continue
-                                if line[0:3] in ('Ran', 'Run'):
-                                    continue
-                                if line[0:6] == 'FAILED':
-                                    continue
-                                if line[0:2] == 'OK':
-                                    continue
-                                #print 'Line: <start>%s<end>' %line
-                                errs += line + '\n'
-
-                            # If there is something left, report it
-                            if errs:
-                                #print 'Got errors:\n%s' %stderr
-                                self.errors.append(errs)
-
-                        if stdout:
-                            diffList.append(stdout)
-
-                    # If the process's output has already hit EOF, then don't worry
-                    # about it. This just means we already got the data from that
-                    # particular process. 
-                    except ValueError:
-                        pass
-
-            diffDicts = []
-            # For each json diff, convert it to a real dictionary
-            for diffJson in diffList:
-                diffDict = json.loads(diffJson)
-                diffDicts.append(diffDict)
-
-            # Combine dictionaries into one, like what we would get from the 
-            # non-parallelized version
-            fullDiffs = self.mergeDiffs(diffDicts)
-            # Format them like how they would normally be formatted
-            diffStr = self.formatDiffsFull(fullDiffs)
-            if self.errors:
-                errStr = 'Got errors from children: \n'
-                for err in self.errors:
-                    errStr += err
-            else:
-                errStr = ''
-            # If there are differences, fail the test
-            if diffStr or errStr:
-                allStr = diffStr + '\n' + errStr
-                self.fail(allStr)
-
-
-        # Old, non-parallel test
-        else:
-            self.runAllUsers()
-            diffs = self.getFormattedDiffs()
-            if diffs:
-                errString  = 'Found differences between actual and expected data:\n'
-                errString += diffs
-                self.fail(errString)
-
-    @staticmethod
-    def mergeDiffs(diffDicts):
-        '''Merge multiple dicts of differences together. '''
-        out = {}
-        for dic in diffDicts:
-
-            sortedUsers = sorted(dic.items())
-            for user, dateDict in sortedUsers:
-                if user not in out:
-                    out[user] = {}
-
-                sortedDates = sorted(dateDict.items())
-                for date, diffs in sortedDates:
-                    out[user][date] = diffs
-
-        return out
 
     # RunTests is where code specific to a test style should go
     def runAllUsers(self):
@@ -244,7 +99,6 @@ class mainMyuwTestCase(unittest.TestCase):
                     'Some cards did not finish loading: %s\n' %cardsNotLoaded
                 )
 
-                
             self.checkDiffs()
 
     def browseLanding(self):
@@ -305,13 +159,15 @@ class mainMyuwTestCase(unittest.TestCase):
 
             for date in sorted(dates.keys(), key = dateSortKey):
                 diffs = dates[date]
-                diffStr += indentChar + 'On date %s:\n' %date
+                diffStr += '\tOn date %s:\n' %date
 
                 for diff in diffs:
                     # Newline is already there
-                    diff = diff.strip()
-                    diffStr += indentChar * 2 + '%s\n' %diff
-                    diffStr = diffStr.replace('\t', indentChar)
+                    for diffline in diff.splitlines():
+                        diffLine = '\t\t' + diffline + '\n'
+                        #diffStr += indentChar + '%s\n' %diff
+                        diffStr += diffLine
+        diffStr = diffStr.replace('\t', indentChar)
         return diffStr
         
                 
@@ -354,7 +210,151 @@ class jsonMyuwTestCase(mainMyuwTestCase):
     def checkPara(self):
         return False
 
-class autoDateMyuwTestCase(mainMyuwTestCase):
+class parallelTestCase(mainMyuwTestCase):
+
+    @staticmethod
+    def mergeDiffs(diffDicts):
+        '''Merge multiple dicts of differences together. '''
+        out = {}
+        for dic in diffDicts:
+
+            sortedUsers = sorted(dic.items())
+            for user, dateDict in sortedUsers:
+                if user not in out:
+                    out[user] = {}
+
+                sortedDates = sorted(dateDict.items())
+                for date, diffs in sortedDates:
+                    out[user][date] = diffs
+
+        return out
+
+    # Run tests and report discrepancies between expected and actual results
+    def test_runtests(self):
+        '''Run all tests as defined in testDates and usersToTest.
+        Will parallelize on a per-user basis if the parallel option
+        is set. usersToTest should be a list of usernames to test with,
+        while testDates should be a dictionary mapping usernames to a list
+        of dates which they should be tested on. '''
+        # List for holding diffs. These will each be a string of json.
+        diffList = []
+        # List for holding each Popen instance.
+        processes = []
+        # User-date pairs
+        udpairs = []
+        if self.usersToTest:
+            testUsers = self.usersToTest
+        else:
+            testUsers = self.testDates.keys()
+        for user in testUsers:
+            dates = self.testDates[user]
+        #for user, dates in self.testDates.items():
+            if not(dates):
+                continue
+            for date in dates:
+                pair = '%s:%s' %(user, date)
+                udpairs.append(pair)
+
+        datesplits = splitList(udpairs, testconfig.parallelNum)
+
+        for datepairs in datesplits:
+            mainFile = 'main.py'
+
+            process = subprocess.Popen(
+                ['python', mainFile, '--single'] + datepairs,
+                stdout = subprocess.PIPE,
+                stderr = subprocess.PIPE,
+                # Reduce priority of child process (doesn't work on Windows)
+                preexec_fn = lambda: os.nice(15),
+            )
+            processes.append(process)
+
+            # Stagger processes to even out load and reduce bottlenecks
+            time.sleep(testconfig.parallelDelay)
+
+        # Wait for every process to finish
+        finished = False
+        while not(finished):
+            time.sleep(2)
+
+            # Set finished to True, but if any process is not finished
+            # then set it back to false
+            finished = True
+            for proc in processes:
+                # Returns None if process is not finished, otherwise
+                # gives the exit code 
+                if proc.poll() is None:
+                    finished = False
+
+            # Grab output from each process
+            # The unittest stuff as well as any errors will go to stderr,
+            # while the actual output will
+            # go to stdout which we read from here
+            for proc in processes:
+                try:
+                    (stdout, stderr) = proc.communicate()
+                    if stderr:
+                        errs = ''
+                        errLines = stderr.split('\n')
+                        # Filter out anything that isn't an error
+                        # There has to be a better way to do this, but right now
+                        # it's more important to make sure errors will be seen
+                        # if they exist. 
+                        for line in errLines:
+                            if len(line) == 0:
+                                continue
+                            if line == 'E':
+                                continue
+                            if line[0] in ('.', 'F'): 
+                                continue
+                            if line[0:4] == '----':
+                                continue
+                            if line[0:3] in ('Ran', 'Run'):
+                                continue
+                            if line[0:6] == 'FAILED':
+                                continue
+                            if line[0:2] == 'OK':
+                                continue
+                            #print 'Line: <start>%s<end>' %line
+                            errs += line + '\n'
+
+                        # If there is something left, report it
+                        if errs:
+                            #print 'Got errors:\n%s' %stderr
+                            self.errors.append(errs)
+
+                    if stdout:
+                        diffList.append(stdout)
+
+                # If the process's output has already hit EOF, then don't worry
+                # about it. This just means we already got the data from that
+                # particular process. 
+                except ValueError:
+                    pass
+
+        diffDicts = []
+        # For each json diff, convert it to a real dictionary
+        for diffJson in diffList:
+            diffDict = json.loads(diffJson)
+            diffDicts.append(diffDict)
+
+        # Combine dictionaries into one, like what we would get from the 
+        # non-parallelized version
+        fullDiffs = self.mergeDiffs(diffDicts)
+        # Format them like how they would normally be formatted
+        diffStr = self.formatDiffsFull(fullDiffs)
+        if self.errors:
+            errStr = 'Got errors from children: \n'
+            for err in self.errors:
+                errStr += err
+        else:
+            errStr = ''
+        # If there are differences, fail the test
+        if diffStr or errStr:
+            allStr = diffStr + '\n' + errStr
+            self.fail(allStr)
+
+class autoDateMyuwTestCase(parallelTestCase):
     '''Test case which automatically finds test users and dates. '''
 
     startDate = defaultStartDate
