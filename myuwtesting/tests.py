@@ -39,7 +39,7 @@ class mainMyuwTestCase(unittest.TestCase):
     # These should be set to the values that myuw will default to
     # with no override. 
     defaultUser = 'javerage'
-    defaultDate = myuwDate(2013, 04, 15)
+    defaultDate = myuwDate('2013-4-15')
 
     def setUp(self):
         self.parallel = self.checkPara()

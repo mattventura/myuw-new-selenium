@@ -24,11 +24,8 @@ from myuwtesting.tests import getTestDates
 # This import is different depending on whether we're using this as a package
 # or not.
 try:
-    from .testconfig import *
-    # We may need to write values here
     from . import testconfig
 except:
-    from testconfig import *
     import testconfig
 
 
@@ -61,16 +58,14 @@ if __name__ == '__main__':
                 testDates[user] = []
             testDates[user].append(date)
         users = testDates.keys()
-        # Disable parallelization
-        testconfig.parallel = False
 
+        # Make test case with our specific dates and users
         class singleTestCase(jsonMyuwTestCase):
             '''Test class for --single mode'''
             testDates = testDates
             usersToTest = users
 
-        # Run the test
-        # This handles the output
+        # Run the test with json output
         unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
 
     elif len(argv) >= 2 and argv[1] == '--dump-dates':
@@ -102,10 +97,12 @@ if __name__ == '__main__':
         #diff = myuwExpected.findDiffs(a, e)
         #h = a['GradStatusCard']
         #e = h.originalElement
+
     elif len(argv) == 3 and argv[1] == '--user':
 
         user = argv[2]
 
+        # Make test class for a specific user
         class userTest(autoDateMyuwTestCase):
             usersToTest = [user]
 

@@ -46,8 +46,8 @@ class myuwDateMeta(type):
 
 @total_ordering
 class myuwDate(object):
-    '''Wrapper around datetime.date that allows easy converion
-    to and from "yyyy-mm-dd" format for myuw. '''
+    '''Wrapper around datetime.date that allows easy converion to and 
+    from "yyyy-mm-dd" format for myuw. '''
     
     __metaclass__ = myuwDateMeta
 
@@ -60,17 +60,9 @@ class myuwDate(object):
         '''
         if len(args) == 1:
             arg = args[0]
-            # If it's already a myuwDate object, make a new one with the same values
-            if isinstance(arg, myuwDate):
-                newDate = (arg.year, arg.month, arg.day)
-                self.__init__(*newDate)
-
-            # If it's a datetime.date, use it directly
-            elif isinstance(arg, datetime.date):
-                self.dateObj = arg
 
             # Interpret yyyy-mm-dd string
-            elif isinstance(arg, basestring):
+            if isinstance(arg, basestring):
                 try:
                     dateParts = [int(s) for s in arg.split('-')]
                 except:
@@ -81,12 +73,12 @@ class myuwDate(object):
 
                 self.dateObj = datetime.date(*dateParts)
 
+            # If it's a datetime.date, use it directly
+            elif isinstance(arg, datetime.date):
+                self.dateObj = arg
+
             else:
                 raise MyuwDateTypeError(*args)
-
-        # Arguments specified as y, m, d
-        elif len(args) == 3:
-            self.dateObj = datetime.date(*args)
 
         # Raise exception on everything else and report erroneous arguments used
         else: 
@@ -123,7 +115,8 @@ class myuwDate(object):
         return '%s-%s-%s' %(self.year, self.month, self.day)
 
     def __repr__(self):
-        return '%s(%s, %s, %s)' %(type(self).__name__, self.year, self.month, self.day)
+        return '%s("%s")' %(type(self).__name__, str(self))
+        #return '%s(%s, %s, %s)' %(type(self).__name__, self.year, self.month, self.day)
 
     def __add__(self, other):
         '''Construct a new myuwDate by taking out own date, converting
@@ -174,7 +167,7 @@ class myuwDate(object):
 class myuwDateTime(myuwDate):
     
     #def __init__(self, *args):
-        #something
+        # TODO
 
     @property
     def hour(self):
