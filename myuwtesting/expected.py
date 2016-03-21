@@ -158,12 +158,9 @@ cardList['jinter'] = [
     EmpFacStudentCard(True, True),
     RegStatusCard(qtrs = ['SP13', 'AU13'], holds = 2),
     SummerRegStatusCard(holds = 2),
-    #SummerRegStatusCard(),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
     NoCourseCard(), 
-#   errorCard('GradCommitteeCard'),
-#   errorCard('GradStatusCard'),
     GradStatusCard(
         [
             petRequest("Master's degree - Extend six year limit", 
@@ -186,7 +183,6 @@ cardList['jinter'] = [
                 visCheck = visBefore('2013-3-27')),
             leaveRequest('Autumn 2013 Leave', 'Paid',
                 visCheck = visBefore('2013-12-18')),
-            # Done: verify above date
             leaveRequest('Winter 2014 Leave', 'Paid'),
             leaveRequest('Spring 2014 Leave', 'Paid'),
         ], 
@@ -514,7 +510,6 @@ cardList['jerror'] = [
 cardList['none'] = [
     ThriveCardExpected(),
     app_acal(),
-    #app_notices(),
 ]
 
 cardList['botgrad'] = [

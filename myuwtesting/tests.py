@@ -28,6 +28,7 @@ class mainMyuwTestCase(unittest.TestCase):
     and usersToTest. '''
     driverFunc = Firefox
     baseUrl = testconfig.testUrl
+
     # By default, don't test anything. Real test cases should subclass
     # this class and define these two variables. 
     # usersToTest: List of usernames in string format

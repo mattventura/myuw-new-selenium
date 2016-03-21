@@ -43,7 +43,8 @@ class ThriveCardExpected(ThriveCard):
     ]
 
     # XXX
-    del thriveCards['WI13']
+    del thriveCards['SP13']
+    #del thriveCards['WI13']
 
     ec = {}
     for key, value in thriveCards.items():

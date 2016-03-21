@@ -48,65 +48,90 @@ if __name__ == '__main__':
     argv = sys.argv
     # --single option causes it to run individual test cases and report
     # them in json format rather than doing everything
-    if len(argv) >= 3 and argv[1] == '--single':
-        # Parse arguments
-        pairs = argv[2:]
-        testDates = {}
-        for pair in pairs:
-            user, date = pair.split(':')
-            if user not in testDates:
-                testDates[user] = []
-            testDates[user].append(date)
-        users = testDates.keys()
+    if len(argv) >= 2:
 
-        # Make test case with our specific dates and users
-        class singleTestCase(jsonMyuwTestCase):
-            '''Test class for --single mode'''
-            testDates = testDates
-            usersToTest = users
+        if argv[1] == '--help':
+            # TODO
+            print 'Placeholder help text'
 
-        # Run the test with json output
-        unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
+        if argv[1] == '--single':
+            # Parse arguments
 
-    elif len(argv) >= 2 and argv[1] == '--dump-dates':
-        testUsers = getTestDates()
-        for user, dates in testUsers.items():
-            print 'Test dates for user %s:' % user
-            print '    ' + ', '.join([str(date) for date in dates])
+            # No test user/dates specified
+            if len(argv) == 2:
+                print 'Please specify one or more test user:date pairs. '
+                print 'Example: main.py --single javerage:2013-2-5'
 
-    elif len(argv) >= 2 and argv[1] == '--debug':
+            else:
 
-        # Scratch area where you can put whatever debug code
-        d = Firefox()
-        d.maximize_window()
-        m = mainMyuwHandler(d, testconfig.testUrl)
+                try:
+                    pairs = argv[2:]
+                    testDates = {}
+                    for pair in pairs:
+                        user, date = pair.split(':')
+                        if user not in testDates:
+                            testDates[user] = []
+                        testDates[user].append(date)
+                    users = testDates.keys()
 
-        m.setUser('seagrad')
-        m.setDate('2013-3-27')
-        try:
-            m.browseLanding()
-        except Exception as e:
-            print e
-        #el = d.find_element_by_id('SummerRegStatusCard1')
-        #print el.is_displayed()
-        #print repr(el.text)
-        #time.sleep(4)
-        a = m.cards
-        #
-        #e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
-        #diff = myuwExpected.findDiffs(a, e)
-        #h = a['GradStatusCard']
-        #e = h.originalElement
+                except:
+                    
+                    print 'Syntax error in --single arguments'
+                    print 'Bad argument was "%s"' %pair
 
-    elif len(argv) == 3 and argv[1] == '--user':
+                else:
 
-        user = argv[2]
+                    # Make test case with our specific dates and users
+                    class singleTestCase(jsonMyuwTestCase):
+                        '''Test class for --single mode'''
+                        testDates = testDates
+                        usersToTest = users
 
-        # Make test class for a specific user
-        class userTest(autoDateMyuwTestCase):
-            usersToTest = [user]
+                    # Run the test with json output
+                    unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
 
-        unittest.TextTestRunner().run(userTest('test_runtests'))
+
+        elif argv[1] == '--dump-dates':
+            testUsers = getTestDates()
+            for user, dates in testUsers.items():
+                print 'Test dates for user %s:' % user
+                print '    ' + ', '.join([str(date) for date in dates])
+
+
+        elif argv[1] == '--debug':
+
+            # Scratch area where you can put whatever debug code
+            # Best used with python's -i option so you can poke around. 
+            d = Firefox()
+            d.maximize_window()
+            m = mainMyuwHandler(d, testconfig.testUrl)
+
+            m.setUser('seagrad')
+            m.setDate('2013-3-27')
+            try:
+                m.browseLanding()
+            except Exception as e:
+                print e
+            #el = d.find_element_by_id('SummerRegStatusCard1')
+            #print el.is_displayed()
+            #print repr(el.text)
+            #time.sleep(4)
+            a = m.cards
+            #
+            #e = myuwExpected.getExpectedResults('javerage', '2013-06-10')
+            #diff = myuwExpected.findDiffs(a, e)
+            #h = a['GradStatusCard']
+            #e = h.originalElement
+
+        elif len(argv) == 3 and argv[1] == '--user':
+
+            user = argv[2]
+
+            # Make test class for a specific user
+            class userTest(autoDateMyuwTestCase):
+                usersToTest = [user]
+
+            unittest.TextTestRunner().run(userTest('test_runtests'))
 
     else:
         # Run default test case

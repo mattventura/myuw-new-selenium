@@ -592,22 +592,19 @@ class cardProxy(object):
     def significantDates(self):
         '''Get a list of significant dates for this card, by combining
         those of the card (if it exists) and our _vis. '''
+
         cardDates = self._vis.significantDates[:]
         cardDates += getattr(self.card, 'significantDates', [])
-        """
-        try:
-            cardDates += self.card.significantDates
-        except AttributeError:
-            pass
-            """
         return cardDates
-        
+
+
 class cardCustom(cardProxy):
     '''Quick way of creating a custom cardproxy using a specific
     visibility function.'''
     def __init__(self, card, vis):
         super(cardCustom, self).__init__(card)
         self._vis = vis
+
 
 def processDateRanges(dates):
     '''Turns (start, end) pairs into myuwDateRange objects'''
@@ -617,6 +614,7 @@ def processDateRanges(dates):
             datePair = myuwDateRange(*datePair)
         dateRanges.append(datePair)
     return dateRanges
+
 
 # Turns "smart" date ranges (e.g. QtrStart + 1 to FinalsBegin - 5)
 # into a list of date ranges

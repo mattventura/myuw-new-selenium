@@ -3,6 +3,26 @@
 import datetime
 from selenium.common.exceptions import WebDriverException
 
+
+def uesc(func):
+    '''Escape unicode from all arguments. '''
+
+    def inner(*args, **kwargs):
+
+        newArgs = []
+        for arg in args:
+            if isinstance(arg, unicode):
+                arg = arg.encode('unicode-escape')
+            newArgs.append(arg)
+
+        for k,v in kwargs.items():
+            if isinstance(v, unicode):
+                kwargs[k] = v.encode('unicode-escape')
+
+        return func(*newArgs, **kwargs)
+
+    return inner
+
 def isCardVisible(cardEl):
     '''Attempt to determine if a card is visible using numerous indicators. '''
     try:
@@ -30,7 +50,7 @@ def toTimeDelta(obj):
     '''Convert an int to a datetime.timedelta. If the input is already
     a timedelta, just return it. '''
     if isinstance(obj, int):
-        obj = datetime.timedelta(obj)
+        return datetime.timedelta(obj)
         
     if isinstance(obj, datetime.timedelta):
         return obj
@@ -49,8 +69,9 @@ def packElement(func):
         newCardInstance.originalElement = e
         return newCardInstance
     return inner
-    
 
+
+@uesc
 def formatDiffs(label, a, b):
     '''Format diffs. 
     If a and b are equal, return an empty string. 
@@ -59,21 +80,13 @@ def formatDiffs(label, a, b):
     '''
     if a == b:
         return ''
+    # TODO
     #elif isinstance(a, list) and isinstance(b, list):
     #    return formatListDiffs(label, a, b)
     else:
-        if isinstance(a, unicode):
-            a = a.encode('unicode-escape')
-        if isinstance(b, unicode):
-            b = b.encode('unicode-escape')
-        try:
-            outStr = 'Different %s (%s vs %s)\n' %(label, a, b)
-            return outStr
-        except:
-            print unicode(a).encode('ascii', 'replace')
-            print unicode(b).encode('ascii', 'replace')
-        
-# Not finished
+        return 'Different %s (%s vs %s)\n' %(label, a, b)
+
+# Not finished TODO
 """
 def formatListDiffs(label, a, b):
     '''Find differences between two lists'''
@@ -93,8 +106,8 @@ def formatListDiffs(label, a, b):
 
     outStr = 'Different lists %s
     """
-        
-        
+
+
 def findDiffs(self, other):
     if hasattr(self, 'autoDiffs'):
         diffs = ''
@@ -109,16 +122,18 @@ def findDiffs(self, other):
                 diffs += valueSelf.findDiffs(valueOther)
             else:
                 diffs += formatDiffs(label, valueSelf, valueOther)
-        #diffs = str(diffs)
         return diffs
     else: 
         raise Exception('Used findDiffs on %s without autoDiffs attribute' %self)
 
 def rangesToSigDates(dateRanges):
-    out = []
-    for r in dateRanges:
-        out += r.significantDates
-    return out
+    '''Given a list of date ranges, find all the significant dates.
+    Does not handle removing dupes. '''
+    return sum([r.significantDates for r in dateRanges], [])
+    #out = []
+    #for r in dateRanges:
+    #   out += r.significantDates
+    #return out
 
 # Get card name from an element
 # Useful for when you can't make a proper card out of the 
@@ -131,44 +146,30 @@ def getCardName(cardEl):
     cardName = cardId or cardDataName
     return cardName
 
-def uesc(func):
-    '''Escape unicode from all arguments. '''
-    
-    def inner(*args, **kwargs):
-        
-        newArgs = []
-        newKw = {}
-        for arg in args:
-            if isinstance(arg, unicode):
-                arg = arg.encode('unicode-escape')
-            newArgs.append(arg)
-
-        for k,v in kwargs.items():
-            if isinstance(v, unicode):
-                v = v.encode('unicode-escape')
-            newKw[k] = v
-
-        return func(*newArgs, **newKw)
-    
-    return inner
 
 def splitList(l, n):
-    '''Split a list into n smaller lists, with a minimum of one item per chunk.'''
+    '''Split a list into n smaller lists, with a minimum of one item per 
+    chunk.'''
     out = []
     for i in range(n):
         length = len(l)
         start = length * i / n
         end = length * (i + 1) / n
         chunk = l[start:end]
+        # Ignore blank chunks, happens when len(l) < n
         if chunk:
             out.append(chunk)
     return out
 
+
 def driverRetry(driverFunc, numTries = 3):
-    '''Function to automatically retry opening the browser when you get the
-    'Can't load the profile' error. 
-    Try at most numTries times to start the Webdriver. 
-    '''
+    '''Function to automatically retry (at most numTries times) opening the 
+    browser when you get the "Can't load the profile" error. This error 
+    occasionally happens randomly, but if it happens more than a few times 
+    in a row it's likely an actual blocker. Most likely, you updated the 
+    browser to a version that the WebDriver isn't equipped to handle, so 
+    either "pip install --upgrade selenium" or roll back the browser. '''
+
     try:
         return driverFunc()
     except WebDriverException as ex:
@@ -177,14 +178,8 @@ def driverRetry(driverFunc, numTries = 3):
         else:
             raise ex
 
+
 def filterListVis(inList, date):
-    '''Filter a list down to elements whose
-    shouldAppear method returns true on that
-    date. '''
+    '''Filter a list down to elements whose shouldAppear method returns true 
+    on that date. '''
     return [item for item in inList if item.shouldAppear(date)]
-    """
-    outList = []
-    for item in inList:
-        if item.shouldAppear(date):
-            outList.append(
-            """

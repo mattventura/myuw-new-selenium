@@ -14,7 +14,7 @@ class mainMyuwHandler(object):
     '''Page object model handler for myuw. '''
     
     # Go to override page and set override username
-    def changeUser(self, username):
+    def _changeUser(self, username):
         '''Set override username. You probably want setUser instead. '''
         self.browseToPage(self.userUrl)
         time.sleep(.5)
@@ -25,7 +25,7 @@ class mainMyuwHandler(object):
         self.currentUser = username
 
     # Go to override page and set override date
-    def changeDate(self, dateStr):
+    def _changeDate(self, dateStr):
         '''Set override date. You probably want setDate instead. '''
         self.browseToPage(self.dateUrl)
         time.sleep(.5)
@@ -36,7 +36,7 @@ class mainMyuwHandler(object):
         time.sleep(1)
         self.currentDate = myuwDate(dateStr)
 
-    def changeTime(self, timeStr):
+    def _changeTime(self, timeStr):
         '''Set override time. NOT IMPLEMENTED YET!'''
         pass
 
@@ -44,18 +44,18 @@ class mainMyuwHandler(object):
     def setUser(self, username):
         '''Set override username only if that isn't already our username. '''
         if username != self.currentUser:
-            self.changeUser(username)
+            self._changeUser(username)
 
     # Set date if it is different from the current date
     def setDate(self, newDate):
         '''Set override date only if that isn't already our date. '''
         newDate = myuwDate(newDate)
         if self.currentDate != newDate:
-            self.changeDate(str(newDate))
+            self._changeDate(str(newDate))
 
         try:
             timeOverride = newDate.getTimeOverride()
-            self.changeTime(timeOverride)
+            self._changeTime(timeOverride)
         except AttributeError:
             pass
 
@@ -164,19 +164,18 @@ class mainMyuwHandler(object):
                     except KeyError as e:
                         # KeyError implies the card was not in the list card classes
                         # This doesn't fail the test as it might just be a new card. 
-                        raise Exception('Error: Card %s unknown. Please write at least a stub class for it. ' %cardName)
+                        raise Exception('Error: Card %s unknown. ' %cardName)
                     else:
                         newCard = cardClass.fromElement(self.currentDate, cardEl)
                         # For cards with multiple names, take the name from the class
                         if newCard is None:
-                            raise Exception('Tried to make %s from element, but it returned none' %cardClass)
+                            raise Exception('%s.fromElement returned None' %cardClass)
                         baseCardName = newCard.name
                         self._cards[baseCardName] = newCard
             else:
                 # Card is hidden
                 if perf:
                     cardTimer.label = 'Parsing hidden card'
-                #continue
 
             if perf:
                 parseTime = cardTimer.endFmt()
@@ -221,23 +220,21 @@ class mainMyuwHandler(object):
                 els = self.driver.find_elements_by_css_selector('i.fa-spin')
                 # Filter these to only visible
                 els = filter(isVisibleFast, els)
-                #els = [el for el in els if el.is_displayed()]
             except:
-                # Ignore exceptions from the browser being in some weird
-                # state while loading. If there's a legitimate exception, 
-                # it will be caught elsewhere. 
+                # Ignore exceptions from the browser being in some weird state 
+                # while loading. If there's a legitimate issue, it will be 
+                # caught elsewhere. 
                 pass
             else:
                 # If there were gears, wait some more. 
                 if els:
                     pass
-                # If there were no loading gears found, consider
-                # the page to have finished loading. 
+                # If not, then the page finished loading
                 else:
                     break
         else:
-            # If the loop ends due to running out of time, throw 
-            # this exception. 
+            # If the loop ends due to running out of time, throw our
+            # custom exception. 
             els = filter(isVisibleFast, els)
             newEls = []
             for el in els:
@@ -251,7 +248,6 @@ class mainMyuwHandler(object):
 
         # If the loop ended due to there being no more loading gears, 
         # it will hit this code instead. 
-
         loadTimer.end()
         if perf:
             print loadTimer.formatted

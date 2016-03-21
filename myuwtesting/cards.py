@@ -53,7 +53,8 @@ balanceLabels = {
 }
 
 
-# TODO: last transaction date
+# Not going to do last transaction date, because it would vary based on
+# when you view the page. 
 @isaCard
 class HFSCard(myuwCard):
     '''Housing and Food Services card (husky card balances card)'''
@@ -116,6 +117,7 @@ class HFSCard(myuwCard):
         'addFundsUrl': 'HFS Add Funds URL',
     }
 
+
 # Student employee/instructor card
 @isaCard
 class EmpFacStudentCard(myuwCard):
@@ -139,6 +141,7 @@ class EmpFacStudentCard(myuwCard):
         'stuEmp': 'Student Employee Section',
         'instructor': 'Instructor Section',
     }
+
 
 @isaCard
 class FutureQuarterCard(myuwCard):
@@ -180,6 +183,7 @@ class FutureQuarterCard(myuwCard):
         return cls(qtrs)
 
     autoDiffs = {'qtrs': 'Future Quarter Data'}
+
 
 @isaCard
 class SummerEFSCard(myuwCard):
@@ -270,9 +274,10 @@ class GradeCard(myuwCard):
         return grades
 
     def findDiffs(self, other):
+        '''Find quarter to compare, then compare data. '''
         diffs = ''
         trueQtr = self.quarter or other.quarter
-            
+
         gradesA = self.getGradesForQuarter(trueQtr)
         gradesB = other.getGradesForQuarter(trueQtr)
 
@@ -281,17 +286,13 @@ class GradeCard(myuwCard):
 
 
     def makeVisCheck(self):
-
+        '''Assemble a visCheck based on our expected data'''
         visChecks = []
         for gradesQtr in self.gradeDict.keys():
             short = gradesQtr[0:2]
             year = gradesQtr[2:4]
 
-            if short in ('WI', 'AU'):
-                show = LastDayInstr[gradesQtr] + 1
-                hide = NextQtrClassesBegin[gradesQtr] - 1
-
-            elif short == 'SP':
+            if short in ('WI', 'AU', 'SP'):
                 show = LastDayInstr[gradesQtr] + 1
                 hide = NextQtrClassesBegin[gradesQtr] - 1
 
@@ -314,7 +315,10 @@ class GradeCard(myuwCard):
         visCheck = visUnion(*visChecks)
         return visCheck
 
+
 class GradeCardDummy(GradeCard):
+    '''Dummy version of the grade card that has quarters but no actual
+    grades for them. Useful for wrapping with errorCard. '''
     def __init__(self, qtrs = ['AU13', 'WI13', 'SP13', 'SA13', 'SB13']):
 
         gradeDict = {qtr: {} for qtr in qtrs}
@@ -352,6 +356,7 @@ class RegStatusCard(myuwCard):
             'a.reg_disclosure',
             'a.reg_disclosure_summerA',
             'a.reg_disclosure_summer1',
+            'a.show_reg_holds'
         ]
         for eleclass in eleclasses:
             try:
@@ -363,7 +368,8 @@ class RegStatusCard(myuwCard):
             return cls(holds = 0)
 
         bannerText = banner.text
-        numHolds = int(bannerText.split(' ')[1])
+        # Need to pull out x from "x holds"
+        numHolds = int(bannerText.split(' ')[-2])
 
         return cls(holds = numHolds, qtr = qtrString)
 
@@ -378,7 +384,6 @@ class RegStatusCard(myuwCard):
 
         return False
 
-
     show = RegCardShow
     hide = RegCardHide
 
@@ -387,7 +392,6 @@ class RegStatusCard(myuwCard):
     autoDiffs = {
         'holds': 'Number of registration holds',
     }
-
 
 
 @isaCard
@@ -438,10 +442,11 @@ class SummerRegStatusCard(RegStatusCard):
     def significantDates(self):
         return self.visCheck.significantDates + self.topCheck.significantDates
 
+
 @isaCard
 class CriticalInfoCard(myuwCard):
     '''Update Critical Info Card'''
-    
+
     def __init__(self, email = True,
         directory = True, residency = True):
         '''email: Set Up UW Email section
@@ -470,6 +475,7 @@ class CriticalInfoCard(myuwCard):
         'directory': 'Student Directory notice',
         'residency': 'Residency notice',
     }
+
 
 @isaCard
 class VisualScheduleCard(myuwCard):
@@ -555,6 +561,7 @@ class VisualScheduleCard(myuwCard):
 
     autoDiffs = {'quartersDict': 'Visual Schedule Classes'}
 
+
 @isaCard
 class FinalExamCard(myuwCard):
     '''Final exam card. Like VisualScheduleCard but is the 
@@ -570,6 +577,7 @@ class FinalExamCard(myuwCard):
 
         return cls()
 
+
 def checkNCC(e):
     '''Check if a card element is actually the NoCourseCard
     (No Registration Found; You don't appear to be registered)
@@ -580,11 +588,13 @@ def checkNCC(e):
     except NoSuchElementException:
         return False
 
+
 @isaCard
 class LibraryCard(myuwCard):
     '''Library Account card'''
     pass
     # TODO: figure out what this card can display and write diffs accordingly
+
 
 @isaCard
 class TextbookCard(myuwCard):
@@ -594,6 +604,7 @@ class TextbookCard(myuwCard):
         visAuto(FirstDayQtr, ClassesBegin + 7, exclude = ['SU13']), 
         visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 7)
     )
+
 
 @isaCard
 class GradCommitteeCard(myuwCard):
@@ -664,6 +675,7 @@ class GradCommitteeCard(myuwCard):
 
         return cls(commDict)
 
+
 # Do later
 @isaCard
 class GradStatusCard(myuwCard):
@@ -717,11 +729,7 @@ class GradStatusCard(myuwCard):
     def processRequests(reqEls, reqClass):
         '''For each reqEl, make a reqClass out of it using the reqClass's
         fromElement classmethod. '''
-        reqsOut = []
-        for reqEl in reqEls:
-            req = reqClass.fromElement(reqEl)
-            reqsOut.append(req)
-        return reqsOut
+        return [reqClass.fromElement(reqEl) for reqEl in reqEls]
 
     # For the expected one, at the top level of each dictionary, rather than specifying an
     # item directly, you can specify 
@@ -756,10 +764,11 @@ class GradStatusCard(myuwCard):
 
         return super(GradStatusCard, self).findDiffs(other)
 
+
 @isaCard
 class ThriveCard(myuwCard):
-    '''Class for a Thrive card. 
-    This should never be an expected card. See ThriveCardExpected. '''
+    '''Class for a Thrive card. This should never be an expected card. 
+    See thrive.ThriveCardExpected for that. '''
     def __init__(self, date = None, content = None):
         
         # Need to handle 3 scenarios:
@@ -780,6 +789,8 @@ class ThriveCard(myuwCard):
             raise Exception('Illegal arguments %s and %s for thrive card' %(date, content))
 
     # Format: dateRange to card
+    # ThriveCardExpected does this automatically based on mappings from
+    # a quarter to a list of cards. 
     expectedContent = {}
 
     def getExpected(self, date):
@@ -828,6 +839,8 @@ class ThriveCard(myuwCard):
                 return True
         return False
 
+    # Since the keys of the expected content dictionary are date ranges, 
+    # we can use rangesToSigDates to generate test dates. 
     @property
     def significantDates(self):
         return rangesToSigDates(self.expectedContent.keys())
@@ -851,12 +864,13 @@ class NoCourseCard(myuwCard):
     '''No Course Card. Not called directly, rather it is created and 
     returned in the fromElement methods of VisualScheduleCard and 
     FinalExamCard.'''
-    #visCheck = visAuto(FirstDayQtr, FinalsEnd)
-    #visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+    pass
+
 
 class NoCourseCardAlt(NoCourseCard):
-    '''No course card with alternate dates. '''
+    '''No course card with alternate dates for spring gradesub stuff. '''
     visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+
 
 @isaCard
 class uwemail(myuwCard):
@@ -906,13 +920,16 @@ class stubCard(myuwCard):
 
 def mkStub(name):
     '''Function for creating stub card classes'''
+
     docstring = 'Stub card class for card "%s"' %name
     return type(name, (stubCard, ), {'__doc__': docstring})
 
 for cardName in stubCards:
+
     newCardClass = mkStub(cardName)
     globals()[cardName] = newCardClass
     # isaCard modifies in place so we don't care about its return. 
     isaCard(newCardClass)
+
 
 del newCardClass
