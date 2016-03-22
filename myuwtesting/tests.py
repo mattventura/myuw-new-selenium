@@ -3,6 +3,8 @@
 import unittest
 import time
 import os
+import sys
+import traceback
 import json
 import subprocess
 from selenium.webdriver import Firefox
@@ -95,12 +97,17 @@ class mainMyuwTestCase(unittest.TestCase):
             try:
                 self.browseLanding()
             except LandingWaitTimedOut as e:
-                cardsNotLoaded = ', '.join(e.cardsNotLoaded)
-                self.logDiffCurrent(
-                    'Some cards did not finish loading: %s\n' %cardsNotLoaded
-                )
+                pass
+                # Handled elsewhere now
 
-            self.checkDiffs()
+            try:
+                self.checkDiffs()
+            except:
+                ei = sys.exc_info()
+                eifmtd = traceback.format_exception(*ei)
+                self.logDiffCurrent(
+                    'Encountered an error checking diffs, the error was: \n%s' %eifmtd
+                )
 
     def browseLanding(self):
         '''Browse the landing page'''
@@ -182,15 +189,22 @@ class mainMyuwTestCase(unittest.TestCase):
     # Check diffs and log any that were found
     def checkDiffs(self):
         '''Check diffs for the page as it currently stands. '''
-        actualCards = self.pageHandler.cards
-        expectedCards = expected.getExpectedResults(self.currentUser, self.currentDate)
-        if perf:
-            diffTimer = perfCounter('Diff checking')
-        diffs = expected.findDiffs(expectedCards, actualCards)
-        if perf:
-            diffTime = diffTimer.endFmt()
-            print diffTime
-        self.logDiffCurrent(diffs)
+        # TODO: add a try/except here to make errors not block the rest of the process
+        try:
+            actualCards = self.pageHandler.cards
+        except:
+            ei = sys.exc_info()
+            self.logDiffCurrent(''.join(traceback.format_exception(*ei)))
+        else:
+            expectedCards = expected.getExpectedResults(self.currentUser, self.currentDate)
+            if perf:
+                diffTimer = perfCounter('Diff checking')
+            diffs = expected.findDiffs(expectedCards, actualCards)
+            if perf:
+                diffTime = diffTimer.endFmt()
+                print diffTime
+            self.logDiffCurrent(diffs)
+
 
 class jsonMyuwTestCase(mainMyuwTestCase):
     def getJsonDiffs(self):
@@ -336,8 +350,12 @@ class parallelTestCase(mainMyuwTestCase):
         diffDicts = []
         # For each json diff, convert it to a real dictionary
         for diffJson in diffList:
-            diffDict = json.loads(diffJson)
-            diffDicts.append(diffDict)
+            try:
+                diffDict = json.loads(diffJson)
+            except ValueError:
+                raise ValueError('Could not decode json object from %s' %diffJson)
+            else:
+                diffDicts.append(diffDict)
 
         # Combine dictionaries into one, like what we would get from the 
         # non-parallelized version

@@ -663,7 +663,7 @@ def findDiffs(expected, actual):
 
     # Report cards which were found but not expected
     if onlyInActual:
-        fmtdList = ', '.join(onlyInActual.keys())
+        fmtdList = ', '.join([str(c.name) for c in onlyInActual.values()])
         diffs += 'Found the following unexpected cards: %s\n' %fmtdList
     # Report cards which were expected but not found
     if onlyInExpected:
@@ -676,7 +676,10 @@ def findDiffs(expected, actual):
 
     # Report differences between actual and expected data on the cards
     for name, pair in common.items():
-        pairDiff = pair.findDiffs()
+        try:
+            pairDiff = pair.findDiffs()
+        except Exception as ex:
+            pairDiff = 'Error when comparing two cards. The error was: %s' %ex
         
         if pairDiff == None:
             raise TypeError('Diff for %s returned None\n' %name)

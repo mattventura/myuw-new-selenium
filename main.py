@@ -68,7 +68,7 @@ if __name__ == '__main__':
                     pairs = argv[2:]
                     testDates = {}
                     for pair in pairs:
-                        user, date = pair.split(':')
+                        user, date = pair.split(':', 1)
                         if user not in testDates:
                             testDates[user] = []
                         testDates[user].append(date)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
             m = mainMyuwHandler(d, testconfig.testUrl)
 
             m.setUser('seagrad')
-            m.setDate('2013-3-27')
+            m.setDate('2013-3-27 3:4:5')
             try:
                 m.browseLanding()
             except Exception as e:

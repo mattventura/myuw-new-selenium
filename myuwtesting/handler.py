@@ -36,10 +36,6 @@ class mainMyuwHandler(object):
         time.sleep(1)
         self.currentDate = myuwDate(dateStr)
 
-    def _changeTime(self, timeStr):
-        '''Set override time. NOT IMPLEMENTED YET!'''
-        pass
-
     # Set user if it is different from the current user
     def setUser(self, username):
         '''Set override username only if that isn't already our username. '''
@@ -51,7 +47,7 @@ class mainMyuwHandler(object):
         '''Set override date only if that isn't already our date. '''
         newDate = myuwDate(newDate)
         if self.currentDate != newDate:
-            self._changeDate(str(newDate))
+            self._changeDate(newDate.getDateOverride())
 
         try:
             timeOverride = newDate.getTimeOverride()
@@ -76,8 +72,8 @@ class mainMyuwHandler(object):
     # (adds the trailing / if not given)
     # Can also take a user and date to override assumed
     # javerage/2013-04-15
-    def __init__(self, driver, baseUrl, date = myuwDate('2013-04-15'), user = 'javerage',
-        userUrl = None, dateUrl = None):
+    def __init__(self, driver, baseUrl, date = myuwDate('2013-04-15'), 
+        user = 'javerage', userUrl = None, dateUrl = None):
         '''Constructor for mainMyuwHandler. 
         baseUrl: root URL for the site. 
         date, user: these indicate what the server will default to before we override. 
@@ -191,8 +187,6 @@ class mainMyuwHandler(object):
         if perf:
             allParseTime = allParseTimer.endFmt()
             print allParseTime
-
-        # TODO: Do other stuff too, like directory info, email link
 
     @property
     def cards(self):

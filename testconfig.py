@@ -10,6 +10,7 @@ parallel = True
 # and the processes are niced anyway, so whatever you would
 # use for make -jX will probably work here. 
 parallelNum = 9
+#parallelNum = 9
 # Number of concurrent tests running at any given time will be at most
 # the number of users to test times parallelDateSplit
 

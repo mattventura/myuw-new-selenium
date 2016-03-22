@@ -29,7 +29,7 @@ class MyuwDateTypeError(TypeError):
     specified when constructing a myuwDate. '''
     def __init__(self, *args):
         args = repr(args)
-        message = 'Arguments to myuwDate must be "yyyy-mm-dd" or yyyy, mm, dd, got %s instead' %args
+        message = 'Arguments to myuwDate must be "yyyy-mm-dd", got %s instead' %args
         super(MyuwDateTypeError, self).__init__(message)
 
 class myuwDateMeta(type):
@@ -42,6 +42,7 @@ class myuwDateMeta(type):
             arg = args[0]
             if isinstance(arg, myuwDate):
                 return arg
+
         return super(myuwDateMeta, cls).__call__(*args, **kwargs)
 
 @total_ordering
@@ -51,40 +52,54 @@ class myuwDate(object):
     
     __metaclass__ = myuwDateMeta
 
-    def __init__(self, *args):
+    def __init__(self, arg):
         '''Arguments are accepted in various forms:
-        myuwDate(yyyy, mm, dd)
         myuwDate('yyyy-mm-dd')
         myuwDate(datetime.date instance)
         myuwDate(myuwDate instance)
         '''
-        if len(args) == 1:
-            arg = args[0]
 
-            # Interpret yyyy-mm-dd string
-            if isinstance(arg, basestring):
-                try:
-                    dateParts = [int(s) for s in arg.split('-')]
-                except:
+        # Interpret yyyy-mm-dd string
+        if isinstance(arg, basestring):
+            try:
+
+                parts = arg.split(' ')
+                l = len(parts)
+                if l > 2:
                     raise MyuwDateTypeError(*args)
 
-                if len(dateParts) != 3:
-                    raise MyuwDateTypeError(*args)
+                dateStr = parts[0]
+                dateParts = dateStr.split('-')
+                dateValues = [int(s) for s in dateParts]
 
-                self.dateObj = datetime.date(*dateParts)
+                if len(parts) == 2:
+                    timeStr = parts[1]
+                    timeParts = timeStr.split(':')
+                    timeValues = [int(s) for s in timeParts]
+                else:
+                    timeValues = [0, 0, 1]
 
-            # If it's a datetime.date, use it directly
-            elif isinstance(arg, datetime.date):
-                self.dateObj = arg
+                assert len(dateValues) == len(timeValues) == 3
+
+            except Exception as ex:
+                raise ex
+                #raise MyuwDateTypeError(arg)
 
             else:
-                raise MyuwDateTypeError(*args)
+                newArgs = dateValues + timeValues
+                self.dateObj = datetime.datetime(*newArgs)
 
-        # Raise exception on everything else and report erroneous arguments used
-        else: 
-            raise MyuwDateTypeError(*args)
+        # If it's a datetime.date, use it directly
+        elif isinstance(arg, datetime.date):
+            self.dateObj = arg
 
+        else:
+            raise MyuwDateTypeError(arg)
+
+        self.yearSanityCheck()
         # Date sanity check
+
+    def yearSanityCheck(self):
         if self.year < 1900:
             raise ValueError(
                 'Got %s for year. Did you mean %s?' %(self.year, self.year + 2000)
@@ -107,16 +122,23 @@ class myuwDate(object):
     def day(self):
         return self.dateObj.day
 
+    @property
+    def hasTime(self):
+        # Plain dates have 00:00:01 as the time
+        return self.dateObj.timetuple()[3:6] != (0, 0, 1)
+
     # String representation, suitable for use in override page
     def __str__(self):
-        return self.getDateOverride()
+        if self.hasTime:
+            return self.dateObj.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            return self.dateObj.strftime('%Y-%m-%d')
 
     def getDateOverride(self):
-        return '%s-%s-%s' %(self.year, self.month, self.day)
+        return self.dateObj.strftime('%Y-%m-%d %H:%M:%S')
 
     def __repr__(self):
         return '%s("%s")' %(type(self).__name__, str(self))
-        #return '%s(%s, %s, %s)' %(type(self).__name__, self.year, self.month, self.day)
 
     def __add__(self, other):
         '''Construct a new myuwDate by taking out own date, converting
@@ -146,14 +168,6 @@ class myuwDate(object):
 
         return self.dateObj == other
 
-    @property
-    def justBefore(self):
-        return self - 1
-
-    @property
-    def justAfter(self):
-        return self + 1
-
     # Define gt and let @total_ordering take care of the rest
     def __gt__(self, other):
         '''Same logic as __eq__ but checks if our date occurs after other. '''
@@ -163,11 +177,6 @@ class myuwDate(object):
             return NotImplemented
 
         return self.dateObj > other
-
-class myuwDateTime(myuwDate):
-    
-    #def __init__(self, *args):
-        # TODO
 
     @property
     def hour(self):
@@ -183,15 +192,18 @@ class myuwDateTime(myuwDate):
 
     @property
     def justBefore(self):
-        return self - datetime.timedelta(minutes=1)
+        if self.hasTime:
+            return self - datetime.timedelta(minutes=1)
+        else:
+            return self - 1
 
     @property
     def justAfter(self):
-        return self + datetime.timedelta(minutes=1)
+        if self.hasTime:
+            return self + datetime.timedelta(minutes=1)
+        else:
+            return self + 1
 
-    # Will be the value you would put into the time override
-    def getTimeOverride(self):
-        return NotImplemented
 
 class myuwDateRange(object):
     '''Date range class, consisting of a start date and end date. 
@@ -305,17 +317,27 @@ class cardPair(object):
 
         actualError = getattr(self.actual, 'isErrorCard', False) 
         expectedError = getattr(self.expected, 'isErrorCard', False) 
+        actualHung = isinstance(self.actual, hungCardClass)
+        expectedHung = isinstance(self.expected, hungCardClass)
+
         #actualError = isinstance(self.actual, errorCard)
         #expectedError = isinstance(self.expected, errorCard)
         if self.nameErr:
             return self.nameErr
-        if actualError == expectedError:
-            return self.expected.findDiffs(self.actual)
-        else:
-            if actualError:
-                return 'Actual card had unexpected error'
-            else:
-                return 'Expected error card, didn\'t get one'
+
+        elif actualError and not expectedError:
+            return 'Actual card had unexpected error'
+        elif expectedError and not actualError:
+            return 'Expected error card, didn\'t get one'
+
+        elif actualHung and not expectedHung:
+            # Already handled elsewhere
+            return 'Actual card did not finish loading'
+            #return 'Card did not finish loading'
+        elif expectedHung and not actualHung:
+            return 'Expected hung card but didn\'t get one'
+
+        return self.expected.findDiffs(self.actual)
 
 class multiDate(dict):
     '''Wrapper to allow us to make an event which recurs on each quarter. 
@@ -759,7 +781,9 @@ class myuwCard(autoDiff):
     # Significant dates
     @property
     def significantDates(self):
-        return self.visCheck.significantDates
+        sigDates = self.visCheck.significantDates
+        sigDates += getattr(self, 'extraSigDates', [])
+        return sigDates
 
     visCheck = visAlways
 
@@ -997,7 +1021,7 @@ class hungCardClass(myuwCard):
 # We want card classes to have descriptive __names__s. 
 @uesc
 def hungCard(name):
-    return type('hungcard_%s' %name, (hungCardClass, ), {'name': name})()
+    return type('hungcard_%s' %name, (hungCardClass, ), {'name': name + ' (hung)'})()
 
 
 class ignoreSig(cardProxy):

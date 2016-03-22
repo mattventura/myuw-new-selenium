@@ -24,7 +24,7 @@ def uesc(func):
     return inner
 
 def isCardVisible(cardEl):
-    '''Attempt to determine if a card is visible using numerous indicators. '''
+    '''Attempt to determine if a card is visible using numerous indicators.'''
     try:
         cardName = getCardName(cardEl)
     except:
@@ -41,7 +41,7 @@ def isCardVisible(cardEl):
 
 # Like above but checks less stuff
 def isVisibleFast(el):
-    '''Attempt to determine if a card is visible using just is_displayed(). '''
+    '''Attempt to determine if a card is visible using just is_displayed().'''
     return el.is_displayed()
 
 # Functions
@@ -56,7 +56,8 @@ def toTimeDelta(obj):
         return obj
 
     else:
-        raise TypeError('toTimeDelta requires either an int or datetime.timedelta as its argument')
+        raise TypeError('toTimeDelta requires either an int or '
+            'datetime.timedelta as its argument')
 
 # Pack the element argument of a fromElement method into the 
 # resultant object for debugging purposes. 
@@ -124,16 +125,14 @@ def findDiffs(self, other):
                 diffs += formatDiffs(label, valueSelf, valueOther)
         return diffs
     else: 
-        raise Exception('Used findDiffs on %s without autoDiffs attribute' %self)
+        raise Exception(
+            'Used findDiffs on %s without autoDiffs attribute' %self
+        )
 
 def rangesToSigDates(dateRanges):
     '''Given a list of date ranges, find all the significant dates.
     Does not handle removing dupes. '''
     return sum([r.significantDates for r in dateRanges], [])
-    #out = []
-    #for r in dateRanges:
-    #   out += r.significantDates
-    #return out
 
 # Get card name from an element
 # Useful for when you can't make a proper card out of the 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-from . import classes
 from .classes import myuwDate, multiDate
+from datetime import timedelta
 
 # These are in (roughly) chronological order
 
@@ -18,6 +18,19 @@ RegPd2 = multiDate({
     'SU13': '2013-05-23',
     'AU13': '2013-06-24',
 })
+
+# Reg period 3 begin
+RegPd3 = multiDate({
+    'SP13': '2013-04-01',
+    'SU13': '2013-06-24',
+    'AU13': '2013-09-25',
+})
+
+(RegPd1open, RegPd2open, RegPd3open) = [
+    md + timedelta(hours=6) for md in (RegPd1, RegPd2, RegPd3)
+]
+
+
 
 # Day when myuw switches quarter,
 # also day after grade sub deadline.

@@ -387,6 +387,17 @@ class RegStatusCard(myuwCard):
     show = RegCardShow
     hide = RegCardHide
 
+    # Registration opening time
+    regTimes = RegPd1open.values() + RegPd2open.values() + RegPd3open.values()
+
+    # Peak load time start/end
+    loadStart = [rt - timedelta(minutes=30) for rt in regTimes]
+    loadEnd = [rt + timedelta(minutes=30) for rt in regTimes]
+
+    # Sig dates for 
+    extraSigDates = [t.justBefore for t in loadStart + loadEnd]
+    extraSigDates += [t.justAfter for t in loadStart + loadEnd]
+
     visCheck = visAuto(RegCardShow, RegCardHide)
 
     autoDiffs = {
@@ -438,9 +449,13 @@ class SummerRegStatusCard(RegStatusCard):
     visCheck = visAuto(SummerRegShow, SummerRegHide)
     topCheck = visAuto(SummerRegShow, SummerRegSwitch - 1)
 
+    extraSigDates = topCheck.significantDates
+
+    """
     @property
     def significantDates(self):
         return self.visCheck.significantDates + self.topCheck.significantDates
+        """
 
 
 @isaCard
@@ -786,7 +801,9 @@ class ThriveCard(myuwCard):
             self.date = date
 
         else:
-            raise Exception('Illegal arguments %s and %s for thrive card' %(date, content))
+            raise Exception(
+                'Illegal arguments %s and %s for thrive card' %(date, content)
+            )
 
     # Format: dateRange to card
     # ThriveCardExpected does this automatically based on mappings from
@@ -912,6 +929,7 @@ stubCards = [
     'app_acal',
     'ToRegisterCard',
     'InternationalStuCard',
+    'ThankYouCard',
 ]
 
 class stubCard(myuwCard):
