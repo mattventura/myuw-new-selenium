@@ -9,7 +9,7 @@ import sys
 
 # myuw-specific imports
 from myuwtesting.classes import myuwDate, errorCard, \
-    LandingWaitTimedOut, perfCounter
+    LandingWaitTimedOut
 from myuwtesting import expected
 from myuwtesting.cards import cardDict
 from myuwtesting.functions import isCardVisible, isVisibleFast, \

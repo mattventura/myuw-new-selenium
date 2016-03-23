@@ -2,10 +2,11 @@
 
 import time
 
-from .cards import cardDict, errorCard
+from .cards import cardFromElement
 from .functions import getCardName, isCardVisible, isVisibleFast
 from .testconfig import perf
-from .classes import myuwDate, perfCounter, LandingWaitTimedOut, hungCard
+from .classes import myuwDate, LandingWaitTimedOut, hungCard
+from .perf import perfCounter
 
 # temp
 import sys
@@ -95,8 +96,8 @@ class mainMyuwHandler(object):
     def _parsePage(self):
         '''Internal function for parsing cards. '''
         # If requested, set up timing
-        if perf: 
-            allParseTimer = perfCounter('Parsing all cards')
+        #if perf: 
+        #   allParseTimer = perfCounter('Parsing all cards')
         cardEls = []
         # Various search strings to use for finding cards
         cardxpaths = (
@@ -134,6 +135,9 @@ class mainMyuwHandler(object):
         # Iterate over each card element
         self._cards = {}
         for cardEl in cardEls:
+            result = cardFromElement(cardEl, self.currentDate)
+            self._cards.update(result)
+            """
             if perf: 
                 cardTimer = perfCounter('Parsing card')
             # Get name of card using whatever's available
@@ -154,15 +158,9 @@ class mainMyuwHandler(object):
                     self._cards[cardName] = newCard
 
                 else:
-                    try:
-                        # Try to find class for the given card name
-                        cardClass = cardDict[cardName]
-                    except KeyError as e:
-                        # KeyError implies the card was not in the list card classes
-                        # This doesn't fail the test as it might just be a new card. 
-                        raise Exception('Error: Card %s unknown. ' %cardName)
+                    cards.getCardClass(cardName)
                     else:
-                        newCard = cardClass.fromElement(self.currentDate, cardEl)
+                        newCard = cardClass.fromElement(cardEl, self.currentDate)
                         # For cards with multiple names, take the name from the class
                         if newCard is None:
                             raise Exception('%s.fromElement returned None' %cardClass)
@@ -176,6 +174,7 @@ class mainMyuwHandler(object):
             if perf:
                 parseTime = cardTimer.endFmt()
                 print parseTime
+            """
 
         failedCards = filter(isVisibleFast, failedCards)
         for cardEl in failedCards:
@@ -184,9 +183,9 @@ class mainMyuwHandler(object):
 
         # Mark the card list as being fresh
         self.cardsValid = True
-        if perf:
-            allParseTime = allParseTimer.endFmt()
-            print allParseTime
+        #if perf:
+        #   allParseTime = allParseTimer.endFmt()
+        #   print allParseTime
 
     @property
     def cards(self):
@@ -243,8 +242,8 @@ class mainMyuwHandler(object):
         # If the loop ended due to there being no more loading gears, 
         # it will hit this code instead. 
         loadTimer.end()
-        if perf:
-            print loadTimer.formatted
+        #if perf:
+        #   print loadTimer.formatted
 
         # Sleep a little longer just in case we have a card that
         # hasn't quite finished but isn't displaying the loading 

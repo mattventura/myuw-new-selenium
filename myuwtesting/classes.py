@@ -732,7 +732,7 @@ class myuwCard(autoDiff):
     # return an instance of the class constructed by selenium element cardEl
     # on date 'date'. 
     @classmethod
-    def fromElement(cls, date, cardEl):
+    def fromElement(cls, cardEl, date):
         # Just return as basic an instance as possible by default
         return cls()
 
@@ -793,7 +793,7 @@ class errorCard(myuwCard):
 
     @classmethod
     @packElement
-    def fromElement(cls, date, cardEl):
+    def fromElement(cls, cardEl, date):
         cardText = cardEl.text
         assert 'An error has occurred' in cardText
         cardName = cardEl.get_attribute('id')
@@ -839,38 +839,6 @@ class LandingWaitTimedOut(Exception):
             not load: %s' %(', '.join(cardNames))
         )
 
-# Class for measuring how long certain things take
-class perfCounter(object):
-    def __init__(self, label = None):
-        self.startTime = time.time()
-        self.finished = False
-        self.label = label
-
-    def end(self):
-        self.endTime = time.time()
-        self.finished = True
-
-    @property
-    def elapsedTime(self):
-        if self.finished:
-            return self.endTime - self.startTime
-        else:
-            return time.time() - self.startTime
-
-    @property
-    def formatted(self):
-        if self.label:
-            return '%s took %s seconds' %(self.label, self.elapsedTime)
-        else: 
-            return str(self.elapsedTime)
-
-    def endGetTime(self):
-        self.end()
-        return self.elapsedTime
-    
-    def endFmt(self):
-        self.end()
-        return self.formatted
 
 class gradRequest(autoDiff):
     '''Base class for graduate requests. '''
@@ -1029,3 +997,20 @@ class ignoreSig(cardProxy):
     number of unnecessary dates tested. '''
     _vis = visAlways
     significantDates = []
+
+"""
+class myplanData(autoDiffs):
+    
+    def __init__(self, ready = [], notReady = []):
+
+        self.ready = ready
+        self.notReady = notReady
+        self.readyCount = len(ready)
+        self.notCount = len(notReady)
+
+    @classmethod
+    def fromElement(cls, e):
+        pass
+
+"""
+

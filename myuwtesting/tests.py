@@ -9,7 +9,7 @@ import json
 import subprocess
 from selenium.webdriver import Firefox
 
-from .classes import myuwDate, perfCounter, LandingWaitTimedOut
+from .classes import myuwDate, LandingWaitTimedOut
 from .functions import splitList, driverRetry
 from . import expected
 from .testconfig import parallel, perf, defaultStartDate, defaultEndDate
@@ -197,12 +197,12 @@ class mainMyuwTestCase(unittest.TestCase):
             self.logDiffCurrent(''.join(traceback.format_exception(*ei)))
         else:
             expectedCards = expected.getExpectedResults(self.currentUser, self.currentDate)
-            if perf:
-                diffTimer = perfCounter('Diff checking')
+            #if perf:
+            #   diffTimer = perfCounter('Diff checking')
             diffs = expected.findDiffs(expectedCards, actualCards)
-            if perf:
-                diffTime = diffTimer.endFmt()
-                print diffTime
+            #if perf:
+            #   diffTime = diffTimer.endFmt()
+            #   print diffTime
             self.logDiffCurrent(diffs)
 
 
