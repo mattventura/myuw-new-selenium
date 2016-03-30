@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 from classes import myuwDate, myuwDateRange, cardPair, \
-cardAlways, cardNever, cardCDM, cardCD, errorCard, \
-cardProxy
+    cardAlways, cardNever, cardCDM, cardCD, errorCard, \
+    cardProxy
 from cards import *
 from dates import *
 from thrive import ThriveCardExpected
@@ -10,10 +10,10 @@ from thrive import ThriveCardExpected
 
 # Assemble actual lists of users and their expected cards
 # These are given as lists then turned into the required dictionary
-# format later. 
-# You can specify multiple conditional cards with disjoint date ranges as a 
+# format later.
+# You can specify multiple conditional cards with disjoint date ranges as a
 # way of specifying different sets of data for different time periods, but
-# ideally this should be put in the card itself. 
+# ideally this should be put in the card itself.
 cardList = {}
 cardList['javerage'] = [
     gmail,
@@ -25,7 +25,7 @@ cardList['javerage'] = [
     SummerEFSCard(True, True),
     cardCD(
         EventsCard(),
-        ('2013-03-19', '2013-04-30')
+        ('2013-03-19', '2013-5-1')
     ),
     ToRegisterCard(),
     VisualScheduleCard({
@@ -40,7 +40,7 @@ cardList['javerage'] = [
             'PHYS 121 AQ': None,
             'PHYS 121 AC': None,
             'TRAIN 100 A': None,
-        }, 
+        },
         'SA13': {
             'TRAIN 102 A': None,
             'ELCBUS 451 A': None,
@@ -63,8 +63,6 @@ cardList['javerage'] = [
                 'sections': 6,
             },
         }),
-        # Bugged?
-        #(RegPd1['WI13'], LastDayQtr['WI13'])
         ['WI13']
     ),
     cardCD(
@@ -82,13 +80,13 @@ cardList['javerage'] = [
                 'sections': 1,
             },
         }),
-        #Spring gradesub known issue
-        (FirstDayQtr['SP13'], ClassesBegin['SU13'] - 1)
+        # Spring gradesub known issue
+        (FirstDayQtr['SP13'], ClassesBegin['SU13'])
     ),
     cardCD(
         FutureQuarterCard({
             'Summer 2013 B-Term': {
-                'credits' : 2, 
+                'credits' : 2,
                 'sections': 2,
             },
             'Autumn 2013': {
@@ -96,8 +94,8 @@ cardList['javerage'] = [
                 'sections': 1,
             },
         }),
-        #Spring gradesub known issue
-        (ClassesBegin['SU13'], SummerBTermBegins['SU13'] - 1)
+        # Spring gradesub known issue
+        (ClassesBegin['SU13'], SummerBTermBegins['SU13'])
     ),
     cardCD(
         FutureQuarterCard({
@@ -106,7 +104,7 @@ cardList['javerage'] = [
                 'sections': 1,
             },
         }),
-        (SummerBTermBegins['SU13'], LastDayQtr['SU13'])
+        (SummerBTermBegins['SU13'], LastDayQtr['SU13'] + 1)
     ),
     cardCD(
         FutureQuarterCard({
@@ -115,7 +113,7 @@ cardList['javerage'] = [
                 'sections': 5,
             },
         }),
-        (FirstDayQtr['AU13'], LastDayQtr['AU13'])
+        (FirstDayQtr['AU13'], LastDayQtr['AU13'] + 1)
     ),
     TextbookCard(),
     GradeCard({
@@ -128,7 +126,7 @@ cardList['javerage'] = [
             'PHYS 121': '4.0',
             'TRAIN 100': 'P',
             'TRAIN 101': 'HP',
-        }, 
+        },
         'SA13': {
             'ELCBUS 451': None,
         },
@@ -153,117 +151,115 @@ cardList['jinter'] = [
     PCEBanner(),
     app_notices(),
     app_acal(),
-    SummerEFSCard(summerReg = False, considerEFS = True), 
+    SummerEFSCard(summerReg = False, considerEFS = True),
     InternationalStuCard(),
     EmpFacStudentCard(True, True),
-    RegStatusCard(qtrs = ['SP13', 'AU13'], holds = 2),
-    SummerRegStatusCard(holds = 2),
+    RegStatusCard(qtrs = ['SP13', 'AU13'], holds = 2, myplanContent = True),
+    SummerRegStatusCard(holds = 2, myplanContent = True),
     cardAlways(CriticalInfoCard()),
     ThriveCardExpected(),
-    NoCourseCard(), 
-    GradStatusCard(
+    NoCourseCard(),
+    ignoreSig(GradStatusCard(
         [
-            petRequest("Master's degree - Extend six year limit", 
-                {'grad': 'Approved',}, 
+            petRequest("Master's degree - Extend six year limit",
+                {'grad': 'Approved'},
                 visCheck = visBefore('2013-6-26'),
-            ), 
-            petRequest("Master's degree - Extend six year limit", 
+            ),
+            petRequest("Master's degree - Extend six year limit",
                 {'grad': 'Pending', 'dept': 'Approve'}
-            ), 
-            petRequest("Master's degree - Extend six year limit", 
-                {'dept': 'Withdraw',}
-            ), 
-            petRequest("Master's degree - Extend six year limit", 
+            ),
+            petRequest("Master's degree - Extend six year limit",
+                {'dept': 'Withdraw'}
+            ),
+            petRequest("Master's degree - Extend six year limit",
                 {'dept': 'Approve', 'grad': 'Withdrawn'}
-            ), 
-
-        ], 
+            ),
+        ],
         [
-            leaveRequest('Winter 2013 Leave', 'Paid', 
+            leaveRequest('Winter 2013 Leave', 'Paid',
                 visCheck = visBefore('2013-3-27')),
             leaveRequest('Autumn 2013 Leave', 'Paid',
                 visCheck = visBefore('2013-12-18')),
             leaveRequest('Winter 2014 Leave', 'Paid'),
             leaveRequest('Spring 2014 Leave', 'Paid'),
-        ], 
+        ],
         [
-            degreeRequest('Masters Request, Winter 2015', 
-                'Awaiting Dept Action (Final Exam)', 
+            degreeRequest('Masters Request, Winter 2015',
+                'Awaiting Dept Action (Final Exam)',
                 title = 'MASTER OF LANDSCAPE ARCHITECTURE/MASTER OF ARCHITECTURE'
-            ), 
-            degreeRequest('Masters Request, Winter 2015', 
+            ),
+            degreeRequest('Masters Request, Winter 2015',
                 'Withdrawn',
                 title = 'MASTER OF ARCHITECTURE'
             ),
-            degreeRequest('Masters Request, Winter 2015', 
+            degreeRequest('Masters Request, Winter 2015',
                 'Withdrawn',
                 title = 'MASTER OF ARCHITECTURE'
             ),
-            degreeRequest('Masters Request, Winter 2015', 
+            degreeRequest('Masters Request, Winter 2015',
                 'Not Recommended by Dept',
                 title = 'MASTER OF LANDSCAPE ARCHITECTURE'
             ),
-            degreeRequest('Masters Request, Spring 2015', 
+            degreeRequest('Masters Request, Spring 2015',
                 'Recommended by Dept',
                 title = 'MASTER OF ARCHITECTURE'
             ),
-            degreeRequest('Masters Request, Spring 2015', 
+            degreeRequest('Masters Request, Spring 2015',
                 'Did Not Graduate',
                 title = 'MASTER OF LANDSCAPE ARCHITECTURE'
             ),
-        
         ]
-    ),
+    )),
     GradCommitteeCard({
         'Doctoral Supervisory Committee': [
             {
-                'dept': 'Anthropology', 
-                'chair': True, 'name': u'Bet Duncan', 
+                'dept': 'Anthropology',
+                'chair': True, 'name': u'Bet Duncan',
                 'email': u'bbb@u.washington.edu'
-            }, 
+            },
             {
-                'dept': u'Anthropology', 'chair': True, 
-                'name': u'Steve M. Goodman', 
+                'dept': u'Anthropology', 'chair': True,
+                'name': u'Steve M. Goodman',
                 'email': u'sss@u.washington.edu'
-            }, 
+            },
             {
-                'dept': u'Health Services - Public Health', 
-                'gsr': True, 
+                'dept': u'Health Services - Public Health',
+                'gsr': True,
                 'name': u'Malinda Korry'
-            }, 
+            },
             {
-                'dept': u'Global Health', 
-                'name': u'James T. Pfeiffer', 
+                'dept': u'Global Health',
+                'name': u'James T. Pfeiffer',
                 'email': u'jjj@uw.edu'
             }
-        ], 
+        ],
         "Master's Committee": [
             {
-                'dept': u'Epidemiology - Public Health', 
-                'chair': True, 
-                'email': u'nnn@u.washington.edu', 
-                'name': u'Nina L. Patrick', 
+                'dept': u'Epidemiology - Public Health',
+                'chair': True,
+                'email': u'nnn@u.washington.edu',
+                'name': u'Nina L. Patrick',
                 'rcc': True
-            }, 
+            },
             {
-                'rcm': True, 
-                'gsr': True, 
-                'name': u'Bet Duncan', 
-                'email': u'bbb@u.washington.edu', 
+                'rcm': True,
+                'gsr': True,
+                'name': u'Bet Duncan',
+                'email': u'bbb@u.washington.edu',
                 'dept': u'Anthropology'
-            }, 
+            },
             {
-                'rcm': True, 
-                'email': u'lll@oge.sld.pe', 
-                'name': u'Louis Vivian', 
+                'rcm': True,
+                'email': u'lll@oge.sld.pe',
+                'name': u'Louis Vivian',
                 'dept': u'Ministry of Health, Peru'
             }
-        ], 
+        ],
         'Advisor': [
             {
-                'rcm': True, 
-                'email': u'bbb@u.washington.edu', 
-                'name': u'Bet Duncan', 
+                'rcm': True,
+                'email': u'bbb@u.washington.edu',
+                'name': u'Bet Duncan',
                 'dept': u'Anthropology'
             }
         ]
@@ -276,79 +272,80 @@ cardList['seagrad'] = [
     TuitionCard(),
     HFSCard({'stu': '$1.00'}),
     app_acal(),
-    ThriveCardExpected(),
+    ignoreSig(ThriveCardExpected()),
     LibraryCard(),
     NoCourseCard(),
     GradStatusCard(
         [
-            petRequest("Doctoral degree - Extend ten year limit", 
-                {'dept': 'Pending',}
-            ), 
-            petRequest("Doctoral degree - Extend ten year limit", 
-                {'dept': 'Withdraw',},
+            petRequest("Doctoral degree - Extend ten year limit",
+                {'dept': 'Pending'}
+            ),
+            petRequest("Doctoral degree - Extend ten year limit",
+                {'dept': 'Withdraw'},
                 visCheck = visBefore('2013-4-25'),
-            ), 
-            petRequest("Doctoral degree - Extend ten year limit", 
+            ),
+            petRequest("Doctoral degree - Extend ten year limit",
                 {'grad': 'Pending', 'dept': 'Deny'}
-            ), 
-            petRequest("Doctoral degree - Extend ten year limit", 
+            ),
+            petRequest("Doctoral degree - Extend ten year limit",
                 {'grad': 'Not approved', 'dept': 'Deny'},
                 visCheck = visBefore('2013-4-25'),
-            ), 
-            petRequest("Doctoral degree - Extend ten year limit", 
+            ),
+            petRequest("Doctoral degree - Extend ten year limit",
                 {'grad': 'Approved'},
                 visCheck = visBefore('2013-4-25'),
-            ), 
-            petRequest("Doctoral degree - Extend ten year limit", 
+            ),
+            petRequest("Doctoral degree - Extend ten year limit",
                 {'dept': 'Approve', 'grad': 'Pending'}
-            ), 
-            petRequest("Doctoral degree - Extend ten year limit", 
+            ),
+            petRequest("Doctoral degree - Extend ten year limit",
                 {'grad': 'Approved'},
                 visCheck = visBefore('2013-4-25'),
-            ), 
-        ], 
+            ),
+        ],
         [
             leaveRequest('Spring 2013 Leave', 'Requested'),
             leaveRequest('Spring 2013 Leave', 'Withdrawn',
                 visCheck = visBefore('2013-8-28')),
-            leaveRequest('Winter 2013 Leave', 'Paid', 
+            leaveRequest('Winter 2013 Leave', 'Paid',
                 visCheck = visBefore('2013-3-27')),
-            leaveRequest('Spring 2013 Leave', 'Approved\n Pay Your Fee To Confirm', 
+            leaveRequest('Spring 2013 Leave',
+                'Approved\n Pay Your Fee To Confirm',
                 visCheck = visBefore('2013-6-8')),
-        ], 
+        ],
         [
-            degreeRequest('Masters Request, Spring 2013', 
-                'Awaiting Dept Action', 
+            degreeRequest('Masters Request, Spring 2013',
+                'Awaiting Dept Action',
                 title = 'Master Of Landscape Architecture/Master Of Architecture'
-            ), 
-            degreeRequest('Masters Request, Spring 2013', 
+            ),
+            degreeRequest('Masters Request, Spring 2013',
                 'Awaiting Dept Action (Final Exam)',
                 title = 'Master Of Landscape Architecture/Master Of Architecture'
             ),
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Awaiting Dept Action (General Exam)',
                 title = 'Master Of Landscape Architecture/Master Of Architecture'
             ),
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Recommended by Dept',
                 title = 'Master Of Architecture'
             ),
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Withdrawn',
                 title = 'Master Of Architecture',
                 visCheck = visBefore('2013-4-25'),
             ),
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Candidacy Granted',
                 title = 'Master Of Landscape Architecture',
                 visCheck = visBefore('2013-8-28'),
             ),
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Graduated by Grad School',
                 title = 'Master Of Landscape Architecture',
                 visCheck = visBefore('2013-8-28'),
             ),
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Did Not Graduate',
                 title = 'Master Of Science In Construction Management',
                 visCheck = visBefore('2013-8-28'),
@@ -358,52 +355,52 @@ cardList['seagrad'] = [
     GradCommitteeCard({
         'Doctoral Supervisory Committee': [
             {
-                'dept': 'Anthropology', 
-                'chair': True, 
+                'dept': 'Anthropology',
+                'chair': True,
                 'rcc': True,
-                'name': u'Bet Duncan', 
+                'name': u'Bet Duncan',
                 'email': u'bbb@u.washington.edu'
-            }, 
+            },
             {
-                'dept': u'Anthropology', 
-                'chair': True, 
-                'name': u'Steve M. Goodman', 
+                'dept': u'Anthropology',
+                'chair': True,
+                'name': u'Steve M. Goodman',
                 'email': u'sss@u.washington.edu'
-            }, 
+            },
             {
-                'dept': u'Health Services - Public Health', 
-                'gsr': True, 
+                'dept': u'Health Services - Public Health',
+                'gsr': True,
                 'name': u'Malinda Korry'
-            }, 
+            },
             {
-                'dept': u'Global Health', 
-                'name': u'James T. Pfeiffer', 
+                'dept': u'Global Health',
+                'name': u'James T. Pfeiffer',
                 'email': u'jjj@uw.edu'
             }
-        ], 
+        ],
         u"Master's Committee": [
             {
-                'dept': u'Epidemiology - Public Health', 
-                'chair': True, 
-                'email': u'nnn@u.washington.edu', 
-                'name': u'Nina L. Fitzpatrick', 
-            }, 
+                'dept': u'Epidemiology - Public Health',
+                'chair': True,
+                'email': u'nnn@u.washington.edu',
+                'name': u'Nina L. Fitzpatrick',
+            },
             {
-                'gsr': True, 
-                'name': u'Bet Shell-Duncan', 
-                'email': u'bbb@u.washington.edu', 
+                'gsr': True,
+                'name': u'Bet Shell-Duncan',
+                'email': u'bbb@u.washington.edu',
                 'dept': u'Anthropology'
-            }, 
+            },
             {
-                'email': u'lll@oge.sld.pe', 
-                'name': u'Louis ReVivian', 
+                'email': u'lll@oge.sld.pe',
+                'name': u'Louis ReVivian',
                 'dept': u'Ministry of Health, Peru',
             }
-        ], 
+        ],
         u'Advisor': [
             {
-                'email': u'bbb@u.washington.edu', 
-                'name': u'Bet Duncan', 
+                'email': u'bbb@u.washington.edu',
+                'name': u'Bet Duncan',
                 'dept': u'Anthropology'
             }
         ]
@@ -445,9 +442,10 @@ cardList['jbothell'] = [
         CourseCards(),
         ['SP13']
     ),
-    cardCD(CourseCards(),
-        ('2013-6-19', 
-        '2013-6-23')
+    cardCD(
+        CourseCards(),
+        ('2013-6-19',
+        '2013-6-24')
     ),
     cardQtr(
         FinalExamCard(),
@@ -465,8 +463,7 @@ cardList['jbothell'] = [
         ['SP13']
     ),
     SummerRegStatusCard(holds = 1),
-    RegStatusCard(qtrs = ['AU13'], holds = 1),
-    
+    ignoreSig(RegStatusCard(qtrs = ['AU13'], holds = 1)),
 ]
 
 cardList['jerror'] = [
@@ -477,7 +474,7 @@ cardList['jerror'] = [
     ),
     cardCD(
         errorCard(FutureQuarterCard({})),
-        (FirstDayQtr['SP13'], ClassesBegin['SU13'] - 1)
+        (FirstDayQtr['SP13'], ClassesBegin['SU13'])
     ),
     app_acal(),
     errorCard('ThankYouCard'),
@@ -519,7 +516,7 @@ cardList['botgrad'] = [
         [],
         [],
         [
-            degreeRequest('Masters Request, Spring 2013', 
+            degreeRequest('Masters Request, Spring 2013',
                 'Awaiting Dept Action (Final Exam)',
                 title = 'Master Of Science In Computational Finance & Risk Management'
             )
@@ -532,10 +529,11 @@ cardList['botgrad'] = [
     ignoreSig(ThriveCardExpected()),
 ]
 
+
 def cardListToDict(cl):
     '''Convert a list of cards to a dictionary of the form:
     { name: [card1, card2] }
-    Multiple cards could have the same name, for example to specify 
+    Multiple cards could have the same name, for example to specify
     different mock data for different time periods. '''
     cd = {}
     for card in cl:
@@ -548,6 +546,7 @@ def cardListToDict(cl):
 
 for name, cl in cardList.items():
     cardList[name] = cardListToDict(cl)
+
 
 def getExpectedResults(user, date):
     '''Get expected results for user on date. Returns a list of cards. '''
@@ -565,17 +564,10 @@ def getExpectedResults(user, date):
                 else:
                     userCardsVisible[name] = card
 
-    for name, card in userCardsVisible.items():
-        # If it's a card proxy, replace it with the real card
-        #if hasattr(card, 'card'):
-        if isinstance(card, cardProxy):
-            #TODO: do we even need this?
-            pass
-            #userCardsVisible[name] = card.card
-            
     return userCardsVisible
 
-def getSigDates(user, start = None, end = None, extras = False): 
+
+def getSigDates(user, start = None, end = None, extras = False):
     '''Get significant dates to test for the given user. Optionally filters
     dates to only those between 'start' and 'end'. If 'extras' is true, then
     it will include generic events in myuwDates. '''
@@ -587,6 +579,7 @@ def getSigDates(user, start = None, end = None, extras = False):
     if end:
         end = myuwDate(end)
     sigDates = []
+
     # Internal function to ensure date is in range
     def checkDate(date):
         if start and date < start:
@@ -605,13 +598,13 @@ def getSigDates(user, start = None, end = None, extras = False):
         if checkDate(date):
             addSigDate(date)
     # Go through each card collection (set of each
-    # different version a card might be in depending on 
+    # different version a card might be in depending on
     # date, as an alternative to natively supporting
-    # that in the card). 
+    # that in the card).
     for cardColl in userCards.values():
         # Go through each version of the card
         for card in cardColl:
-            # Check each sigdate for each card and see if 
+            # Check each sigdate for each card and see if
             # it falls within the desired range
             if hasattr(card, 'significantDates'):
                 for sigDate in card.significantDates:
@@ -625,8 +618,9 @@ def getSigDates(user, start = None, end = None, extras = False):
     outList.sort()
     return outList
 
+
 def findDiffs(expected, actual):
-    '''Given dictionaries of expected and actual cards (of the form 
+    '''Given dictionaries of expected and actual cards (of the form
     {name: card}), find differences between which cards were found as well
     as content of the cards. '''
 
@@ -639,15 +633,15 @@ def findDiffs(expected, actual):
             expectedCard = expected[cardName]
             common[cardName] = cardPair(expectedCard, actualCard)
 
-    # For the cards in common, remove them from the dictionaries of 
-    # the actual and expected lists (after copying them) to form 
-    # the list of cards exclusive to each group. 
+    # For the cards in common, remove them from the dictionaries of
+    # the actual and expected lists (after copying them) to form
+    # the list of cards exclusive to each group.
     onlyInActual = actual.copy()
     onlyInExpected = expected.copy()
     for cardName in common:
         onlyInActual.pop(cardName)
         onlyInExpected.pop(cardName)
-    
+
     # Calculate actual differences
     diffs = ''
 
@@ -678,10 +672,12 @@ def findDiffs(expected, actual):
     for name, pair in common.items():
         try:
             pairDiff = pair.findDiffs()
-        except Exception as ex:
-            pairDiff = 'Error when comparing two cards. The error was: %s' %ex
-        
-        if pairDiff == None:
+        except:
+            ei = sys.exc_info()
+            eifmtd = traceback.format_exception(*ei)
+            pairDiff = 'Error when comparing two cards. The error was: %s' %eifmtd
+
+        if pairDiff is None:
             raise TypeError('Diff for %s returned None\n' %name)
 
         elif not(isinstance(pairDiff, basestring)):
@@ -696,4 +692,3 @@ def findDiffs(expected, actual):
             diffs += pairDiffStr
 
     return diffs
-

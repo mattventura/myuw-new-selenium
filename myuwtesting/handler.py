@@ -18,23 +18,25 @@ class mainMyuwHandler(object):
     def _changeUser(self, username):
         '''Set override username. You probably want setUser instead. '''
         self.browseToPage(self.userUrl)
-        time.sleep(.5)
+        # XXX
+        time.sleep(.2)
         userBox = self.driver.find_element_by_xpath('//input[@name="override_as"]')
         userBox.send_keys(username)
         userBox.submit()
-        time.sleep(1)
+        # XXX
+        time.sleep(.2)
         self.currentUser = username
 
     # Go to override page and set override date
     def _changeDate(self, dateStr):
         '''Set override date. You probably want setDate instead. '''
         self.browseToPage(self.dateUrl)
-        time.sleep(.5)
+        time.sleep(.2)
         dateBox = self.driver.find_element_by_xpath('//input[@name="date"]')
         dateBox.clear()
         dateBox.send_keys(dateStr)
         dateBox.submit()
-        time.sleep(1)
+        time.sleep(.2)
         self.currentDate = myuwDate(dateStr)
 
     # Set user if it is different from the current user
@@ -199,7 +201,7 @@ class mainMyuwHandler(object):
         a LandingWaitTimedOut exception, which accepts a list of elements that did
         not finish loading. The presence of the loading gear is used to determine
         that an element has not finished loading. Waits 1 second after the last 
-        loading gear has disappeared. 
+        loading gear has disappeared.
         '''
         # I don't know if selenium's implicit wait can wait until
         # an element is *not* found, so do it manually
@@ -208,7 +210,7 @@ class mainMyuwHandler(object):
         els = []
         while loadTimer.elapsedTime < maxTime:
             try:
-                time.sleep(.2)
+                time.sleep(.8)
                 # Look for loading gears
                 els = self.driver.find_elements_by_css_selector('i.fa-spin')
                 # Filter these to only visible
@@ -239,14 +241,14 @@ class mainMyuwHandler(object):
                     newEls.append(el)
             raise LandingWaitTimedOut(newEls)
 
-        # If the loop ended due to there being no more loading gears, 
-        # it will hit this code instead. 
+        # If the loop ended due to there being no more loading gears,
+        # it will hit this code instead.
         loadTimer.end()
         #if perf:
         #   print loadTimer.formatted
 
         # Sleep a little longer just in case we have a card that
         # hasn't quite finished but isn't displaying the loading 
-        # gear either. 
+        # gear either.
         time.sleep(1)
 

@@ -80,6 +80,7 @@ class HFSCard(myuwCard):
     @packElement
     def fromElement(cls, e, date):
         titleEl = e.find_element_by_xpath('./div[@data-type="card"]/h3')
+        #titleEl = e.find_element_by_css_selector('div h3')
         titleText = titleEl.text
 
         # Find balances on the card
@@ -294,15 +295,15 @@ class GradeCard(myuwCard):
 
             if short in ('WI', 'AU', 'SP'):
                 show = LastDayInstr[gradesQtr] + 1
-                hide = NextQtrClassesBegin[gradesQtr] - 1
+                hide = NextQtrClassesBegin[gradesQtr]
 
             elif short == 'SA':
                 show = SummerBTermBegins['SU' + year]
-                hide = NextQtrClassesBegin['SU' + year] - 1
+                hide = NextQtrClassesBegin['SU' + year]
 
             elif short == 'SB':
                 show = LastDayInstr['SU' + year]
-                hide = NextQtrClassesBegin['SU' + year] - 1
+                hide = NextQtrClassesBegin['SU' + year]
 
             else:
                 exStr = 'Invalid short quarter name %s from quarter %s.'%(short, gradesQtr)
@@ -320,7 +321,6 @@ class GradeCardDummy(GradeCard):
     '''Dummy version of the grade card that has quarters but no actual
     grades for them. Useful for wrapping with errorCard. '''
     def __init__(self, qtrs = ['AU13', 'WI13', 'SP13', 'SA13', 'SB13']):
-
         gradeDict = {qtr: {} for qtr in qtrs}
         super(GradeCardDummy, self).__init__(gradeDict)
 
@@ -331,11 +331,13 @@ class RegStatusCard(myuwCard):
 
     # quarters is the quarters that the reg card corresponds to, not the 
     # quarters in which it should appear. 
-    def __init__(self, qtrs = [], holds = 0, qtr = None, myplanData = {}):
+    def __init__(self, qtrs = [], holds = 0, qtr = None, myplanContent = False,
+        date = None):
         self.qtrs = qtrs
         self.holds = holds
         self.qtr = qtr
-        self.myplanData = myplanData
+        self.myplanContent = myplanContent
+        self.date = date
         # If there are holds, card should always appear
         #if holds:
         #   self.visCheck = visAlways
@@ -349,7 +351,9 @@ class RegStatusCard(myuwCard):
         titleSplit = title.split(' ')
         qtr = titleSplit[1]
         year = titleSplit[2]
+        # Abbreviate to 2 letters
         qtr = qtr[0:2].upper()
+        # Use last 2 digits
         year = year[2:4]
         # Assemble date of the form 'SU13'
         qtrString = qtr + year
@@ -372,7 +376,10 @@ class RegStatusCard(myuwCard):
         # Need to pull out x from "x holds"
         numHolds = int(bannerText.split(' ')[-2])
 
-        return cls(holds = numHolds, qtr = qtrString)
+        hasMyplan = 'In MyPlan' in e.text
+
+        return cls(holds = numHolds, qtr = qtrString, date = date,
+            myplanContent = hasMyplan)
 
     def shouldAppear(self, date):
 
@@ -385,19 +392,63 @@ class RegStatusCard(myuwCard):
 
         return False
 
+    @classmethod
+    def isPeakLoad(cls, date):
+        return cls.loadPeriods(date)
+
+    def findDiffs(self, other):
+        peak = self.isPeakLoad(other.date)
+        expVis = self.myplanContent
+        actualVis = other.myplanContent
+
+        if peak:
+            if actualVis:
+                diffs = 'Myplan content appeared during peak load time.\n'
+
+            else:
+                diffs = ''
+
+        else:
+            if actualVis and not expVis:
+                diffs = 'Myplan content showed unexpectedly.\n'
+
+            elif expVis and not actualVis:
+                diffs = 'Myplan content did not show but was expected.\n'
+
+            else:
+                diffs = formatDiffs('Myplan content visibility', expVis, actualVis)
+
+        diffs += super(RegStatusCard, self).findDiffs(other)
+        return diffs
+
+
     show = RegCardShow
     hide = RegCardHide
 
-    # Registration opening time
-    regTimes = RegPd1open.values() + RegPd2open.values() + RegPd3open.values()
+    regVis = visAuto(RegPd1open, RegPd1end - 1)
+    reg1days = regVis.allDays()
+    #reg1days = RegPd1open.values() + (RegPd1open + 2).values()
+    loadPairs = [(d - timedelta(minutes=30), d + timedelta(minutes=30)) for\
+        d in reg1days]
+    loadPeriods = visCDM(loadPairs)
 
-    # Peak load time start/end
-    loadStart = [rt - timedelta(minutes=30) for rt in regTimes]
-    loadEnd = [rt + timedelta(minutes=30) for rt in regTimes]
+    reg1sigDays = RegPd1open.values() + (RegPd1open + 2).values()
+    # ugly
+    sigDates = sum([
+        [d - timedelta(minutes=35),
+        d - timedelta(minutes=25),
+        d + timedelta(minutes=25),
+        d + timedelta(minutes=35)
+        ] for d in reg1sigDays],
+    [])
+    extraSigDates = sigDates
 
-    # Sig dates for 
-    extraSigDates = [t.justBefore for t in loadStart + loadEnd]
-    extraSigDates += [t.justAfter for t in loadStart + loadEnd]
+    """
+    sigPairs = [(d - timedelta(minutes=30), d + timedelta(minutes=30)) for\
+        d in reg1days]
+    sigPeriods = visCDM(sigPairs)
+    extraSigDates = sigPeriods.sigDates
+    """
 
     visCheck = visAuto(RegCardShow, RegCardHide)
 
@@ -411,9 +462,9 @@ class SummerRegStatusCard(RegStatusCard):
     '''Summer Registration Status card. Covers both the positions
     in which the card can appear. '''
     
-    def __init__(self, holds = 0, qtr = None, position = 'top'):
-        qtrs = ['SU13']
-        super(SummerRegStatusCard, self).__init__(qtrs, holds, qtr)
+    def __init__(self, **kwargs):
+        kwargs['qtrs'] = ['SU13']
+        super(SummerRegStatusCard, self).__init__(**kwargs)
 
     @classmethod
     def fromElement(cls, e, date):
@@ -427,7 +478,7 @@ class SummerRegStatusCard(RegStatusCard):
         # Need to un-classmethod this
         newCard = RegStatusCard.fromElement.__func__(cls, e, date)
         newCard.pos = pos
-        newCard.date = date
+        #newCard.date = date
         return newCard
 
     name = 'SummerRegStatusCard'
@@ -448,7 +499,7 @@ class SummerRegStatusCard(RegStatusCard):
     hide = SummerRegHide
 
     visCheck = visAuto(SummerRegShow, SummerRegHide)
-    topCheck = visAuto(SummerRegShow, SummerRegSwitch - 1)
+    topCheck = visAuto(SummerRegShow, SummerRegSwitch)
 
     extraSigDates = topCheck.significantDates
 
@@ -550,7 +601,7 @@ class VisualScheduleCard(myuwCard):
         diffs = formatDiffs('Visual Schedule Content', classesA, classesB)
         return diffs
 
-    visCheck = visAuto(FirstDayQtr, LastDayInstr)
+    visCheck = visAuto(FirstDayQtr, LastDayInstr + 1)
 
     def shouldAppear(self, date):
         # If the normal visibility function determines that the card shouldn't appear,
@@ -563,7 +614,7 @@ class VisualScheduleCard(myuwCard):
             # spring deadline tomorrow thing
             badDateRange = myuwDateRange(
                 LastDayQtr['SP13'],
-                ClassesBegin['SU13'] - 1
+                ClassesBegin['SU13']# - 1
             )
             if date in badDateRange:
                 return False
@@ -583,7 +634,7 @@ class FinalExamCard(myuwCard):
     '''Final exam card. Like VisualScheduleCard but is the 
     finals-only version of it. Does not currently check any
     data.'''
-    visCheck = visAuto(LastDayInstr + 1, BreakBegins - 1, exclude = ['SU'])
+    visCheck = visAuto(LastDayInstr + 1, BreakBegins, exclude = ['SU'])
     #TODO: actually check data here
     @classmethod
     def fromElement(cls, e, date):
@@ -617,8 +668,8 @@ class TextbookCard(myuwCard):
     '''Textbooks card'''
     # TODO: check data
     visCheck = visUnion(
-        visAuto(FirstDayQtr, ClassesBegin + 7, exclude = ['SU13']), 
-        visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 7)
+        visAuto(FirstDayQtr, ClassesBegin + 8, exclude = ['SU13']), 
+        visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 8)
     )
 
 
@@ -887,7 +938,7 @@ class NoCourseCard(myuwCard):
 
 class NoCourseCardAlt(NoCourseCard):
     '''No course card with alternate dates for spring gradesub stuff. '''
-    visCheck = visAlways - visCD('2013-6-19', '2013-6-23')
+    visCheck = visAlways - visCD('2013-6-19', '2013-6-24')
 
 
 @isaCard

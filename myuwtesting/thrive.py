@@ -52,7 +52,7 @@ class ThriveCardExpected(ThriveCard):
         curDate = startDate
         for card in value:
             if card is not None:
-                dr = myuwDateRange(curDate, curDate + 6)
+                dr = myuwDateRange(curDate, curDate + 7)
                 ec[dr] = card
             curDate = curDate + 7
 

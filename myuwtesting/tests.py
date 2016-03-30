@@ -7,7 +7,7 @@ import sys
 import traceback
 import json
 import subprocess
-from selenium.webdriver import Firefox
+from selenium.webdriver import Firefox, Chrome
 
 from .classes import myuwDate, LandingWaitTimedOut
 from .functions import splitList, driverRetry
@@ -28,7 +28,8 @@ def getTestDates(start = defaultStartDate, end = defaultEndDate):
 class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
     and usersToTest. '''
-    driverFunc = Firefox
+    #driverFunc = Firefox
+    driverFunc = Chrome
     baseUrl = testconfig.testUrl
 
     # By default, don't test anything. Real test cases should subclass
@@ -263,7 +264,6 @@ class parallelTestCase(mainMyuwTestCase):
             testUsers = self.testDates.keys()
         for user in testUsers:
             dates = self.testDates[user]
-        #for user, dates in self.testDates.items():
             if not(dates):
                 continue
             for date in dates:
@@ -290,6 +290,7 @@ class parallelTestCase(mainMyuwTestCase):
         # Wait for every process to finish
         finished = False
         while not(finished):
+            # XXX
             time.sleep(2)
 
             # Set finished to True, but if any process is not finished

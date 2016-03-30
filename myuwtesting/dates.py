@@ -30,6 +30,11 @@ RegPd3 = multiDate({
     md + timedelta(hours=6) for md in (RegPd1, RegPd2, RegPd3)
 ]
 
+RegPd1end = multiDate({
+    'SP13': '2013-3-3',
+    'SU13': '2013-5-22',
+    'AU13': '2013-6-23'
+})
 
 
 # Day when myuw switches quarter,
@@ -114,10 +119,10 @@ for key, value in RegPd1.items():
     # quarter reg card date
     if key[0:2] == 'SU':
         SummerRegCardShowDates[key] = value - 7
-        SummerRegCardHideDates[key] = RegPd2[key] + 6
+        SummerRegCardHideDates[key] = RegPd2[key] + 7
     else:
         RegCardShowDates[key] = value - 14
-        RegCardHideDates[key] = RegPd2[key] + 6
+        RegCardHideDates[key] = RegPd2[key] + 7
 
 RegCardShow = multiDate(RegCardShowDates)
 SummerRegShow = multiDate(SummerRegCardShowDates)
@@ -135,7 +140,7 @@ def dateToQtr(date):
     for qtr, start in FirstDayQtr.items():
         try:
             end = LastDayQtr[qtr]
-            if start <= date <= end:
+            if start <= date < end + 1:
                 return qtr
         except:
             continue

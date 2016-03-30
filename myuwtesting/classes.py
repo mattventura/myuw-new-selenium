@@ -193,14 +193,14 @@ class myuwDate(object):
     @property
     def justBefore(self):
         if self.hasTime:
-            return self - datetime.timedelta(minutes=1)
+            return self - datetime.timedelta(minutes=5)
         else:
             return self - 1
 
     @property
     def justAfter(self):
         if self.hasTime:
-            return self + datetime.timedelta(minutes=1)
+            return self + datetime.timedelta(minutes=5)
         else:
             return self + 1
 
@@ -213,11 +213,8 @@ class myuwDateRange(object):
     Supports 'in' operation, and has the significantDates property which
     defaults to startDate - 1, startDate, endDate - 1, and endDate. 
 
-    Ending date is inclusive, i.e. the endDate is the last day which 
-    should be considered part of the date range. 
-    A dateRange consisting of one day only should have the start and 
-    end date be the same. 
-    '''
+    Ending date is now exclusive since it makes more sense with the
+    introduction of times. '''
     
     def __init__(self, startDate, endDate):
         '''startDate and endDate must either be a myuwDate, or a format
@@ -247,7 +244,7 @@ class myuwDateRange(object):
     # would specify an identical start and end date
     def __contains__(self, element):
         element = myuwDate(element)
-        return self.startDate <= element <= self.endDate
+        return self.startDate <= element < self.endDate
 
     def __repr__(self):
         return 'myuwDateRange(%s, %s)' %(self.startDate, self.endDate)
@@ -368,6 +365,7 @@ class multiDate(dict):
     def __repr__(self):
         return 'multiDate(%s)' %super(multiDate, self).__repr__()
 
+
 # Visibility check classes
 
 # Most of them need to be called with arguments, but others are 
@@ -454,6 +452,15 @@ class visRanges(visClass):
                 return True
         return False
 
+    def allDays(self):
+        out = []
+        for dr in self.dateRanges:
+            cur = dr.startDate
+            while cur in dr:
+                out.append(cur)
+                cur = cur + 1
+        return set(out)
+
 class visCDM(visRanges):
     '''Visibility class for multiple date ranges. Like visRanges, but also
     supports specifying date pairs as (start, end) tuples.'''
@@ -510,6 +517,9 @@ class visUnion(visCollection):
             if child(date):
                 return True
         return False
+
+    def allDays(self):
+        return set.union(*[child.allDays() for child in self.children])
             
 class visIntersect(visCollection):
     '''Visibility intersection. Returns True only if there is
@@ -519,6 +529,11 @@ class visIntersect(visCollection):
             if not(child(date)):
                 return False
         return True
+
+    def allDays(self):
+        out = sum([child.allDays() for child in self.children], [])
+        out = [date for date in out if self(date)]
+        out = set(out)
 
 class visSub(visClass):
     '''Visibility difference class that will return true if the date is
