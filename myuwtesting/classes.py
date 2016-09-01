@@ -8,7 +8,9 @@ import time
 from .functions import toTimeDelta, packElement, formatDiffs, findDiffs, \
     getCardName, uesc, isCardVisible, isVisibleFast, getCardName
 
+from .exceptions import MyuwDateTypeError, LandingWaitTimedOut
 from .testconfig import perf
+
 
 def toDate(obj):
     '''Convert string, timedelta, or myuw date to datetime.date'''
@@ -18,24 +20,17 @@ def toDate(obj):
         obj = myuwDate(obj)
 
     # Convert myuwDate, including one made above, to datetime.date
-    # by grabbing its dateObj attribute. 
+    # by grabbing its dateObj attribute.
     if isinstance(obj, myuwDate):
         obj = obj.dateObj
 
     return obj
 
-class MyuwDateTypeError(TypeError):
-    '''Pre-packaged exception for when an invalid date format is 
-    specified when constructing a myuwDate. '''
-    def __init__(self, *args):
-        args = repr(args)
-        message = 'Arguments to myuwDate must be "yyyy-mm-dd", got %s instead' %args
-        super(MyuwDateTypeError, self).__init__(message)
 
 class myuwDateMeta(type):
     '''Metaclass to allow us to provide a myuwDate or subclass instance as
     the argument for myuwDate and having it simply return that input. Useful
-    so that things that use the myuwDate constructor won't choke on 
+    so that things that use the myuwDate constructor won't choke on
     and/or mangle myuwDateTime instances. '''
     def __call__(cls, *args, **kwargs):
         if len(args) == 1:
@@ -45,11 +40,12 @@ class myuwDateMeta(type):
 
         return super(myuwDateMeta, cls).__call__(*args, **kwargs)
 
+
 @total_ordering
 class myuwDate(object):
-    '''Wrapper around datetime.date that allows easy converion to and 
+    '''Wrapper around datetime.date that allows easy converion to and
     from "yyyy-mm-dd" format for myuw. '''
-    
+
     __metaclass__ = myuwDateMeta
 
     def __init__(self, arg):
@@ -81,9 +77,8 @@ class myuwDate(object):
 
                 assert len(dateValues) == len(timeValues) == 3
 
-            except Exception as ex:
-                raise ex
-                #raise MyuwDateTypeError(arg)
+            except Exception:
+                raise
 
             else:
                 newArgs = dateValues + timeValues
@@ -102,7 +97,8 @@ class myuwDate(object):
     def yearSanityCheck(self):
         if self.year < 1900:
             raise ValueError(
-                'Got %s for year. Did you mean %s?' %(self.year, self.year + 2000)
+                'Got %s for year. Did you mean %s?'
+                % (self.year, self.year + 2000)
             )
 
     @property
@@ -138,17 +134,17 @@ class myuwDate(object):
         return self.dateObj.strftime('%Y-%m-%d %H:%M:%S')
 
     def __repr__(self):
-        return '%s("%s")' %(type(self).__name__, str(self))
+        return '%s("%s")' % (type(self).__name__, str(self))
 
     def __add__(self, other):
         '''Construct a new myuwDate by taking out own date, converting
-        'other' to a timedelta, and then adding them together. 
+        'other' to a timedelta, and then adding them together.
         For example, foo = bar + 3 will result in foo being exactly three
         days after bar. '''
         try:
             other = toTimeDelta(other)
 
-        except TypeError: 
+        except TypeError:
             return NotImplemented
 
         newDateObj = self.dateObj + other
@@ -159,7 +155,7 @@ class myuwDate(object):
         return self.__add__(-1 * other)
 
     def __eq__(self, other):
-        '''Try to convert other to a datetime.date, then compare 
+        '''Try to convert other to a datetime.date, then compare
         our dateObj to other. '''
         try:
             other = toDate(other)
@@ -206,16 +202,16 @@ class myuwDate(object):
 
 
 class myuwDateRange(object):
-    '''Date range class, consisting of a start date and end date. 
+    '''Date range class, consisting of a start date and end date.
     Start and end arguments may be specified in any format that the
-    myuwDate constructor will accept. 
+    myuwDate constructor will accept.
 
     Supports 'in' operation, and has the significantDates property which
-    defaults to startDate - 1, startDate, endDate - 1, and endDate. 
+    defaults to startDate - 1, startDate, endDate - 1, and endDate.
 
     Ending date is now exclusive since it makes more sense with the
     introduction of times. '''
-    
+
     def __init__(self, startDate, endDate):
         '''startDate and endDate must either be a myuwDate, or a format
         which the myuwDate constructor understands. '''
@@ -225,19 +221,19 @@ class myuwDateRange(object):
 
         if self.startDate > self.endDate:
             raise Exception('Start date %s comes after end date %s'
-                %(self.startDate, self.endDate))
+                            % (self.startDate, self.endDate))
 
     # Get dates that should be tested based on this date range
     @property
     def significantDates(self):
         return (
-            self.startDate.justBefore, 
-            self.startDate, 
-            self.endDate, 
+            self.startDate.justBefore,
+            self.startDate,
+            self.endDate,
             self.endDate.justAfter,
         )
 
-    # Lets us use 'date in dateRange' syntax to check if 
+    # Lets us use 'date in dateRange' syntax to check if
     # a date is part of this date range
     # This is INCLUSIVE of the end date
     # So for a card that should appear for only one day, you
@@ -247,7 +243,7 @@ class myuwDateRange(object):
         return self.startDate <= element < self.endDate
 
     def __repr__(self):
-        return 'myuwDateRange(%s, %s)' %(self.startDate, self.endDate)
+        return 'myuwDateRange(%s, %s)' % (self.startDate, self.endDate)
 
     def __eq__(self, other):
         '''Equality check. Returns True if start and end are equal. '''
@@ -274,8 +270,9 @@ class myuwDateRange(object):
     def __ne__(self, other):
         return not(self == other)
 
+
 class nullDateRange(myuwDateRange):
-    '''Dummy date range for when there are no dates whatsoever. 
+    '''Dummy date range for when there are no dates whatsoever.
     Has no significant dates, and __contains__ is always false. '''
     def __init__(self):
         pass
@@ -287,38 +284,38 @@ class nullDateRange(myuwDateRange):
     def __contains__(self, element):
         return False
 
+
 class cardPair(object):
     '''Holds an expected card and an actual card and allows
     them to be easily compared. '''
     def __init__(self, expected, actual):
-        # Ensure that the cards have the same name, and then 
-        # set this object's name to that. 
+        # Ensure that the cards have the same name, and then
+        # set this object's name to that.
         aNames = actual.allNames
         eNames = expected.allNames
         if actual.name in eNames or expected.name in aNames:
-            # Use the expected card's name since it will be more generic, 
-            # if different to begin with. 
+            # Use the expected card's name since it will be more generic,
+            # if different to begin with.
             self.name = expected.name
             self.otherName = actual.name
             self.nameErr = None
         else:
-            self.nameErr = 'Name mismatch between %s and %s' %(actual.name, expected.name)
+            self.nameErr = 'Name mismatch between %s and %s'\
+                           % (actual.name, expected.name)
         self.actual = actual
         self.expected = expected
 
     def __repr__(self):
-        return 'cardPair(%s, %s)' %(actual, expected)
+        return 'cardPair(%s, %s)' % (actual, expected)
 
     def findDiffs(self):
-        '''Find and report the differences between expected and actual card. '''
+        '''Find and report the differences between expected and actual card.'''
 
-        actualError = getattr(self.actual, 'isErrorCard', False) 
-        expectedError = getattr(self.expected, 'isErrorCard', False) 
+        actualError = getattr(self.actual, 'isErrorCard', False)
+        expectedError = getattr(self.expected, 'isErrorCard', False)
         actualHung = isinstance(self.actual, hungCardClass)
         expectedHung = isinstance(self.expected, hungCardClass)
 
-        #actualError = isinstance(self.actual, errorCard)
-        #expectedError = isinstance(self.expected, errorCard)
         if self.nameErr:
             return self.nameErr
 
@@ -330,19 +327,19 @@ class cardPair(object):
         elif actualHung and not expectedHung:
             # Already handled elsewhere
             return 'Actual card did not finish loading'
-            #return 'Card did not finish loading'
         elif expectedHung and not actualHung:
             return 'Expected hung card but didn\'t get one'
 
         return self.expected.findDiffs(self.actual)
 
-class multiDate(dict):
-    '''Wrapper to allow us to make an event which recurs on each quarter. 
-    Used extensively in myuwDates, see there for examples. 
-    Supports multiDate +/- int operation, so you can do things like
-    FinalsBegin + 1 to mean the day after finals begin. 
 
-    Supports all the operations a normal dictionary does. 
+class multiDate(dict):
+    '''Wrapper to allow us to make an event which recurs on each quarter.
+    Used extensively in myuwDates, see there for examples.
+    Supports multiDate +/- int operation, so you can do things like
+    FinalsBegin + 1 to mean the day after finals begin.
+
+    Supports all the operations a normal dictionary does.
     '''
 
     def __init__(self, qtrsDict):
@@ -363,20 +360,19 @@ class multiDate(dict):
         return self.__add__(-1 * other)
 
     def __repr__(self):
-        return 'multiDate(%s)' %super(multiDate, self).__repr__()
+        return 'multiDate(%s)' % super(multiDate, self).__repr__()
 
 
 # Visibility check classes
 
-# Most of them need to be called with arguments, but others are 
+# Most of them need to be called with arguments, but others are
 # singletons thus need to be used directly
-
 class visClass(object):
-    '''New visClass, intended to replace old vis functions with an actual 
-    class so that significantDates can be rolled into this. 
-    This class is not meant to be used directly, you should subclass it. 
-    Subclasses should override visCheck and the significantDates property. 
-    Supports +/-/* operations for quick union/intersect/difference ops. 
+    '''New visClass, intended to replace old vis functions with an actual
+    class so that significantDates can be rolled into this.
+    This class is not meant to be used directly, you should subclass it.
+    Subclasses should override visCheck and the significantDates property.
+    Supports +/-/* operations for quick union/intersect/difference ops.
     '''
     def __call__(self, date):
         '''Included for backwards compatibility. Calls self.shouldAppear.'''
@@ -398,8 +394,9 @@ class visClass(object):
     def __sub__(self, other):
         return visSub(self, other)
 
+
 class visException(visClass):
-    '''Dummy class to cause an exception whenever any of the vis 
+    '''Dummy class to cause an exception whenever any of the vis
     methods are used. Used by the base cardProxy class to make sure
     its _vis property gets overridden in a subclass. '''
 
@@ -413,18 +410,23 @@ class visException(visClass):
     def significantDates(self):
         self.makeExc()
 
+
 class visNever(visClass):
-    visCheck = lambda self, date: False
+    def visCheck(self, date):
+        return False
     sigDates = []
 
+
 class visAlways(visClass):
-    visCheck = lambda self, date: True
+    def visCheck(self, date):
+        return False
     sigDates = []
 
 # Turn these into singletons
 visNever = visNever()
 visAlways = visAlways()
 visException = visException()
+
 
 def dateArgs(c):
     '''Given a callable, convert string args to myuwDate'''
@@ -438,6 +440,7 @@ def dateArgs(c):
         return c(*newArgs)
     return inner
 
+
 class visRanges(visClass):
     '''Vis class for multiple myuwDateRanges'''
     def __init__(self, dateRanges):
@@ -445,7 +448,7 @@ class visRanges(visClass):
         self.sigDates = []
         for dateRange in self.dateRanges:
             self.sigDates += dateRange.significantDates
-            
+
     def visCheck(self, date):
         for dateRange in self.dateRanges:
             if date in dateRange:
@@ -461,6 +464,7 @@ class visRanges(visClass):
                 cur = cur + 1
         return set(out)
 
+
 class visCDM(visRanges):
     '''Visibility class for multiple date ranges. Like visRanges, but also
     supports specifying date pairs as (start, end) tuples.'''
@@ -468,17 +472,20 @@ class visCDM(visRanges):
         dateRanges = processDateRanges(dates)
         super(visCDM, self).__init__(dateRanges)
 
+
 def visCD(start, end):
     '''Visibility class creator for a single date range,
     specified as a start and end date. '''
     return visCDM([(start, end)])
 
-def visAuto(starts, ends, exclude = []):
+
+def visAuto(starts, ends, exclude=[]):
     '''Given a starting and ending multiDate object, return
-    an appropriate visibility function that returns True when 
+    an appropriate visibility function that returns True when
     the date is between a start date and its corresponding end
     date in the same quarter. '''
     return visCDM(getMultiDateRange(starts, ends, exclude))
+
 
 class visBefore(visClass):
     '''Vis class which is True for all dates strictly before the end date'''
@@ -490,7 +497,7 @@ class visBefore(visClass):
     def visCheck(self, date):
         return self.endDate > date
 
-            
+
 class visAfter(visClass):
     '''Vis class which is True for all dates strictly after the start date'''
     @dateArgs
@@ -501,6 +508,7 @@ class visAfter(visClass):
     def visCheck(self, date):
         return self.afterDate < date
 
+
 class visCollection(visClass):
     '''Superclass for visUnion and visIntersect'''
     def __init__(self, *children):
@@ -508,6 +516,7 @@ class visCollection(visClass):
         self.sigDates = []
         for child in children:
             self.sigDates += child.sigDates
+
 
 class visUnion(visCollection):
     '''Visibility union. Returns True if at least one
@@ -520,7 +529,8 @@ class visUnion(visCollection):
 
     def allDays(self):
         return set.union(*[child.allDays() for child in self.children])
-            
+
+
 class visIntersect(visCollection):
     '''Visibility intersection. Returns True only if there is
     no child vis which returns False. '''
@@ -535,6 +545,7 @@ class visIntersect(visCollection):
         out = [date for date in out if self(date)]
         out = set(out)
 
+
 class visSub(visClass):
     '''Visibility difference class that will return true if the date is
     in visA but not visB. '''
@@ -545,16 +556,18 @@ class visSub(visClass):
 
     def visCheck(self, date):
         return self.visA(date) and not(self.visB(date))
-    
-def visQtr(include = [], exclude = []):
-    '''Function to filter by quarter (qtr switch, not start of instruction). 
-    Does not give significant dates on its own, so it should generally be 
-    combined with some other vis function using visUnion/Intersect/Sub. 
-    Can specify a partial quarter name (e.g. 'SU' instead of 'SU13'. 
+
+
+def visQtr(include=[], exclude=[]):
+    '''Function to filter by quarter (qtr switch, not start of instruction).
+    Does not give significant dates on its own, so it should generally be
+    combined with some other vis function using visUnion/Intersect/Sub.
+    Can specify a partial quarter name (e.g. 'SU' instead of 'SU13'.
     Also works with summer terms (SA/SB). '''
 
     if include and exclude:
-        raise Exception('visFilterQtr needs an include or exclude list, not both')
+        raise Exception('visFilterQtr needs an include or exclude list, '
+                        'not both')
 
     elif exclude:
         return visQtrEx(exclude)
@@ -562,6 +575,7 @@ def visQtr(include = [], exclude = []):
     else:
         '''If both are left blank, just assume a null visibility function.'''
         return visQtrIn(include)
+
 
 class visQtrIn(visClass):
     '''Class for restricting visibility to particular quarters. '''
@@ -581,21 +595,22 @@ class visQtrIn(visClass):
                 return True
         return False
 
+
 class visQtrEx(visQtrIn):
-    '''Class for restricting visibility to everything but the 
+    '''Class for restricting visibility to everything but the
     specified quarters. '''
     def visCheck(self, date):
         return not(super(visQtrEx, self).visCheck(date))
 
 
 class cardProxy(object):
-    '''Proxy for attaching additional show/hide logic to a card, for 
-    example if a user does not get a particular card in a certain 
+    '''Proxy for attaching additional show/hide logic to a card, for
+    example if a user does not get a particular card in a certain
     quarter, we can special case it for that user without needing
-    to create a subclass of that card. 
+    to create a subclass of that card.
 
     This class is not meant to be used directly. You should subclass
-    this and define the _vis property. 
+    this and define the _vis property.
     '''
 
     def __init__(self, card):
@@ -603,14 +618,16 @@ class cardProxy(object):
 
     def __getattr__(self, attr):
         # If we get to this point in attribute resolution, try to pass it
-        # along to the card itself so that we can masqeurade as a real card. 
+        # along to the card itself so that we can masqeurade as a real card.
         return getattr(self.card, attr)
 
     # Cause an exception if _vis isn't overridden. This should never
-    # happen normally. 
+    # happen normally.
     _vis = visException
     # Leave sigDates undefined
-    #significantDates = []
+    '''
+    significantDates = []
+    '''
 
     def shouldAppear(self, date):
         '''Visiliby logic for a cardProxy is that iff both our local vis and
@@ -655,12 +672,12 @@ def processDateRanges(dates):
 
 # Turns "smart" date ranges (e.g. QtrStart + 1 to FinalsBegin - 5)
 # into a list of date ranges
-def getMultiDateRange(starts, ends, exclude = []):
+def getMultiDateRange(starts, ends, exclude=[]):
     '''Given two multiDate objects, turn them into a series of date
     ranges. For example, getMultiDateRange(FirstDayQtr, RedPd1) would
     give you a series of date ranges, each spanning from the first
-    of the quarter to reg period 1 for its respective quarter. 
-    
+    of the quarter to reg period 1 for its respective quarter.
+
     Supports an optional exclude argument, which should contain a list
     of strings to use to filter out certain quarters, e.g.:
     exclude = ['SU', 'SP13'] would filter out dates in spring 2013 as
@@ -675,29 +692,33 @@ def getMultiDateRange(starts, ends, exclude = []):
         # If there is no corresponding date in the ending multidate, skip it
         if qtr not in ends:
             skip = True
-        if skip: 
+        if skip:
             continue
         ed = ends[qtr]
         dateRange = myuwDateRange(sd, ed)
         dateRanges.append(dateRange)
     return dateRanges
 
+
 def cardAlways(card):
-    '''Card proxy to signify that the card should always appear. 
-    Obsolete, since this is the behavior you would get if you just specified 
+    '''Card proxy to signify that the card should always appear.
+    Obsolete, since this is the behavior you would get if you just specified
     the card directly. '''
     return cardCustom(card, visAlways)
 
+
 def cardNever(card):
-    '''Card proxy to signify that the card should never appear. 
-    Not strictly necessary, since removing the card from expected data would 
+    '''Card proxy to signify that the card should never appear.
+    Not strictly necessary, since removing the card from expected data would
     do the same. '''
     return cardCustom(card, visNever)
 
+
 def cardCDM(card, dates):
-    '''Card proxy generated from a list of date ranges. 
+    '''Card proxy generated from a list of date ranges.
     See visCDM for allowable formats. '''
     return cardCustom(card, visCDM(dates))
+
 
 def cardCD(card, dateRange):
     '''Card proxy for just a single date range. Date range can be specified
@@ -707,53 +728,53 @@ def cardCD(card, dateRange):
         dateRange = myuwDateRange(dateRange[0], dateRange[1])
     return cardCustom(card, visRanges([dateRange]))
 
+
 # Lets you use multiDate (or even a plain old dict) for start and end
 def cardAuto(card, startDates, endDates):
     '''Card proxy with automatically generated dates based on start
-    and end dates specified as multiDate instances. 
+    and end dates specified as multiDate instances.
     Example: cardCustom(HFSCard(), QtrStart + 2, LastDayInstr - 1)'''
     return cardCustom(card, visAuto(startDates, endDates))
 
-def cardQtr(card, include = [], exclude = []):
+
+def cardQtr(card, include=[], exclude=[]):
     return cardCustom(card, visQtr(include, exclude))
 
 
 class autoDiff(object):
-    '''Mixin that provides a findDiffs method which uses the autoDiffs 
+    '''Mixin that provides a findDiffs method which uses the autoDiffs
     property of the object. '''
     def findDiffs(self, other):
         # This is the findDiffs as defined in myuwFunctions
         return findDiffs(self, other)
 
+
 # Generic card class
 class myuwCard(autoDiff):
-    '''Base class for every card. 
+    '''Base class for every card.
 
     Actual card classes should subclass this, and override:
     name (@isaCard will do this for you)
     altNames (if it has any)
-    either visCheck if show/hide logic is only date dependent, 
-        or shouldAppear if it is more complicated. 
+    either visCheck if show/hide logic is only date dependent,
+        or shouldAppear if it is more complicated.
     fromElement (must be a class method)
     __init__
     significantDates
 
     '''
-    # Lets things that aren't actually cards (like cardProxies) be 
-    # considered real subclasses of myuwCard. Easier than duck typing. 
-    #__metaclass__ = ABCMeta
 
     # Subclasses should define the class method fromElement, which should
     # return an instance of the class constructed by selenium element cardEl
-    # on date 'date'. 
+    # on date 'date'.
     @classmethod
     def fromElement(cls, cardEl, date):
         # Just return as basic an instance as possible by default
         return cls()
 
-    # Subclasses can use autoDiffs if they wish to have their diffs done 
+    # Subclasses can use autoDiffs if they wish to have their diffs done
     # automatically. If they don't want this behavior, they should override
-    # findDiffs. 
+    # findDiffs.
     autoDiffs = {}
 
     # findDiffs should do one of three things:
@@ -763,9 +784,9 @@ class myuwCard(autoDiff):
 
     def __eq__(self, other):
         return not(self.findDiffs(other))
-    
-    # The 'name' property is combined with altNames to get a list of card IDs 
-    # that this card class should cover. 
+
+    # The 'name' property is combined with altNames to get a list of card IDs
+    # that this card class should cover.
     altNames = []
 
     @classmethod
@@ -779,9 +800,9 @@ class myuwCard(autoDiff):
         '''Like getAllNames, but uses the instance rather than class. '''
         return [self.name] + self.altNames[:]
 
-    # Method that should return a boolean based on whether the card should 
+    # Method that should return a boolean based on whether the card should
     # appear on the given date. By default, it uses self.visCheck after
-    # unbinding it if applicable.  
+    # unbinding it if applicable.
     def shouldAppear(self, date):
         if hasattr(self, 'visCheck'):
             # If we got a bound version, we want it unbound
@@ -802,6 +823,7 @@ class myuwCard(autoDiff):
 
     visCheck = visAlways
 
+
 class errorCard(myuwCard):
 
     isErrorCard = True
@@ -815,7 +837,7 @@ class errorCard(myuwCard):
         newObj = cls.__init__(cardName)
         return newObj
 
-    def __init__(self, base, forcename = None):
+    def __init__(self, base, forcename=None):
         if isinstance(base, basestring):
             self.name = base
             self.base = None
@@ -836,29 +858,18 @@ class errorCard(myuwCard):
         return ''
 
     visCheck = visAlways
+
     def shouldAppear(self, date):
         if self.base:
             return self.base.shouldAppear(date)
         else:
             return super(errorCard, self).shouldAppear(date)
 
-class LandingWaitTimedOut(Exception):
-    def __init__(self, els):
-        cardNames = []
-        for el in els:
-            cardName = getCardName(el)
-            cardNames.append(cardName)
-        self.cardsNotLoaded = cardNames
-        super(LandingWaitTimedOut, self).__init__(
-            'Waited too long for landing page to finish loading. The following cards did\
-            not load: %s' %(', '.join(cardNames))
-        )
-
 
 class gradRequest(autoDiff):
     '''Base class for graduate requests. '''
     @uesc
-    def __init__(self, name, statuses, visCheck = visAlways, title = None):
+    def __init__(self, name, statuses, visCheck=visAlways, title=None):
         self.name = name
         self.statuses = statuses
         self.visCheck = visCheck
@@ -873,7 +884,9 @@ class gradRequest(autoDiff):
         return self.__class__.__name__ + ': ' + self.name
 
     def __repr__(self):
-        return '<%s "%s": %s>' %(self.__class__.__name__, self.name, self.statuses)
+        return '<%s "%s": %s>' % (self.__class__.__name__,
+                                  self.name,
+                                  self.statuses)
 
     @classmethod
     def fromElement(cls, reqEl):
@@ -886,13 +899,15 @@ class gradRequest(autoDiff):
         if decisionEls:
             pass
         else:
-            # For ones with just a 'Status' decision, we can use the original element
-            # to find the appropriate children. 
+            # For ones with just a 'Status' decision, we can use the
+            # original element to find the appropriate children.
             decisionEls = [reqEl]
         decisions = {}
         for decEl in decisionEls:
-            key = decEl.find_element_by_css_selector('span.card-badge-label').text
-            value = decEl.find_element_by_css_selector('span.card-badge-value').text
+            label = decEl.find_element_by_css_selector('span.card-badge-label')
+            val = decEl.find_element_by_css_selector('span.card-badge-value')
+            key = label.text
+            value = value.text
 
             if key in cls.replacements:
                 key = cls.replacements[key]
@@ -901,7 +916,7 @@ class gradRequest(autoDiff):
 
             decisions[key] = value
 
-        req = cls(reqName, decisions, title = title)
+        req = cls(reqName, decisions, title=title)
         return req
 
     replacements = {}
@@ -920,15 +935,17 @@ class gradRequest(autoDiff):
     def significantDates(self):
         return self.visCheck.significantDates
 
+
 class simpleStatus:
-    '''Mixin for grad requests that only have a 'Status' property.''' 
+    '''Mixin for grad requests that only have a 'Status' property.'''
     def statusFix(self):
         if isinstance(self.statuses, basestring):
             self.statuses = {'Status': self.statuses}
 
     def __repr__(self):
         className = self.__class__.__name__
-        return '<%s "%s": %s>' %(className, self.name, self.statuses['Status'])
+        return '<%s %s: %s>' % (className, self.name, self.statuses['Status'])
+
 
 class petRequest(gradRequest):
     '''Petition request. '''
@@ -938,17 +955,20 @@ class petRequest(gradRequest):
         'Department Recommendation': 'dept'
     }
 
+
 class leaveRequest(simpleStatus, gradRequest):
     '''Leave request. '''
 
+
 class degreeRequest(simpleStatus, gradRequest):
     '''Degree request. '''
+
 
 class link(autoDiff):
     '''Class for a link. Stores the link text, URL, and whether
     it should open in a new tab/window. '''
     @uesc
-    def __init__(self, label, url, newTab = False):
+    def __init__(self, label, url, newTab=False):
         self.label = label
         self.url = url
         self.newTab = newTab
@@ -965,7 +985,7 @@ class link(autoDiff):
         return cls(label, url, newTab)
 
     def __repr__(self):
-        return 'link(%s, %s, %s)' %(self.label, self.url, self.newTab)
+        return 'link(%s, %s, %s)' % (self.label, self.url, self.newTab)
 
     autoDiffs = {
         'label': 'Link Label',
@@ -974,15 +994,16 @@ class link(autoDiff):
     }
 
     def __eq__(self, other):
-        return (self.label == other.label and self.url == other.url \
-            and self.newTab == other.newTab)
+        return (self.label == other.label and self.url == other.url and
+                self.newTab == other.newTab)
+
 
 class thriveContent(autoDiff):
-    '''Class for an individual thrive card. 
+    '''Class for an individual thrive card.
     A thrive card has a title, description, an optional Try This
     section, and one or more links. '''
     @uesc
-    def __init__(self, title, desc = '', tryThis = '', links = []):
+    def __init__(self, title, desc='', tryThis='', links=[]):
         self.title = title
         self.desc = desc
         self.tryThis = tryThis
@@ -990,21 +1011,25 @@ class thriveContent(autoDiff):
 
     autoDiffs = {
         'title': 'Thrive card title',
-        # TODO: these can be re-enabled once we get the rest of 
+        # TODO: these can be re-enabled once we get the rest of
         # the thrive mock data in
-        #'desc': 'Thrive card first section',
-        #'tryThis': 'Thrive card "Try This" section',
-        #'links': 'Thrive card links'
+        # 'desc': 'Thrive card first section',
+        # 'tryThis': 'Thrive card "Try This" section',
+        # 'links': 'Thrive card links'
     }
+
 
 # Cards that didn't finish loading
 class hungCardClass(myuwCard):
     pass
 
-# We want card classes to have descriptive __names__s. 
+
+# We want card classes to have descriptive __names__s.
 @uesc
 def hungCard(name):
-    return type('hungcard_%s' %name, (hungCardClass, ), {'name': name + ' (hung)'})()
+    return type('hungcard_%s' % name,
+                (hungCardClass, ),
+                {'name': name + ' (hung)'})()
 
 
 class ignoreSig(cardProxy):
@@ -1015,7 +1040,7 @@ class ignoreSig(cardProxy):
 
 """
 class myplanData(autoDiffs):
-    
+
     def __init__(self, ready = [], notReady = []):
 
         self.ready = ready
@@ -1028,4 +1053,3 @@ class myplanData(autoDiffs):
         pass
 
 """
-

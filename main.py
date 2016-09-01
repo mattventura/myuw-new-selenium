@@ -2,14 +2,15 @@
 
 
 # Generic imports
-from selenium.webdriver import Firefox
 import unittest
 import time
 import sys
 
+from selenium.webdriver import Firefox
+
 # myuw-specific imports
-from myuwtesting.classes import myuwDate, errorCard, \
-    LandingWaitTimedOut
+from myuwtesting.classes import myuwDate, errorCard
+from myuwtesting.exceptions import LandingWaitTimedOut
 from myuwtesting import expected
 from myuwtesting.cards import cardDict
 from myuwtesting.functions import isCardVisible, isVisibleFast, \
@@ -34,8 +35,6 @@ class sampleMyuwTestCase(mainMyuwTestCase):
 
     # Quick test with custom dates, mainly for testing the test itself
     testDates = {}
-    #testDates['jinter'] = ('2013-02-09',)
-    #testDates['javerage'] = ('2013-02-08',)
     testDates['javerage'] = ('2013-2-15', '2013-3-15', '2013-4-15')
     testDates['jinter'] = ('2013-02-15', '2013-01-09', '2013-05-12')
     testDates['seagrad'] = ('2013-1-15', )
@@ -75,9 +74,9 @@ if __name__ == '__main__':
                     users = testDates.keys()
 
                 except:
-                    
+
                     print 'Syntax error in --single arguments'
-                    print 'Bad argument was "%s"' %pair
+                    print 'Bad argument was "%s"' % pair
 
                 else:
 
@@ -88,8 +87,8 @@ if __name__ == '__main__':
                         usersToTest = users
 
                     # Run the test with json output
-                    unittest.TextTestRunner().run(singleTestCase('_test_json_out'))
-
+                    runner = unittest.TextTestRunner()
+                    runner.run(singleTestCase('_test_json_out'))
 
         elif argv[1] == '--dump-dates':
             testUsers = getTestDates()
@@ -97,11 +96,10 @@ if __name__ == '__main__':
                 print 'Test dates for user %s:' % user
                 print '    ' + ', '.join([str(date) for date in dates])
 
-
         elif argv[1] == '--debug':
 
             # Scratch area where you can put whatever debug code
-            # Best used with python's -i option so you can poke around. 
+            # Best used with python's -i option so you can poke around.
             d = Firefox()
             d.maximize_window()
             m = mainMyuwHandler(d, testconfig.testUrl)
@@ -135,4 +133,4 @@ if __name__ == '__main__':
 
     else:
         # Run default test case
-        unittest.main(defaultTest = 'autoDateMyuwTestCase')
+        unittest.main(defaultTest='autoDateMyuwTestCase')

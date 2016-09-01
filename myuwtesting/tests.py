@@ -7,9 +7,12 @@ import sys
 import traceback
 import json
 import subprocess
-from selenium.webdriver import Firefox, Chrome
 
-from .classes import myuwDate, LandingWaitTimedOut
+from selenium.webdriver import Firefox, Chrome, PhantomJS
+
+
+from .classes import myuwDate
+from .exceptions import LandingWaitTimedOut
 from .functions import splitList, driverRetry
 from . import expected
 from .testconfig import parallel, perf, defaultStartDate, defaultEndDate
@@ -29,19 +32,20 @@ class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
     and usersToTest. '''
     #driverFunc = Firefox
+    #driverFunc = PhantomJS
     driverFunc = Chrome
     baseUrl = testconfig.testUrl
 
     # By default, don't test anything. Real test cases should subclass
-    # this class and define these two variables. 
+    # this class and define these two variables.
     # usersToTest: List of usernames in string format
     usersToTest = []
-    # testDates: Dictionary of usernames as strings -> list or tuple of 
-    # dates as strings. 
+    # testDates: Dictionary of usernames as strings -> list or tuple of
+    # dates as strings.
     testDates = {}
 
     # These should be set to the values that myuw will default to
-    # with no override. 
+    # with no override.
     defaultUser = 'javerage'
     defaultDate = myuwDate('2013-4-15')
 
@@ -135,7 +139,7 @@ class mainMyuwTestCase(unittest.TestCase):
         with each line being considered a different diff. '''
         if diffs:
             # Might get more than one at a time, separated
-            # by linefeeds. 
+            # by linefeeds.
             for diff in diffs.split('\n'):
                 # Ignore empty lines
                 if diff:
@@ -155,9 +159,9 @@ class mainMyuwTestCase(unittest.TestCase):
         '''Returns formatted version of the diff dictionary. '''
         return self.formatDiffsFull(self.diffs)
 
-    @staticmethod 
+    @staticmethod
     def formatDiffsFull(diffs, indentChar = '  '):
-        '''Given a diff dictionary, format them with indentChar used to 
+        '''Given a diff dictionary, format them with indentChar used to
         indicate nesting. '''
         diffStr = ''
         # Use myuwDate to sort the dates, since a string won't necessarily
@@ -178,14 +182,14 @@ class mainMyuwTestCase(unittest.TestCase):
                         diffStr += diffLine
         diffStr = diffStr.replace('\t', indentChar)
         return diffStr
-        
-                
+
+
     # Log diff for the current user and date
     def logDiffCurrent(self, diff):
         '''Given a diff, get the current user and date, and use logDiffs
         to report it. '''
         self.logDiffs(self.currentUser, self.currentDate, diff)
-        
+
 
     # Check diffs and log any that were found
     def checkDiffs(self):
@@ -298,7 +302,7 @@ class parallelTestCase(mainMyuwTestCase):
             finished = True
             for proc in processes:
                 # Returns None if process is not finished, otherwise
-                # gives the exit code 
+                # gives the exit code
                 if proc.poll() is None:
                     finished = False
 
@@ -315,13 +319,13 @@ class parallelTestCase(mainMyuwTestCase):
                         # Filter out anything that isn't an error
                         # There has to be a better way to do this, but right now
                         # it's more important to make sure errors will be seen
-                        # if they exist. 
+                        # if they exist.
                         for line in errLines:
                             if len(line) == 0:
                                 continue
                             if line == 'E':
                                 continue
-                            if line[0] in ('.', 'F'): 
+                            if line[0] in ('.', 'F'):
                                 continue
                             if line[0:4] == '----':
                                 continue
@@ -344,7 +348,7 @@ class parallelTestCase(mainMyuwTestCase):
 
                 # If the process's output has already hit EOF, then don't worry
                 # about it. This just means we already got the data from that
-                # particular process. 
+                # particular process.
                 except ValueError:
                     pass
 
@@ -358,7 +362,7 @@ class parallelTestCase(mainMyuwTestCase):
             else:
                 diffDicts.append(diffDict)
 
-        # Combine dictionaries into one, like what we would get from the 
+        # Combine dictionaries into one, like what we would get from the
         # non-parallelized version
         fullDiffs = self.mergeDiffs(diffDicts)
         # Format them like how they would normally be formatted

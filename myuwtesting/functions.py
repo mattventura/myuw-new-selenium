@@ -23,12 +23,9 @@ def uesc(func):
 
     return inner
 
+
 def isCardVisible(cardEl):
     '''Attempt to determine if a card is visible using numerous indicators.'''
-    try:
-        cardName = getCardName(cardEl)
-    except:
-        pass
     if not(cardEl.is_displayed()):
         return False
     #if not cardEl.get_attribute('innerHTML'):
@@ -39,19 +36,18 @@ def isCardVisible(cardEl):
 
     return True
 
-# Like above but checks less stuff
+
 def isVisibleFast(el):
     '''Attempt to determine if a card is visible using just is_displayed().'''
     return el.is_displayed()
 
-# Functions
-# Convert int to timedelta, if necessary
+
 def toTimeDelta(obj):
     '''Convert an int to a datetime.timedelta. If the input is already
     a timedelta, just return it. '''
     if isinstance(obj, int):
         return datetime.timedelta(obj)
-        
+
     if isinstance(obj, datetime.timedelta):
         return obj
 
@@ -59,11 +55,10 @@ def toTimeDelta(obj):
         raise TypeError('toTimeDelta requires either an int or '
             'datetime.timedelta as its argument')
 
-# Pack the element argument of a fromElement method into the 
-# resultant object for debugging purposes. 
+
 def packElement(func):
     '''Decorator to set the 'originalElement' property of a card
-    to the web element used to construct it. Useful for debugging. 
+    to the web element used to construct it. Useful for debugging.
     '''
     def inner(cls, date, e):
         newCardInstance = func(cls, date, e)
@@ -74,10 +69,10 @@ def packElement(func):
 
 @uesc
 def formatDiffs(label, a, b):
-    '''Format diffs. 
-    If a and b are equal, return an empty string. 
-    If not, then use 'label' to form a description of the differences. 
-    Escapes unicode such as to not cause problems. 
+    '''Format diffs.
+    If a and b are equal, return an empty string.
+    If not, then use 'label' to form a description of the differences.
+    Escapes unicode such as to not cause problems.
     '''
     if a == b:
         return ''
@@ -91,7 +86,7 @@ def formatDiffs(label, a, b):
 """
 def formatListDiffs(label, a, b):
     '''Find differences between two lists'''
-    
+
     if len(a) != len(b):
         outStr = 'Different lengths of %s (%s vs %s)\n' %(label, len(a), len(b))
         return outStr
@@ -124,7 +119,7 @@ def findDiffs(self, other):
             else:
                 diffs += formatDiffs(label, valueSelf, valueOther)
         return diffs
-    else: 
+    else:
         raise Exception(
             'Used findDiffs on %s without autoDiffs attribute' %self
         )
@@ -134,12 +129,10 @@ def rangesToSigDates(dateRanges):
     Does not handle removing dupes. '''
     return sum([r.significantDates for r in dateRanges], [])
 
-# Get card name from an element
-# Useful for when you can't make a proper card out of the 
-# element, but still need a useful identifier, e.g. 
-# the loading spinner. 
 def getCardName(cardEl):
-    '''Try to guess card name from an element. '''
+    '''Try to guess card name from an element. Useful for when you can't
+    make a proper card out of the element, but still need some sort of
+    identifier, e.g. a card that hasn't finished loading.'''
     cardId = cardEl.get_attribute('id')
     cardDataName = cardEl.get_attribute('data-name')
     cardName = cardId or cardDataName
@@ -147,7 +140,7 @@ def getCardName(cardEl):
 
 
 def splitList(l, n):
-    '''Split a list into n smaller lists, with a minimum of one item per 
+    '''Split a list into n smaller lists, with a minimum of one item per
     chunk.'''
     out = []
     for i in range(n):
@@ -162,11 +155,11 @@ def splitList(l, n):
 
 
 def driverRetry(driverFunc, numTries = 3):
-    '''Function to automatically retry (at most numTries times) opening the 
-    browser when you get the "Can't load the profile" error. This error 
-    occasionally happens randomly, but if it happens more than a few times 
-    in a row it's likely an actual blocker. Most likely, you updated the 
-    browser to a version that the WebDriver isn't equipped to handle, so 
+    '''Function to automatically retry (at most numTries times) opening the
+    browser when you get the "Can't load the profile" error. This error
+    occasionally happens randomly, but if it happens more than a few times
+    in a row it's likely an actual blocker. Most likely, you updated the
+    browser to a version that the WebDriver isn't equipped to handle, so
     either "pip install --upgrade selenium" or roll back the browser. '''
 
     try:
@@ -179,6 +172,6 @@ def driverRetry(driverFunc, numTries = 3):
 
 
 def filterListVis(inList, date):
-    '''Filter a list down to elements whose shouldAppear method returns true 
+    '''Filter a list down to elements whose shouldAppear method returns true
     on that date. '''
     return [item for item in inList if item.shouldAppear(date)]

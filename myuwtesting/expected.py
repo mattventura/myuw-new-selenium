@@ -49,6 +49,9 @@ cardList['javerage'] = [
             'TRAIN 101 A': None,
             'TRAIN 102 A': None,
         },
+        'EFS': {
+            'EFS_OK 101 AQ': None,
+        },
         'AU13': {
             'ENGL 207 A': None,
         },
@@ -59,8 +62,8 @@ cardList['javerage'] = [
     cardQtr(
         FutureQuarterCard({
             'Spring 2013': {
-                'credits' : 15,
-                'sections': 6,
+                'credits' : 12,
+                'sections': 5,
             },
         }),
         ['WI13']
@@ -76,8 +79,8 @@ cardList['javerage'] = [
                 'sections': 2,
             },
             'Autumn 2013': {
-                'credits' : 5,
-                'sections': 1,
+                'credits' : 10,
+                'sections': 2,
             },
         }),
         # Spring gradesub known issue
@@ -90,8 +93,8 @@ cardList['javerage'] = [
                 'sections': 2,
             },
             'Autumn 2013': {
-                'credits' : 5,
-                'sections': 1,
+                'credits' : 10,
+                'sections': 2,
             },
         }),
         # Spring gradesub known issue
@@ -100,8 +103,8 @@ cardList['javerage'] = [
     cardCD(
         FutureQuarterCard({
             'Autumn 2013': {
-                'credits' : 5,
-                'sections': 1,
+                'credits' : 10,
+                'sections': 2,
             },
         }),
         (SummerBTermBegins['SU13'], LastDayQtr['SU13'] + 1)
@@ -612,7 +615,8 @@ def getSigDates(user, start = None, end = None, extras = False):
 
     if extras:
         for sigDate in getAllDates():
-            checkAndAdd(sigDate)
+            if not(getattr(sigDate, 'nosig', False)):
+                checkAndAdd(sigDate)
     outList = sigDates
 
     outList.sort()

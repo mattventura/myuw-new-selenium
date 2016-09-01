@@ -24,13 +24,13 @@ class perfCounter(object):
     def formatted(self):
         if self.label:
             return '%s took %s seconds' %(self.label, self.elapsedTime)
-        else: 
+        else:
             return str(self.elapsedTime)
 
     def endGetTime(self):
         self.end()
         return self.elapsedTime
-    
+
     def endFmt(self):
         self.end()
         return self.formatted

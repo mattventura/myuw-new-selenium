@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-from .classes import myuwDate, multiDate
 from datetime import timedelta
+
+from .classes import myuwDate, multiDate
 
 # These are in (roughly) chronological order
 
@@ -26,9 +27,19 @@ RegPd3 = multiDate({
     'AU13': '2013-09-25',
 })
 
+# Generate dates for 6AM on reg days
 (RegPd1open, RegPd2open, RegPd3open) = [
     md + timedelta(hours=6) for md in (RegPd1, RegPd2, RegPd3)
 ]
+
+# Set these dates to insignificant, i.e. don't automatically test them
+allReg = sum(
+    [d.values() for d in (RegPd1open, RegPd2open, RegPd3open)],
+    []
+)
+for date in allReg:
+    date.nosig = True
+
 
 RegPd1end = multiDate({
     'SP13': '2013-3-3',
@@ -77,7 +88,7 @@ FinalsBegin = multiDate({
 })
 
 # Break begins, also first day after
-# the end of finals for non-summer qtrs. 
+# the end of finals for non-summer qtrs.
 BreakBegins = multiDate({
     'WI13': '2013-03-23',
     'SP13': '2013-06-15',
@@ -146,6 +157,7 @@ def dateToQtr(date):
             continue
     raise Exception("Couldn't find quarter for date %s" %date)
 
+
 def dateToTerm(date):
     '''Like dateToQtr, but differentiates between the two
     summer terms. Will return 'SA13' or 'SB13' for summer
@@ -166,6 +178,7 @@ def dateToTerm(date):
     else:
         return qtr
 
+
 def getPastTerm(date):
     '''Get the term that you're either in or just finished'''
     date = myuwDate(date)
@@ -175,7 +188,7 @@ def getPastTerm(date):
     else:
         qtr = dateToTerm(date - 10)
     return qtr
-    
+
 
 def getAllMultiDates():
     '''Get a list of all multiDates defined here. '''
@@ -185,6 +198,7 @@ def getAllMultiDates():
             mds.append(md)
 
     return mds
+
 
 def getAllDates():
     '''Get a list of all dates defined in all multiDates defined here. '''

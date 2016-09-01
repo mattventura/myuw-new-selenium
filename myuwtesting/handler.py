@@ -5,15 +5,13 @@ import time
 from .cards import cardFromElement
 from .functions import getCardName, isCardVisible, isVisibleFast
 from .testconfig import perf
-from .classes import myuwDate, LandingWaitTimedOut, hungCard
+from .classes import myuwDate, hungCard
+from .exceptions import LandingWaitTimedOut
 from .perf import perfCounter
-
-# temp
-import sys
 
 class mainMyuwHandler(object):
     '''Page object model handler for myuw. '''
-    
+
     # Go to override page and set override username
     def _changeUser(self, username):
         '''Set override username. You probably want setUser instead. '''
@@ -75,13 +73,13 @@ class mainMyuwHandler(object):
     # (adds the trailing / if not given)
     # Can also take a user and date to override assumed
     # javerage/2013-04-15
-    def __init__(self, driver, baseUrl, date = myuwDate('2013-04-15'), 
+    def __init__(self, driver, baseUrl, date = myuwDate('2013-04-15'),
         user = 'javerage', userUrl = None, dateUrl = None):
-        '''Constructor for mainMyuwHandler. 
-        baseUrl: root URL for the site. 
-        date, user: these indicate what the server will default to before we override. 
-        userUrl: override the user override page. Defaults to baseUrl + 'users/'. 
-        dateUrl: Same for date page. Defaults to baseUrl + 'admin/dates'. 
+        '''Constructor for mainMyuwHandler.
+        baseUrl: root URL for the site.
+        date, user: these indicate what the server will default to before we override.
+        userUrl: override the user override page. Defaults to baseUrl + 'users/'.
+        dateUrl: Same for date page. Defaults to baseUrl + 'admin/dates'.
         '''
 
         self.cardsValid = False
@@ -98,7 +96,7 @@ class mainMyuwHandler(object):
     def _parsePage(self):
         '''Internal function for parsing cards. '''
         # If requested, set up timing
-        #if perf: 
+        #if perf:
         #   allParseTimer = perfCounter('Parsing all cards')
         cardEls = []
         # Various search strings to use for finding cards
@@ -108,7 +106,7 @@ class mainMyuwHandler(object):
             # Calendar on mobile
             '//div[@id="calendar_banner_location_mobile"]/div',
             # Calendar on desktop
-            '//div[@id="calendar_banner_location_desktop"]/div', 
+            '//div[@id="calendar_banner_location_desktop"]/div',
             # PCE message
             '//div[@id="pce_banner_location"]/div',
             # Left column on desktop layout, only column on mobile
@@ -119,16 +117,20 @@ class mainMyuwHandler(object):
             '//div[@id="app_header"]//div[@id="uwemail"]'
         )
 
+        self.driver.find_elements_by_css_selector('i.fa-spin')
+
         # Cards that didn't finish loading
         failedCards = []
-        for el in self.driver.find_elements_by_css_selector('i.fa-spin'):
+        spinners = self.driver.find_elements_by_css_selector('i.fa-spin')
+
+        spinners = filter(isVisibleFast, spinners)
+        for el in spinners:
             cardName = None
             while cardName is None:
                 el = el.find_element_by_xpath('..')
                 cardName = getCardName(el)
             else:
                 failedCards.append(el)
-        
 
         # Using each search string above, find cards
         for xpath in cardxpaths:
@@ -136,47 +138,10 @@ class mainMyuwHandler(object):
 
         # Iterate over each card element
         self._cards = {}
+        st = time.time()
         for cardEl in cardEls:
             result = cardFromElement(cardEl, self.currentDate)
             self._cards.update(result)
-            """
-            if perf: 
-                cardTimer = perfCounter('Parsing card')
-            # Get name of card using whatever's available
-            cardName = getCardName(cardEl)
-            # If the card is not visible, then don't do anything with it
-            if isCardVisible(cardEl):
-                # Cards are identified by their id
-
-                cardIsError = 'An error has occurred' in cardEl.text
-                    
-                # If the card errors out, use myuwClasses.errorCard and provide
-                # the name. This allows us to give an error card as the expected
-                # result. 
-                if cardIsError:
-                    if cardName in cardDict:
-                        cardName = cardDict[cardName].name
-                    newCard = errorCard(cardName)
-                    self._cards[cardName] = newCard
-
-                else:
-                    cards.getCardClass(cardName)
-                    else:
-                        newCard = cardClass.fromElement(cardEl, self.currentDate)
-                        # For cards with multiple names, take the name from the class
-                        if newCard is None:
-                            raise Exception('%s.fromElement returned None' %cardClass)
-                        baseCardName = newCard.name
-                        self._cards[baseCardName] = newCard
-            else:
-                # Card is hidden
-                if perf:
-                    cardTimer.label = 'Parsing hidden card'
-
-            if perf:
-                parseTime = cardTimer.endFmt()
-                print parseTime
-            """
 
         failedCards = filter(isVisibleFast, failedCards)
         for cardEl in failedCards:
@@ -200,7 +165,7 @@ class mainMyuwHandler(object):
         '''Wait for landing to finish loading. If this times out, it will raise
         a LandingWaitTimedOut exception, which accepts a list of elements that did
         not finish loading. The presence of the loading gear is used to determine
-        that an element has not finished loading. Waits 1 second after the last 
+        that an element has not finished loading. Waits 1 second after the last
         loading gear has disappeared.
         '''
         # I don't know if selenium's implicit wait can wait until
@@ -210,26 +175,27 @@ class mainMyuwHandler(object):
         els = []
         while loadTimer.elapsedTime < maxTime:
             try:
-                time.sleep(.8)
                 # Look for loading gears
                 els = self.driver.find_elements_by_css_selector('i.fa-spin')
                 # Filter these to only visible
                 els = filter(isVisibleFast, els)
             except:
-                # Ignore exceptions from the browser being in some weird state 
-                # while loading. If there's a legitimate issue, it will be 
-                # caught elsewhere. 
+                # Ignore exceptions from the browser being in some weird state
+                # while loading. If there's a legitimate issue, it will be
+                # caught elsewhere.
                 pass
             else:
-                # If there were gears, wait some more. 
+                # If there were gears, wait some more.
                 if els:
                     pass
                 # If not, then the page finished loading
                 else:
                     break
+            time.sleep(.8)
+
         else:
             # If the loop ends due to running out of time, throw our
-            # custom exception. 
+            # custom exception.
             els = filter(isVisibleFast, els)
             newEls = []
             for el in els:
@@ -248,7 +214,7 @@ class mainMyuwHandler(object):
         #   print loadTimer.formatted
 
         # Sleep a little longer just in case we have a card that
-        # hasn't quite finished but isn't displaying the loading 
+        # hasn't quite finished but isn't displaying the loading
         # gear either.
-        time.sleep(1)
+        time.sleep(.5)
 
