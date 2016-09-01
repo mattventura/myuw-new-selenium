@@ -9,6 +9,7 @@ from .classes import myuwDate, hungCard
 from .exceptions import LandingWaitTimedOut
 from .perf import perfCounter
 
+
 class mainMyuwHandler(object):
     '''Page object model handler for myuw. '''
 
@@ -18,7 +19,8 @@ class mainMyuwHandler(object):
         self.browseToPage(self.userUrl)
         # XXX
         time.sleep(.2)
-        userBox = self.driver.find_element_by_xpath('//input[@name="override_as"]')
+        userBox = self.driver.find_element_by_xpath(
+            '//input[@name="override_as"]')
         userBox.send_keys(username)
         userBox.submit()
         # XXX
@@ -73,12 +75,14 @@ class mainMyuwHandler(object):
     # (adds the trailing / if not given)
     # Can also take a user and date to override assumed
     # javerage/2013-04-15
-    def __init__(self, driver, baseUrl, date = myuwDate('2013-04-15'),
-        user = 'javerage', userUrl = None, dateUrl = None):
-        '''Constructor for mainMyuwHandler.
+    def __init__(self, driver, baseUrl, date=myuwDate('2013-04-15'),
+                 user='javerage', userUrl=None, dateUrl=None):
+        '''
+        Constructor for mainMyuwHandler.
         baseUrl: root URL for the site.
-        date, user: these indicate what the server will default to before we override.
-        userUrl: override the user override page. Defaults to baseUrl + 'users/'.
+        date, user: these indicate what the server will default to before we
+        override.
+        userUrl: user override page. Defaults to baseUrl + 'users/'.
         dateUrl: Same for date page. Defaults to baseUrl + 'admin/dates'.
         '''
 
@@ -96,8 +100,10 @@ class mainMyuwHandler(object):
     def _parsePage(self):
         '''Internal function for parsing cards. '''
         # If requested, set up timing
-        #if perf:
-        #   allParseTimer = perfCounter('Parsing all cards')
+        '''
+        if perf:
+            allParseTimer = perfCounter('Parsing all cards')
+        '''
         cardEls = []
         # Various search strings to use for finding cards
         cardxpaths = (
@@ -150,9 +156,11 @@ class mainMyuwHandler(object):
 
         # Mark the card list as being fresh
         self.cardsValid = True
-        #if perf:
-        #   allParseTime = allParseTimer.endFmt()
-        #   print allParseTime
+        '''
+        if perf:
+            allParseTime = allParseTimer.endFmt()
+            print allParseTime
+        '''
 
     @property
     def cards(self):
@@ -162,11 +170,12 @@ class mainMyuwHandler(object):
         return self._cards
 
     def waitForLanding(self):
-        '''Wait for landing to finish loading. If this times out, it will raise
-        a LandingWaitTimedOut exception, which accepts a list of elements that did
-        not finish loading. The presence of the loading gear is used to determine
-        that an element has not finished loading. Waits 1 second after the last
-        loading gear has disappeared.
+        '''
+        Wait for landing to finish loading. If this times out, it will raise
+        a LandingWaitTimedOut exception, which accepts a list of elements that
+        did not finish loading. The presence of the loading gear is used to
+        determine that an element has not finished loading. Waits 1 second
+        after the last loading gear has disappeared.
         '''
         # I don't know if selenium's implicit wait can wait until
         # an element is *not* found, so do it manually
@@ -210,11 +219,12 @@ class mainMyuwHandler(object):
         # If the loop ended due to there being no more loading gears,
         # it will hit this code instead.
         loadTimer.end()
-        #if perf:
-        #   print loadTimer.formatted
+        '''
+        if perf:
+            print loadTimer.formatted
+        '''
 
         # Sleep a little longer just in case we have a card that
         # hasn't quite finished but isn't displaying the loading
         # gear either.
         time.sleep(.5)
-

@@ -86,7 +86,9 @@ def formatListDiffs(label, a, b):
     '''Find differences between two lists'''
 
     if len(a) != len(b):
-        outStr = 'Different lengths of %s (%s vs %s)\n' %(label, len(a), len(b))
+        outStr = 'Different lengths of %s (%s vs %s)\n' % (label,
+                                                           len(a),
+                                                           len(b))
         return outStr
 
     sortedA = sorted(a)
@@ -117,13 +119,15 @@ def findDiffs(self, other):
         return diffs
     else:
         raise Exception(
-            'Used findDiffs on %s without autoDiffs attribute' %self
+            'Used findDiffs on %s without autoDiffs attribute' % self
         )
+
 
 def rangesToSigDates(dateRanges):
     '''Given a list of date ranges, find all the significant dates.
     Does not handle removing dupes. '''
     return sum([r.significantDates for r in dateRanges], [])
+
 
 def getCardName(cardEl):
     '''Try to guess card name from an element. Useful for when you can't
@@ -150,7 +154,7 @@ def splitList(l, n):
     return out
 
 
-def driverRetry(driverFunc, numTries = 3):
+def driverRetry(driverFunc, numTries=3):
     '''Function to automatically retry (at most numTries times) opening the
     browser when you get the "Can't load the profile" error. This error
     occasionally happens randomly, but if it happens more than a few times

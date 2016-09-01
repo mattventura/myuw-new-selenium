@@ -19,6 +19,7 @@ from .testconfig import parallel, perf, defaultStartDate, defaultEndDate
 from . import testconfig
 from .handler import mainMyuwHandler
 
+
 def getTestDates(start = defaultStartDate, end = defaultEndDate):
     '''Get test dates based off expected cards and known dates. '''
     userList = expected.cardList.keys()
@@ -27,6 +28,7 @@ def getTestDates(start = defaultStartDate, end = defaultEndDate):
         sd = expected.getSigDates(user, start, end, True)
         tcDict[user] = sd
     return tcDict
+
 
 class mainMyuwTestCase(unittest.TestCase):
     '''Main myuw test case. Others should subclass this and override testDates
