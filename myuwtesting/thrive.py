@@ -4,18 +4,25 @@ from classes import thriveContent, link, myuwDateRange
 from cards import ThriveCard
 from dates import ClassesBegin
 
+
 class ThriveCardExpected(ThriveCard):
     '''Expected data for Thrive'''
 
     thriveCards = {}
     thriveCards['WI13'] = [
-        thriveContent('New Year, Fresh Start',
-            #'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
-            'Happy New Year! The new year is an opportunity to reflect on your aspirations for 2016.',
-            u'Finish this sentence: This year, I wish to ______. When you come to Mary Gates Hall this week \u2013 for advising, career coaching, or CLUE tutoring \u2013 share your aspirations on the board outside of First Year Programs (MGH 120), or using #ThriveUW.',
-            [ link('New Year\u2019s Resolutions for College Students',
-                'http://collegelife.about.com/od/cocurricularlife/a/10-Sample-New-Years-Resolutions-For-College-Students.htm', True)
-            ]
+        thriveContent(
+            'New Year, Fresh Start',
+            'Happy New Year! The new year is an opportunity to reflect on '
+            'your aspirations for 2016.',
+            u'Finish this sentence: This year, I wish to ______. When you '
+            'come to Mary Gates Hall this week \u2013 for advising, career '
+            'coaching, or CLUE tutoring \u2013 share your aspirations on the '
+            'board outside of First Year Programs (MGH 120), or using '
+            '#ThriveUW.',
+            [link('New Year\u2019s Resolutions for College Students',
+                  'http://collegelife.about.com/od/cocurricularlife/a/10-'
+                  'Sample-New-Years-Resolutions-For-College-Students.htm',
+                  True)]
         ),
         thriveContent('Learn to Lead'),
         thriveContent('Activate your Activism'),

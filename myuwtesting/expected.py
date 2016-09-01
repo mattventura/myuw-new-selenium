@@ -570,7 +570,7 @@ def getExpectedResults(user, date):
     return userCardsVisible
 
 
-def getSigDates(user, start = None, end = None, extras = False):
+def getSigDates(user, start=None, end=None, extras=False):
     '''Get significant dates to test for the given user. Optionally filters
     dates to only those between 'start' and 'end'. If 'extras' is true, then
     it will include generic events in myuwDates. '''
@@ -631,20 +631,15 @@ def findDiffs(expected, actual):
     # Populate a dictionary of name: cardPair objects, where the cardPair
     # holds the expected and actual version of the card
     common = {}
+    onlyInActual = actual.copy()
+    onlyInExpected = expected.copy()
     for cardName in actual:
         if cardName in expected:
             actualCard = actual[cardName]
             expectedCard = expected[cardName]
             common[cardName] = cardPair(expectedCard, actualCard)
-
-    # For the cards in common, remove them from the dictionaries of
-    # the actual and expected lists (after copying them) to form
-    # the list of cards exclusive to each group.
-    onlyInActual = actual.copy()
-    onlyInExpected = expected.copy()
-    for cardName in common:
-        onlyInActual.pop(cardName)
-        onlyInExpected.pop(cardName)
+            del onlyInActual[cardName]
+            del onlyInExpected[cardName]
 
     # Calculate actual differences
     diffs = ''

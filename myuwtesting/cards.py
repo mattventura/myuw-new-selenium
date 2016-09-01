@@ -62,8 +62,8 @@ class HFSCard(myuwCard):
 
     title = 'Husky Card & Dining'
 
-    def __init__(self, balanceDict = {},
-        addFundsUrl = stuHuskyCardLink, title = title):
+    def __init__(self, balanceDict={},
+                 addFundsUrl=stuHuskyCardLink, title=title):
         '''balanceDict should be provided in the form:
             {'stu' = '$123.45', 'emp' = '$0.00', 'fac' = '$9.87'},
         leaving out balances the user doesn't have.
@@ -81,7 +81,6 @@ class HFSCard(myuwCard):
     @packElement
     def fromElement(cls, e, date):
         titleEl = e.find_element_by_xpath('./div[@data-type="card"]/h3')
-        #titleEl = e.find_element_by_css_selector('div h3')
         titleText = titleEl.text
 
         # Find balances on the card
@@ -125,7 +124,7 @@ class HFSCard(myuwCard):
 class EmpFacStudentCard(myuwCard):
     '''Employee/Faculty information card'''
 
-    def __init__(self, stuEmp = False, instructor = False):
+    def __init__(self, stuEmp=False, instructor=False):
         '''stuEmp is whether or not they have the student employee part
         of the card, same for instructor. '''
         self.stuEmp = stuEmp
@@ -172,7 +171,8 @@ class FutureQuarterCard(myuwCard):
             qtrName = titleEl.text
             subElements = qtrEl.find_elements_by_xpath('.//p/span')
             creditsText, sectionsText = [el.text for el in subElements]
-            credits = re.search('registered for (.*) credit', creditsText).groups()[0]
+            credits_re = re.search('registered for (.*) credit', creditsText)
+            credits = credits_re.groups()[0]
             sections = re.search('\((.*) section', sectionsText).groups()[0]
             credits = int(credits)
             sections = int(sections)
@@ -190,7 +190,7 @@ class FutureQuarterCard(myuwCard):
 @isaCard
 class SummerEFSCard(myuwCard):
     '''Critical Summer Reg info/Early Fall Start information card. '''
-    def __init__(self, summerReg = True, considerEFS = True):
+    def __init__(self, summerReg=True, considerEFS=True):
         '''summerReg and considerEFS refer to whether the user
         should see those parts of the card. '''
         self.sumReg = summerReg
@@ -209,11 +209,13 @@ class SummerEFSCard(myuwCard):
         'efs': 'Has EFS Section',
     }
 
+
 @isaCard
 class GradeCard(myuwCard):
     '''Final Grades Card'''
 
     noGradeStr = 'No grade yet\nX'
+
     def __init__(self, gradeDict):
         '''gradeDict is specified as a dictionary of the form:
             { 'WI13': {'PHYS 123': '4.0'} }
@@ -223,7 +225,7 @@ class GradeCard(myuwCard):
         None is shorthand for No grade yet/X.'''
         for qtrGrades in gradeDict.values():
             for className, grade in qtrGrades.items():
-                if grade == None:
+                if grade is None:
                     qtrGrades[className] = self.noGradeStr
 
         self.gradeDict = gradeDict
@@ -286,7 +288,6 @@ class GradeCard(myuwCard):
         diffs += formatDiffs('Final grades', gradesA, gradesB)
         return diffs
 
-
     def makeVisCheck(self):
         '''Assemble a visCheck based on our expected data'''
         visChecks = []
@@ -307,11 +308,11 @@ class GradeCard(myuwCard):
                 hide = NextQtrClassesBegin['SU' + year]
 
             else:
-                exStr = 'Invalid short quarter name %s from quarter %s.'%(short, gradesQtr)
+                exStr = ('Invalid short quarter name %s from quarter %s.'
+                         % (short, gradesQtr))
                 raise Exception(exStr)
 
             visNew = visCD(show, hide)
-            #print visNew
             visChecks.append(visNew)
 
         visCheck = visUnion(*visChecks)
@@ -321,7 +322,7 @@ class GradeCard(myuwCard):
 class GradeCardDummy(GradeCard):
     '''Dummy version of the grade card that has quarters but no actual
     grades for them. Useful for wrapping with errorCard. '''
-    def __init__(self, qtrs = ['AU13', 'WI13', 'SP13', 'SA13', 'SB13']):
+    def __init__(self, qtrs=['AU13', 'WI13', 'SP13', 'SA13', 'SB13']):
         gradeDict = {qtr: {} for qtr in qtrs}
         super(GradeCardDummy, self).__init__(gradeDict)
 
@@ -332,16 +333,16 @@ class RegStatusCard(myuwCard):
 
     # quarters is the quarters that the reg card corresponds to, not the
     # quarters in which it should appear.
-    def __init__(self, qtrs = [], holds = 0, qtr = None, myplanContent = False,
-        date = None):
+    def __init__(self, qtrs=[], holds=0, qtr=None, myplanContent=False,
+                 date=None):
         self.qtrs = qtrs
         self.holds = holds
         self.qtr = qtr
         self.myplanContent = myplanContent
         self.date = date
         # If there are holds, card should always appear
-        #if holds:
-        #   self.visCheck = visAlways
+        if holds:
+            self.visCheck = visAlways
 
     @classmethod
     def fromElement(cls, e, date):
@@ -371,7 +372,7 @@ class RegStatusCard(myuwCard):
             except NoSuchElementException:
                 continue
         else:
-            return cls(holds = 0, qtr = qtrString)
+            return cls(holds=0, qtr=qtrString)
 
         bannerText = banner.text
         # Need to pull out x from "x holds"
@@ -379,8 +380,8 @@ class RegStatusCard(myuwCard):
 
         hasMyplan = 'In MyPlan' in e.text
 
-        return cls(holds = numHolds, qtr = qtrString, date = date,
-            myplanContent = hasMyplan)
+        return cls(holds=numHolds, qtr=qtrString, date=date,
+                   myplanContent=hasMyplan)
 
     def shouldAppear(self, date):
 
@@ -417,31 +418,30 @@ class RegStatusCard(myuwCard):
                 diffs = 'Myplan content did not show but was expected.\n'
 
             else:
-                diffs = formatDiffs('Myplan content visibility', expVis, actualVis)
+                diffs = formatDiffs('Myplan content visibility',
+                                    expVis,
+                                    actualVis)
 
         diffs += super(RegStatusCard, self).findDiffs(other)
         return diffs
-
 
     show = RegCardShow
     hide = RegCardHide
 
     regVis = visAuto(RegPd1open, RegPd1end - 1)
     reg1days = regVis.allDays()
-    #reg1days = RegPd1open.values() + (RegPd1open + 2).values()
-    loadPairs = [(d - timedelta(minutes=30), d + timedelta(minutes=30)) for\
-        d in reg1days]
+    # reg1days = RegPd1open.values() + (RegPd1open + 2).values()
+    loadPairs = [(d - timedelta(minutes=30), d + timedelta(minutes=30)) for
+                 d in reg1days]
     loadPeriods = visCDM(loadPairs)
 
     reg1sigDays = RegPd1open.values() + (RegPd1open + 2).values()
     # ugly
-    sigDates = sum([
-        [d - timedelta(minutes=35),
-        d - timedelta(minutes=25),
-        d + timedelta(minutes=25),
-        d + timedelta(minutes=35)
-        ] for d in reg1sigDays],
-    [])
+    sigDates = sum([[d - timedelta(minutes=35),
+                     d - timedelta(minutes=25),
+                     d + timedelta(minutes=25),
+                     d + timedelta(minutes=35)]
+                    for d in reg1sigDays], [])
     extraSigDates = sigDates
 
     """
@@ -479,7 +479,7 @@ class SummerRegStatusCard(RegStatusCard):
         # Need to un-classmethod this
         newCard = RegStatusCard.fromElement.__func__(cls, e, date)
         newCard.pos = pos
-        #newCard.date = date
+        # newCard.date = date
         return newCard
 
     name = 'SummerRegStatusCard'
@@ -491,10 +491,8 @@ class SummerRegStatusCard(RegStatusCard):
     def findDiffs(self, other):
         diffs = super(SummerRegStatusCard, self).findDiffs(other)
         expPos = 'top' if self.topCheck(other.date) else 'bot'
-        #if expPos != other.pos:
         diffs += formatDiffs('Summer Reg Card Position', expPos, other.pos)
         return diffs
-
 
     show = SummerRegShow
     hide = SummerRegHide
@@ -515,8 +513,8 @@ class SummerRegStatusCard(RegStatusCard):
 class CriticalInfoCard(myuwCard):
     '''Update Critical Info Card'''
 
-    def __init__(self, email = True,
-        directory = True, residency = True):
+    def __init__(self, email=True,
+                 directory=True, residency=True):
         '''email: Set Up UW Email section
         directory: Update Student Directory section
         residency: Non-resident classification section'''
@@ -550,7 +548,7 @@ class VisualScheduleCard(myuwCard):
     '''Visual Schedule Card. Does not encompass the final-exam-only VS,
     that's the FinalExamCard. '''
 
-    def __init__(self, quartersDict = None):
+    def __init__(self, quartersDict=None):
         '''quartersDict is of the form:
             {'WI13': {'PHYS 123 A': None, 'PHYS 456 AC': None}}
         None is just a placeholder, there may be data such as room
@@ -588,7 +586,7 @@ class VisualScheduleCard(myuwCard):
         return newObj
 
     def getQtrInfo(self, qtr):
-        if self.quartersDict == None:
+        if self.quartersDict is None:
             return {}
         else:
             return self.quartersDict.get(qtr)
@@ -614,12 +612,12 @@ class VisualScheduleCard(myuwCard):
             # spring deadline tomorrow thing
             badDateRange = myuwDateRange(
                 LastDayQtr['SP13'],
-                ClassesBegin['SU13']# - 1
+                ClassesBegin['SU13']  # - 1
             )
             if date in badDateRange:
                 return False
             else:
-                # This is now a little smarter, it will automatically hide 
+                # This is now a little smarter, it will automatically hide
                 # itself if there are no classes for the current quarter
                 term = dateToTerm(date)
                 return term in self.quartersDict and bool(self.quartersDict)
@@ -634,8 +632,9 @@ class FinalExamCard(myuwCard):
     '''Final exam card. Like VisualScheduleCard but is the
     finals-only version of it. Does not currently check any
     data.'''
-    visCheck = visAuto(LastDayInstr + 1, BreakBegins, exclude = ['SU'])
-    #TODO: actually check data here
+    visCheck = visAuto(LastDayInstr + 1, BreakBegins, exclude=['SU'])
+    # TODO: actually check data here
+
     @classmethod
     def fromElement(cls, e, date):
         '''Will return a NoCourseCard if applicable. '''
@@ -668,7 +667,7 @@ class TextbookCard(myuwCard):
     '''Textbooks card'''
     # TODO: check data
     visCheck = visUnion(
-        visAuto(FirstDayQtr, ClassesBegin + 8, exclude = ['SU13']),
+        visAuto(FirstDayQtr, ClassesBegin + 8, exclude=['SU13']),
         visCD(ClassesBegin['SU13'], ClassesBegin['SU13'] + 8)
     )
 
@@ -704,7 +703,8 @@ class GradCommitteeCard(myuwCard):
             # Get committee name
             commName = section.find_element_by_xpath('./h4').text
             # Get committee members
-            memberSections = section.find_elements_by_xpath('./ol/li[@class="committee-member"]')
+            memberSections = section.find_elements_by_xpath(
+                './ol/li[@class="committee-member"]')
             members = []
             for member in memberSections:
                 memberLines = member.find_elements_by_xpath('./span')
@@ -749,7 +749,7 @@ class GradStatusCard(myuwCard):
     '''Graduate Status Card. Encompasses petition, leave, and
     degree/exam requests. '''
 
-    def __init__(self, petitions, leaves, degrees, date = None):
+    def __init__(self, petitions, leaves, degrees, date=None):
         '''petitions, leaves, degrees are lists of
         petRequest, leaveRequest, and degreeRequest instances,
         respectively. '''
@@ -777,9 +777,9 @@ class GradStatusCard(myuwCard):
     def fromElement(cls, e, date):
         date = myuwDate(date)
 
-        petEls = e.find_elements_by_xpath('.//div[@id="petition-reqs"]/ul/li/div')
-        leaveEls = e.find_elements_by_xpath('.//div[@id="leave-reqs"]/ul/li/div')
-        degreeEls = e.find_elements_by_xpath('.//div[@id="degree-reqs"]/ul/li/div')
+        petEls, leaveEls, degreeEls =\
+            [e.find_elements_by_xpath('.//div[@id="%s"]/ul/li/div' % el_id) for
+             el_id in ('petition-reqs', 'leave-reqs', 'degree-reqs')]
 
         requestEls = petEls + leaveEls + degreeEls
 
@@ -798,8 +798,8 @@ class GradStatusCard(myuwCard):
         fromElement classmethod. '''
         return [reqClass.fromElement(reqEl) for reqEl in reqEls]
 
-    # For the expected one, at the top level of each dictionary, rather than specifying an
-    # item directly, you can specify
+    # For the expected one, at the top level of each dictionary, rather than
+    # specifying an item directly, you can specify
     def filterToDate(self, date):
         '''Returns a new GradStatusCard based on expected date which
         contains only the requests that should be visible on the
@@ -814,9 +814,9 @@ class GradStatusCard(myuwCard):
         return newObj
 
     autoDiffs = {
-        'petitions'    : 'Petition Requests',
-        'leaves'        : 'Leave Requests',
-        'degrees'    : 'Degree Requests',
+        'petitions': 'Petition Requests',
+        'leaves':  'Leave Requests',
+        'degrees': 'Degree Requests',
     }
 
     def findDiffs(self, other):
@@ -836,7 +836,7 @@ class GradStatusCard(myuwCard):
 class ThriveCard(myuwCard):
     '''Class for a Thrive card. This should never be an expected card.
     See thrive.ThriveCardExpected for that. '''
-    def __init__(self, date = None, content = None):
+    def __init__(self, date=None, content=None):
 
         # Need to handle 3 scenarios:
         # 1. Actual card, in which case we get a date and a content
@@ -853,9 +853,8 @@ class ThriveCard(myuwCard):
             self.date = date
 
         else:
-            raise Exception(
-                'Illegal arguments %s and %s for thrive card' %(date, content)
-            )
+            raise Exception('Illegal arguments %s and %s for thrive card'
+                            % (date, content))
 
     # Format: dateRange to card
     # ThriveCardExpected does this automatically based on mappings from
@@ -928,6 +927,7 @@ class CourseCards(myuwCard):
 
         return cls()
 
+
 @isaCard
 class NoCourseCard(myuwCard):
     '''No Course Card. Not called directly, rather it is created and
@@ -944,8 +944,8 @@ class NoCourseCardAlt(NoCourseCard):
 @isaCard
 class uwemail(myuwCard):
 
-    def __init__(self, emailType = None):
-        #if emailType is None:
+    def __init__(self, emailType=None):
+        # if emailType is None:
         #   raise AssertionError('emailType must be specified')
 
         self.emailType = emailType
@@ -961,9 +961,9 @@ class uwemail(myuwCard):
 
         else:
             emailType = None
-            #raise AssertionError("Didn't find a known email type")
+            # raise AssertionError("Didn't find a known email type")
 
-        return cls(emailType = emailType)
+        return cls(emailType=emailType)
 
     autoDiffs = {'emailType': 'Email Type'}
 
@@ -984,15 +984,18 @@ stubCards = [
     'ThankYouCard',
 ]
 
+
 class stubCard(myuwCard):
     '''Class for quickly generating simple cards'''
     pass
 
+
 def mkStub(name):
     '''Function for creating stub card classes'''
 
-    docstring = 'Stub card class for card "%s"' %name
+    docstring = 'Stub card class for card "%s"' % name
     return type(name, (stubCard, ), {'__doc__': docstring})
+
 
 for cardName in stubCards:
 
@@ -1004,11 +1007,13 @@ for cardName in stubCards:
 
 del newCardClass
 
+
 class UnknownCardError(KeyError):
     def __init__(self, cardName):
         super(UnknownCardError, self).__init__(
-            'Error: Card with name %s unknown' %cardName
+            'Error: Card with name %s unknown' % cardName
         )
+
 
 def getCardClass(cardName):
     try:
@@ -1016,8 +1021,10 @@ def getCardClass(cardName):
     except KeyError:
         raise UnknownCardError(cardName)
 
+
 def cardIsError(el):
     return 'An error has occurred' in el.text
+
 
 def cardFromElement(el, date):
     '''Automatically make a card from a WebElement'''
@@ -1042,7 +1049,7 @@ def cardFromElement(el, date):
             newCard = cardClass.fromElement(el, date)
 
             if newCard is None:
-                raise Exception('%s.fromElement returned None' %cardClass)
+                raise Exception('%s.fromElement returned None' % cardClass)
             baseCardName = newCard.name
 
         retval = {baseCardName: newCard}
@@ -1050,5 +1057,3 @@ def cardFromElement(el, date):
 
     else:
         return {}
-
-

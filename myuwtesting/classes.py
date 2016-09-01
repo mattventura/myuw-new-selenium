@@ -419,7 +419,7 @@ class visNever(visClass):
 
 class visAlways(visClass):
     def visCheck(self, date):
-        return False
+        return True
     sigDates = []
 
 # Turn these into singletons
@@ -907,12 +907,10 @@ class gradRequest(autoDiff):
             label = decEl.find_element_by_css_selector('span.card-badge-label')
             val = decEl.find_element_by_css_selector('span.card-badge-value')
             key = label.text
-            value = value.text
+            value = val.text
 
-            if key in cls.replacements:
-                key = cls.replacements[key]
-            if value in cls.replacements:
-                value = cls.replacements[value]
+            key = cls.replacements.get(key, key)
+            value = cls.replacements.get(value, value)
 
             decisions[key] = value
 

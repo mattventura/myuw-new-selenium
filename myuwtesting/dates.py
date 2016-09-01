@@ -142,6 +142,7 @@ SummerRegHide = multiDate(SummerRegCardHideDates)
 
 SummerRegSwitch = RegPd1 + 7
 
+
 def dateToQtr(date):
     '''Try to convert a date to quarter in the form of 'SP13'. '''
     date = myuwDate(date)
@@ -155,7 +156,7 @@ def dateToQtr(date):
                 return qtr
         except:
             continue
-    raise Exception("Couldn't find quarter for date %s" %date)
+    raise Exception("Couldn't find quarter for date %s" % date)
 
 
 def dateToTerm(date):

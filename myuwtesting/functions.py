@@ -2,24 +2,23 @@
 
 import datetime
 from selenium.common.exceptions import WebDriverException
+from functools import wraps
 
 
 def uesc(func):
     '''Escape unicode from all arguments. '''
-
+    @wraps(func)
     def inner(*args, **kwargs):
-
-        newArgs = []
-        for arg in args:
+        args = list(args)
+        for i, arg in enumerate(args):
             if isinstance(arg, unicode):
-                arg = arg.encode('unicode-escape')
-            newArgs.append(arg)
+                args[i] = arg.encode('unicode-escape')
 
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if isinstance(v, unicode):
                 kwargs[k] = v.encode('unicode-escape')
 
-        return func(*newArgs, **kwargs)
+        return func(*args, **kwargs)
 
     return inner
 
@@ -28,8 +27,10 @@ def isCardVisible(cardEl):
     '''Attempt to determine if a card is visible using numerous indicators.'''
     if not(cardEl.is_displayed()):
         return False
-    #if not cardEl.get_attribute('innerHTML'):
-    #    return False
+    '''
+    if not cardEl.get_attribute('innerHTML'):
+        return False
+    '''
     text = cardEl.text
     if not(cardEl.text):
         return False
@@ -53,7 +54,7 @@ def toTimeDelta(obj):
 
     else:
         raise TypeError('toTimeDelta requires either an int or '
-            'datetime.timedelta as its argument')
+                        'datetime.timedelta as its argument')
 
 
 def packElement(func):
@@ -76,11 +77,8 @@ def formatDiffs(label, a, b):
     '''
     if a == b:
         return ''
-    # TODO
-    #elif isinstance(a, list) and isinstance(b, list):
-    #    return formatListDiffs(label, a, b)
     else:
-        return 'Different %s (%s vs %s)\n' %(label, a, b)
+        return 'Different %s (%s vs %s)\n' % (label, a, b)
 
 # Not finished TODO
 """
@@ -91,10 +89,8 @@ def formatListDiffs(label, a, b):
         outStr = 'Different lengths of %s (%s vs %s)\n' %(label, len(a), len(b))
         return outStr
 
-    sortedA = list(a)
-    sortedB = list(b)
-    sortedA.sort()
-    sortedB.sort()
+    sortedA = sorted(a)
+    sortedB = sorted(b)
 
     if sortedA == sortedB:
         outStr = 'Different order of %s (%s vs %s)\n' %(label, a, b)
